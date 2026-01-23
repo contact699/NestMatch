@@ -1,0 +1,257 @@
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { VerificationBadge, Badge } from '@/components/ui/badge'
+import {
+  User,
+  Mail,
+  Phone,
+  Briefcase,
+  Edit,
+  Shield,
+  CheckCircle,
+  XCircle,
+  Globe,
+} from 'lucide-react'
+
+export const metadata = {
+  title: 'Profile',
+}
+
+export default async function ProfilePage() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .single() as { data: any }
+
+  const { data: lifestyleResponses } = await supabase
+    .from('lifestyle_responses')
+    .select('*')
+    .eq('user_id', user.id)
+    .single() as { data: any }
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Your Profile</h1>
+        <Link href="/profile/edit">
+          <Button>
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
+        </Link>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Profile Card */}
+        <div className="lg:col-span-1">
+          <Card variant="bordered">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  {profile?.profile_photo ? (
+                    <img
+                      src={profile.profile_photo}
+                      alt={profile.name || 'Profile'}
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-blue-600" />
+                  )}
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {profile?.name || 'Add your name'}
+                </h2>
+                {profile?.occupation && (
+                  <p className="text-gray-500 mt-1">{profile.occupation}</p>
+                )}
+                <div className="mt-3">
+                  <VerificationBadge level={profile?.verification_level || 'basic'} />
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-3 text-sm">
+                  <Mail className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">{user.email}</span>
+                  {profile?.email_verified ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-gray-300 ml-auto" />
+                  )}
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  <span className="text-gray-600">
+                    {profile?.phone || 'Add phone number'}
+                  </span>
+                  {profile?.phone_verified ? (
+                    <CheckCircle className="h-4 w-4 text-green-500 ml-auto" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-gray-300 ml-auto" />
+                  )}
+                </div>
+                {profile?.languages && profile.languages.length > 0 && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <Globe className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">
+                      {profile.languages.join(', ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {profile?.verification_level === 'basic' && (
+                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <Shield className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-900">
+                        Get verified
+                      </p>
+                      <p className="text-sm text-blue-700 mt-1">
+                        Verified profiles get 3x more responses. Verify your
+                        identity to build trust.
+                      </p>
+                      <Link href="/verify">
+                        <Button size="sm" className="mt-3">
+                          Verify Now
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Bio */}
+          <Card variant="bordered">
+            <CardHeader>
+              <CardTitle>About</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {profile?.bio ? (
+                <p className="text-gray-600 whitespace-pre-wrap">{profile.bio}</p>
+              ) : (
+                <p className="text-gray-400 italic">
+                  Add a bio to tell potential roommates about yourself.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Lifestyle Preferences */}
+          <Card variant="bordered">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Lifestyle Preferences</CardTitle>
+              {!lifestyleResponses && (
+                <Link href="/quiz">
+                  <Button size="sm" variant="outline">
+                    Take Quiz
+                  </Button>
+                </Link>
+              )}
+            </CardHeader>
+            <CardContent>
+              {lifestyleResponses ? (
+                <div className="grid grid-cols-2 gap-4">
+                  {lifestyleResponses.work_schedule && (
+                    <div>
+                      <p className="text-sm text-gray-500">Work Schedule</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.work_schedule.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.sleep_schedule && (
+                    <div>
+                      <p className="text-sm text-gray-500">Sleep Schedule</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.sleep_schedule.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.cleanliness_level && (
+                    <div>
+                      <p className="text-sm text-gray-500">Cleanliness</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.cleanliness_level}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.noise_tolerance && (
+                    <div>
+                      <p className="text-sm text-gray-500">Noise Tolerance</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.noise_tolerance.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.guest_frequency && (
+                    <div>
+                      <p className="text-sm text-gray-500">Guests</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.guest_frequency}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.smoking && (
+                    <div>
+                      <p className="text-sm text-gray-500">Smoking</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.smoking.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.pets_preference && (
+                    <div>
+                      <p className="text-sm text-gray-500">Pets</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.pets_preference.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  )}
+                  {lifestyleResponses.remote_work_frequency && (
+                    <div>
+                      <p className="text-sm text-gray-500">Remote Work</p>
+                      <p className="font-medium capitalize">
+                        {lifestyleResponses.remote_work_frequency}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-gray-500 mb-4">
+                    Complete the lifestyle quiz to help us find compatible
+                    roommates for you.
+                  </p>
+                  <Link href="/quiz">
+                    <Button>Take the Quiz</Button>
+                  </Link>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  )
+}
