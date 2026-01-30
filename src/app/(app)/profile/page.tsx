@@ -15,6 +15,7 @@ import {
   XCircle,
   Globe,
   Star,
+  MapPin,
 } from 'lucide-react'
 
 export const metadata = {
@@ -136,6 +137,14 @@ export default async function ProfilePage() {
                     <Globe className="h-4 w-4 text-gray-400" />
                     <span className="text-gray-600">
                       {profile.languages.join(', ')}
+                    </span>
+                  </div>
+                )}
+                {(profile?.city || profile?.province) && (
+                  <div className="flex items-center gap-3 text-sm">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-600">
+                      {[profile.city, profile.province].filter(Boolean).join(', ')}
                     </span>
                   </div>
                 )}

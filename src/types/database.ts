@@ -27,6 +27,8 @@ export interface Database {
           verification_level: 'basic' | 'verified' | 'trusted'
           verified_at: string | null
           languages: string[] | null
+          city: string | null
+          province: string | null
           created_at: string
           updated_at: string
         }
@@ -47,6 +49,8 @@ export interface Database {
           verification_level?: 'basic' | 'verified' | 'trusted'
           verified_at?: string | null
           languages?: string[] | null
+          city?: string | null
+          province?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -67,6 +71,8 @@ export interface Database {
           verification_level?: 'basic' | 'verified' | 'trusted'
           verified_at?: string | null
           languages?: string[] | null
+          city?: string | null
+          province?: string | null
           created_at?: string
           updated_at?: string
         }
