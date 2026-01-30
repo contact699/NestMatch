@@ -109,6 +109,7 @@ export default function NewListingPage() {
   }
 
   const onSubmit = async (data: ListingFormData) => {
+    console.log('Form submitted with data:', data)
     setIsSubmitting(true)
     setError(null)
 
@@ -119,7 +120,15 @@ export default function NewListingPage() {
         body: JSON.stringify(data),
       })
 
-      const result = await response.json()
+      const text = await response.text()
+      console.log('API response:', text)
+
+      let result
+      try {
+        result = JSON.parse(text)
+      } catch {
+        throw new Error('Server returned invalid response')
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to create listing')
@@ -127,9 +136,19 @@ export default function NewListingPage() {
 
       router.push(`/listings/${result.listing.id}`)
     } catch (err) {
+      console.error('Submit error:', err)
       setError(err instanceof Error ? err.message : 'Something went wrong')
       setIsSubmitting(false)
     }
+  }
+
+  // Handle validation errors on submit
+  const onError = (validationErrors: any) => {
+    console.log('Validation errors:', validationErrors)
+    const errorMessages = Object.entries(validationErrors)
+      .map(([field, error]: [string, any]) => `${field}: ${error.message}`)
+      .join(', ')
+    setError(`Please fix the following: ${errorMessages}`)
   }
 
   const renderStep = () => {
@@ -212,7 +231,7 @@ export default function NewListingPage() {
         </div>
 
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit, onError)}>
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
