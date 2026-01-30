@@ -11,6 +11,7 @@ import {
   CTASection,
   Footer,
 } from '@/components/landing'
+import { FeaturedListingsSection } from '@/components/landing/featured-listings-section'
 
 export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -41,6 +42,7 @@ export default function HomePage() {
       <TrustFeaturesSection />
       <HowItWorksSection />
       <StatsSection />
+      <FeaturedListingsSection />
       <NewcomerSection />
       <CTASection />
       <Footer />

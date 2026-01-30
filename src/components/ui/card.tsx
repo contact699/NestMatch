@@ -2,19 +2,26 @@ import { cn } from '@/lib/utils'
 import { type HTMLAttributes } from 'react'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: 'default' | 'bordered' | 'elevated'
+  variant?: 'default' | 'bordered' | 'elevated' | 'feature' | 'glass'
+  animate?: boolean
 }
 
-export function Card({ className, variant = 'default', ...props }: CardProps) {
+export function Card({ className, variant = 'default', animate = false, ...props }: CardProps) {
   const variants = {
     default: 'bg-white rounded-xl',
     bordered: 'bg-white rounded-xl border border-gray-200',
     elevated: 'bg-white rounded-xl shadow-lg',
+    feature: 'feature-card',
+    glass: 'glass rounded-xl',
   }
 
   return (
     <div
-      className={cn(variants[variant], className)}
+      className={cn(
+        variants[variant],
+        animate && 'card-hover',
+        className
+      )}
       {...props}
     />
   )

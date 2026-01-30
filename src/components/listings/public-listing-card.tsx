@@ -1,11 +1,9 @@
 'use client'
 
 import Link from 'next/link'
-import { formatPrice, formatDate, getRelativeTime } from '@/lib/utils'
+import { formatPrice, formatDate } from '@/lib/utils'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
-import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import {
   MapPin,
   Calendar,
@@ -13,29 +11,34 @@ import {
   Heart,
   Users,
   Leaf,
-  Clock,
+  Lock,
 } from 'lucide-react'
-import type { Listing, Profile } from '@/types/database'
 
-interface ListingCardProps {
-  listing: Listing & {
-    profiles?: Profile
+interface PublicListingCardProps {
+  listing: {
+    id: string
+    title: string
+    description: string | null
+    city: string
+    province: string
+    price: number
+    type: 'room' | 'shared_room' | 'entire_place'
+    photos: string[] | null
+    newcomer_friendly: boolean
+    no_credit_history_ok: boolean
+    utilities_included: boolean
+    available_date: string
+    created_at: string
+    user_id: string
+    profiles: {
+      name: string | null
+      verification_level: string
+      profile_photo: string | null
+    } | null
   }
-  currentUserId?: string | null
-  compatibilityScore?: number
-  isSaved?: boolean
-  onSave?: () => void
-  onUnsave?: () => void
 }
 
-export function ListingCard({
-  listing,
-  currentUserId,
-  compatibilityScore,
-  isSaved,
-  onSave,
-  onUnsave,
-}: ListingCardProps) {
+export function PublicListingCard({ listing }: PublicListingCardProps) {
   const typeLabels = {
     room: 'Private Room',
     shared_room: 'Shared Room',
@@ -43,8 +46,8 @@ export function ListingCard({
   }
 
   return (
-    <Card variant="bordered" className="overflow-hidden card-hover group">
-      <Link href={`/listings/${listing.id}`}>
+    <Card variant="bordered" className="overflow-hidden feature-card group">
+      <Link href={`/signup?redirect=/listings/${listing.id}`}>
         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
           {listing.photos && listing.photos.length > 0 ? (
             <img
@@ -71,39 +74,32 @@ export function ListingCard({
             )}
           </div>
 
-          {/* Compatibility score */}
-          {currentUserId && listing.user_id !== currentUserId && (
-            <div className="absolute top-3 right-3">
-              <CompatibilityBadge
-                userId={listing.user_id}
-                currentUserId={currentUserId}
-                size="sm"
-                showLabel={false}
-              />
+          {/* Compatibility badge - locked for public */}
+          <div className="absolute top-3 right-3">
+            <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-gray-600">
+              <Lock className="h-3 w-3" />
+              <span className="blur-[3px]">85%</span>
             </div>
-          )}
+          </div>
 
-          {/* Save button */}
+          {/* Save button - disabled for public */}
           <button
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              isSaved ? onUnsave?.() : onSave?.()
+              window.location.href = '/signup'
             }}
-            className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white hover:scale-110 transition-all duration-300 shadow-sm"
+            className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white transition-all duration-300 shadow-sm group/save"
+            title="Sign up to save"
           >
-            <Heart
-              className={`h-5 w-5 transition-colors duration-300 ${
-                isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 group-hover:text-red-400'
-              }`}
-            />
+            <Heart className="h-5 w-5 text-gray-400 group-hover/save:text-red-400 transition-colors" />
           </button>
         </div>
       </Link>
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <Link href={`/listings/${listing.id}`}>
+          <Link href={`/signup?redirect=/listings/${listing.id}`}>
             <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">
               {listing.title}
             </h3>
@@ -157,46 +153,21 @@ export function ListingCard({
                   {listing.profiles.name || 'Anonymous'}
                 </p>
                 <VerificationBadge
-                  level={listing.profiles.verification_level}
+                  level={listing.profiles.verification_level as 'basic' | 'verified' | 'trusted'}
                   size="sm"
                   showLabel={false}
                 />
               </div>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
-              <Clock className="h-3 w-3" />
-              {getRelativeTime(listing.created_at)}
-            </div>
+            <Link
+              href={`/signup?redirect=/listings/${listing.id}`}
+              className="text-xs text-blue-600 hover:underline font-medium"
+            >
+              View details
+            </Link>
           </div>
         )}
       </div>
     </Card>
-  )
-}
-
-interface ListingCardSkeletonProps {
-  count?: number
-}
-
-export function ListingCardSkeleton({ count = 1 }: ListingCardSkeletonProps) {
-  return (
-    <>
-      {Array.from({ length: count }).map((_, i) => (
-        <Card key={i} variant="bordered" className="overflow-hidden">
-          <div className="aspect-[4/3] bg-gray-200 animate-pulse" />
-          <div className="p-4 space-y-3">
-            <div className="flex justify-between">
-              <div className="h-5 w-2/3 bg-gray-200 rounded animate-pulse" />
-              <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
-            </div>
-            <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-            <div className="flex gap-2">
-              <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
-              <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
-            </div>
-          </div>
-        </Card>
-      ))}
-    </>
   )
 }

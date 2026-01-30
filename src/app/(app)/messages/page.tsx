@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -50,6 +50,36 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Set up intersection observer for animations
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (prefersReducedMotion) {
+      containerRef.current?.querySelectorAll('[data-animate]').forEach((el) => {
+        el.classList.add('is-visible')
+      })
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-visible')
+          }
+        })
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    )
+
+    containerRef.current?.querySelectorAll('[data-animate]').forEach((el) => {
+      observer.observe(el)
+    })
+
+    return () => observer.disconnect()
+  }, [conversations])
 
   // Handle "to" parameter for starting new conversations
   useEffect(() => {
@@ -143,6 +173,12 @@ export default function MessagesPage() {
 
   const totalUnread = conversations.reduce((sum, c) => sum + c.unread_count, 0)
 
+  // Stagger delay classes
+  const getDelayClass = (index: number) => {
+    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-600']
+    return delays[index % delays.length]
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -152,9 +188,9 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div ref={containerRef} className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-6" data-animate>
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
@@ -168,14 +204,14 @@ export default function MessagesPage() {
 
         {/* Search */}
         {conversations.length > 0 && (
-          <div className="relative mt-4">
+          <div className="relative mt-4 delay-100" data-animate>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all"
             />
           </div>
         )}
@@ -183,7 +219,7 @@ export default function MessagesPage() {
 
       {/* Conversations list */}
       {conversations.length === 0 ? (
-        <Card variant="bordered">
+        <Card variant="bordered" data-animate className="delay-200">
           <CardContent className="py-12 text-center">
             <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -201,21 +237,24 @@ export default function MessagesPage() {
           </CardContent>
         </Card>
       ) : filteredConversations.length === 0 ? (
-        <Card variant="bordered">
+        <Card variant="bordered" data-animate className="delay-200">
           <CardContent className="py-8 text-center">
             <p className="text-gray-500">No conversations match your search.</p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-2">
-          {filteredConversations.map((conversation) => (
+          {filteredConversations.map((conversation, index) => (
             <Link
               key={conversation.id}
               href={`/messages/${conversation.id}`}
+              data-animate
+              className={getDelayClass(index)}
             >
               <Card
                 variant="bordered"
-                className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+                animate
+                className={`cursor-pointer ${
                   conversation.unread_count > 0 ? 'border-blue-200 bg-blue-50/30' : ''
                 }`}
               >
@@ -223,7 +262,7 @@ export default function MessagesPage() {
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105">
                         {conversation.other_profile?.profile_photo ? (
                           <img
                             src={conversation.other_profile.profile_photo}
@@ -282,7 +321,7 @@ export default function MessagesPage() {
                     {/* Unread indicator */}
                     {conversation.unread_count > 0 && (
                       <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full">
+                        <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full animate-pulse">
                           {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                         </span>
                       </div>
