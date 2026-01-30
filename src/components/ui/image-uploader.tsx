@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from './button'
 import {
   Camera,
@@ -30,35 +31,51 @@ export function ImageUploader({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const uploadFile = async (file: File): Promise<string | null> => {
-    const formData = new FormData()
-    formData.append('file', file)
-    formData.append('bucket', bucket)
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.')
+    }
 
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024
+    if (file.size > maxSize) {
+      throw new Error('File too large. Maximum size is 5MB.')
+    }
+
+    const supabase = createClient()
+
+    // Get current user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (authError || !user) {
+      throw new Error('You must be logged in to upload images')
+    }
+
+    // Generate unique filename
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(2, 8)
+    const extension = file.name.split('.').pop() || 'jpg'
+    const filename = `${user.id}/${timestamp}-${randomString}.${extension}`
+
+    // Upload directly to Supabase Storage
+    const { data, error: uploadError } = await supabase.storage
+      .from(bucket)
+      .upload(filename, file, {
+        contentType: file.type,
+        upsert: false,
       })
 
-      const text = await response.text()
-
-      let result
-      try {
-        result = JSON.parse(text)
-      } catch {
-        console.error('Server response:', text)
-        throw new Error(text.substring(0, 100) || 'Server returned invalid response')
-      }
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Upload failed')
-      }
-
-      return result.url
-    } catch (err) {
-      console.error('Upload error:', err)
-      throw err
+    if (uploadError) {
+      console.error('Upload error:', uploadError)
+      throw new Error(uploadError.message || 'Failed to upload file')
     }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path)
+
+    return urlData.publicUrl
   }
 
   const handleFiles = async (files: FileList | File[]) => {
