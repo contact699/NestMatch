@@ -39,19 +39,12 @@ async function SearchResults({
 }) {
   const supabase = await createClient()
 
+  // Get current user for compatibility scoring
+  const { data: { user } } = await supabase.auth.getUser()
+
   let query = supabase
     .from('listings')
-    .select(
-      `
-      *,
-      profiles (
-        id,
-        name,
-        profile_photo,
-        verification_level
-      )
-    `
-    )
+    .select('*')
     .eq('is_active', true)
     .order('created_at', { ascending: false })
 
@@ -115,6 +108,7 @@ async function SearchResults({
         <ListingCard
           key={listing.id}
           listing={listing as any}
+          currentUserId={user?.id}
         />
       ))}
     </div>

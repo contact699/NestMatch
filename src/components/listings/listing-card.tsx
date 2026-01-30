@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { formatPrice, formatDate, getRelativeTime } from '@/lib/utils'
-import { VerificationBadge, CompatibilityBadge, Badge } from '@/components/ui/badge'
+import { VerificationBadge, Badge } from '@/components/ui/badge'
+import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +21,7 @@ interface ListingCardProps {
   listing: Listing & {
     profiles?: Profile
   }
+  currentUserId?: string | null
   compatibilityScore?: number
   isSaved?: boolean
   onSave?: () => void
@@ -28,6 +30,7 @@ interface ListingCardProps {
 
 export function ListingCard({
   listing,
+  currentUserId,
   compatibilityScore,
   isSaved,
   onSave,
@@ -69,9 +72,14 @@ export function ListingCard({
           </div>
 
           {/* Compatibility score */}
-          {compatibilityScore !== undefined && (
+          {currentUserId && listing.user_id !== currentUserId && (
             <div className="absolute top-3 right-3">
-              <CompatibilityBadge score={compatibilityScore} size="sm" />
+              <CompatibilityBadge
+                userId={listing.user_id}
+                currentUserId={currentUserId}
+                size="sm"
+                showLabel={false}
+              />
             </div>
           )}
 

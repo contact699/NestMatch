@@ -84,6 +84,7 @@ export function Navbar({ user }: NavbarProps) {
     ? [
         { href: '/dashboard', label: 'Home', icon: Home },
         { href: '/search', label: 'Search', icon: Search },
+        { href: '/roommates', label: 'Roommates', icon: Users },
         { href: '/listings/new', label: 'Post', icon: PlusCircle },
         { href: '/my-listings', label: 'Listings', icon: Home },
         { href: '/messages', label: 'Messages', icon: MessageCircle },

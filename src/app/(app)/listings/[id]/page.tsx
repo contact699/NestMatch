@@ -23,6 +23,7 @@ import {
   Edit,
 } from 'lucide-react'
 import { ListingActions } from './listing-actions'
+import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -286,6 +287,19 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   )}
                 </div>
               </div>
+
+              {/* Compatibility score */}
+              {user && !isOwner && (
+                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600 mb-2">Your compatibility</p>
+                  <CompatibilityBadge
+                    userId={listing.user_id}
+                    currentUserId={user.id}
+                    size="lg"
+                    showLabel={true}
+                  />
+                </div>
+              )}
 
               {profile?.bio && (
                 <p className="text-sm text-gray-600 mb-4 line-clamp-3">
