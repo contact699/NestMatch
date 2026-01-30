@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, memo, useCallback } from 'react'
+import { useState, useEffect, memo, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -31,6 +31,7 @@ interface NavLinkProps {
   isActive: boolean
   onClick?: () => void
   mobile?: boolean
+  badge?: number
 }
 
 const NavLink = memo(function NavLink({
@@ -40,12 +41,13 @@ const NavLink = memo(function NavLink({
   isActive,
   onClick,
   mobile,
+  badge,
 }: NavLinkProps) {
   return (
     <Link
       href={href}
       className={cn(
-        'flex items-center rounded-lg text-sm font-medium transition-colors',
+        'flex items-center rounded-lg text-sm font-medium transition-colors relative',
         mobile ? 'gap-3 px-3 py-2' : 'gap-2 px-3 py-2',
         isActive
           ? 'bg-blue-50 text-blue-600'
@@ -53,8 +55,20 @@ const NavLink = memo(function NavLink({
       )}
       onClick={onClick}
     >
-      <Icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
+      <div className="relative">
+        <Icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
+        {badge && badge > 0 && (
+          <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full">
+            {badge > 9 ? '9+' : badge}
+          </span>
+        )}
+      </div>
       {label}
+      {badge && badge > 0 && mobile && (
+        <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-xs font-bold rounded-full">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </Link>
   )
 })
@@ -68,6 +82,62 @@ export function Navbar({ user }: NavbarProps) {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  // Fetch unread message count
+  useEffect(() => {
+    if (!user) return
+
+    async function fetchUnreadCount() {
+      try {
+        const response = await fetch('/api/conversations')
+        if (response.ok) {
+          const data = await response.json()
+          const total = data.conversations?.reduce(
+            (sum: number, c: any) => sum + (c.unread_count || 0),
+            0
+          ) || 0
+          setUnreadCount(total)
+        }
+      } catch (error) {
+        console.error('Error fetching unread count:', error)
+      }
+    }
+
+    fetchUnreadCount()
+
+    // Set up real-time subscription for new messages
+    const supabase = createClient()
+    const channel = supabase
+      .channel('navbar-messages')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchUnreadCount()
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages',
+        },
+        () => {
+          fetchUnreadCount()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -87,7 +157,7 @@ export function Navbar({ user }: NavbarProps) {
         { href: '/roommates', label: 'Roommates', icon: Users },
         { href: '/listings/new', label: 'Post', icon: PlusCircle },
         { href: '/my-listings', label: 'Listings', icon: Home },
-        { href: '/messages', label: 'Messages', icon: MessageCircle },
+        { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
         { href: '/saved', label: 'Saved', icon: Heart },
       ]
     : []
@@ -105,13 +175,14 @@ export function Navbar({ user }: NavbarProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map(({ href, label, icon }) => (
+            {navLinks.map(({ href, label, icon, badge }) => (
               <NavLink
                 key={href}
                 href={href}
                 label={label}
                 icon={icon}
                 isActive={pathname === href}
+                badge={badge}
               />
             ))}
           </div>
@@ -222,7 +293,7 @@ export function Navbar({ user }: NavbarProps) {
       {mobileMenuOpen && user && (
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-2 py-3 space-y-1">
-            {navLinks.map(({ href, label, icon }) => (
+            {navLinks.map(({ href, label, icon, badge }) => (
               <NavLink
                 key={href}
                 href={href}
@@ -231,6 +302,7 @@ export function Navbar({ user }: NavbarProps) {
                 isActive={pathname === href}
                 onClick={closeMobileMenu}
                 mobile
+                badge={badge}
               />
             ))}
           </div>
