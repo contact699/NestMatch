@@ -129,15 +129,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if conversation already exists between these users for this listing
+    // Check if conversation already exists between these users
     let existingConversation = null
 
     if (listing_id) {
+      // Check for conversation with this specific listing
       const { data } = await (supabase as any)
         .from('conversations')
         .select('id')
         .contains('participant_ids', [user.id, participant_id])
         .eq('listing_id', listing_id)
+        .single() as { data: any; error: any }
+      existingConversation = data
+    } else {
+      // Check for any existing conversation between these users (without listing)
+      const { data } = await (supabase as any)
+        .from('conversations')
+        .select('id')
+        .contains('participant_ids', [user.id, participant_id])
+        .is('listing_id', null)
         .single() as { data: any; error: any }
       existingConversation = data
     }

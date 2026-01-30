@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate, getRelativeTime } from '@/lib/utils'
@@ -45,10 +45,41 @@ interface Conversation {
 
 export default function MessagesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  // Handle "to" parameter for starting new conversations
+  useEffect(() => {
+    const toUserId = searchParams.get('to')
+    if (!toUserId) return
+
+    async function startConversation() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        router.push('/login?redirect=/messages?to=' + toUserId)
+        return
+      }
+
+      // Create or get existing conversation
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participant_id: toUserId }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        router.replace(`/messages/${data.conversation.id}`)
+      }
+    }
+
+    startConversation()
+  }, [searchParams, router])
 
   useEffect(() => {
     async function loadConversations() {
