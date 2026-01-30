@@ -76,8 +76,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .eq('user_id', listing.user_id)
     .single() as { data: any }
 
-  // Attach profile to listing for easier access
-  listing.profiles = profile
 
   // Check if this is the owner's listing
   const isOwner = user?.id === listing.user_id
@@ -107,8 +105,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
     shared_room: 'Shared Room',
     entire_place: 'Entire Place',
   }
-
-  const profile = listing.profiles as any
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
