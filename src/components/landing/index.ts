@@ -1,0 +1,8 @@
+export { LandingNav } from './landing-nav'
+export { HeroSection } from './hero-section'
+export { TrustFeaturesSection } from './trust-features-section'
+export { HowItWorksSection } from './how-it-works-section'
+export { StatsSection } from './stats-section'
+export { NewcomerSection } from './newcomer-section'
+export { CTASection } from './cta-section'
+export { Footer } from './footer'

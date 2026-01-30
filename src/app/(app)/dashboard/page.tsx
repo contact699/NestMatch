@@ -13,7 +13,16 @@ import {
   ArrowRight,
   CheckCircle,
   AlertCircle,
+  Home,
+  Heart,
 } from 'lucide-react'
+
+type ProfileData = {
+  name: string | null
+  bio: string | null
+  verification_level: 'basic' | 'verified' | 'trusted'
+  profile_photo: string | null
+}
 
 export const metadata = {
   title: 'Dashboard',
@@ -29,32 +38,40 @@ export default async function DashboardPage() {
     redirect('/login')
   }
 
-  // Fetch user profile
+  // Fetch profile
   const { data: profile } = await supabase
     .from('profiles')
-    .select('*')
+    .select('name, bio, verification_level, profile_photo')
     .eq('user_id', user.id)
-    .single() as { data: { name: string | null; bio: string | null; verification_level: 'basic' | 'verified' | 'trusted'; profile_photo: string | null } | null }
+    .single() as { data: ProfileData | null }
 
-  // Fetch user's lifestyle responses
+  // Fetch lifestyle responses
   const { data: lifestyleResponses } = await supabase
     .from('lifestyle_responses')
     .select('id')
     .eq('user_id', user.id)
     .single() as { data: { id: string } | null }
 
-  // Fetch user's listings count
-  const { count: listingsCount } = await supabase
-    .from('listings')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id) as { count: number | null }
+  // Batch fetch: all counts in parallel
+  const [listingsResult, unreadResult, savedResult] = await Promise.all([
+    supabase
+      .from('listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+    supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .is('read_at', null)
+      .neq('sender_id', user.id),
+    supabase
+      .from('saved_listings')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', user.id),
+  ])
 
-  // Fetch unread messages count
-  const { count: unreadCount } = await supabase
-    .from('messages')
-    .select('*', { count: 'exact', head: true })
-    .is('read_at', null)
-    .neq('sender_id', user.id) as { count: number | null }
+  const listingsCount = listingsResult.count
+  const unreadCount = unreadResult.count
+  const savedCount = savedResult.count
 
   const hasCompletedProfile = profile?.name && profile?.bio
   const hasCompletedQuiz = !!lifestyleResponses
@@ -160,7 +177,7 @@ export default async function DashboardPage() {
               <CardTitle>Quick actions</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid sm:grid-cols-2 gap-4">
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <Link href="/listings/new">
                   <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
                     <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -183,14 +200,18 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                 </Link>
-                <Link href="/seeking/new">
+                <Link href="/my-listings">
                   <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
                     <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                      <User className="h-6 w-6 text-purple-600" />
+                      <Home className="h-6 w-6 text-purple-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">Create seeker profile</p>
-                      <p className="text-sm text-gray-500">Let rooms find you</p>
+                      <p className="font-medium text-gray-900">My listings</p>
+                      <p className="text-sm text-gray-500">
+                        {listingsCount && listingsCount > 0
+                          ? `${listingsCount} active`
+                          : 'Manage your rooms'}
+                      </p>
                     </div>
                   </div>
                 </Link>
@@ -210,6 +231,21 @@ export default async function DashboardPage() {
                         {unreadCount && unreadCount > 0
                           ? `${unreadCount} unread`
                           : 'View conversations'}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+                <Link href="/saved">
+                  <div className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-colors cursor-pointer">
+                    <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                      <Heart className="h-6 w-6 text-red-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">Saved</p>
+                      <p className="text-sm text-gray-500">
+                        {savedCount && savedCount > 0
+                          ? `${savedCount} saved`
+                          : 'Your saved listings'}
                       </p>
                     </div>
                   </div>
@@ -268,8 +304,8 @@ export default async function DashboardPage() {
                   <span className="font-semibold">{unreadCount || 0}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Profile views</span>
-                  <span className="font-semibold text-gray-400">Coming soon</span>
+                  <span className="text-gray-600">Saved listings</span>
+                  <span className="font-semibold">{savedCount || 0}</span>
                 </div>
               </div>
             </CardContent>

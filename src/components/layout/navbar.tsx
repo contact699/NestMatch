@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, memo, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -12,13 +12,52 @@ import {
   PlusCircle,
   MessageCircle,
   User,
+  Users,
   Menu,
   X,
   LogOut,
   Settings,
   Heart,
+  Star,
+  Receipt,
+  LucideIcon,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+
+interface NavLinkProps {
+  href: string
+  label: string
+  icon: LucideIcon
+  isActive: boolean
+  onClick?: () => void
+  mobile?: boolean
+}
+
+const NavLink = memo(function NavLink({
+  href,
+  label,
+  icon: Icon,
+  isActive,
+  onClick,
+  mobile,
+}: NavLinkProps) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center rounded-lg text-sm font-medium transition-colors',
+        mobile ? 'gap-3 px-3 py-2' : 'gap-2 px-3 py-2',
+        isActive
+          ? 'bg-blue-50 text-blue-600'
+          : 'text-gray-600 hover:bg-gray-100'
+      )}
+      onClick={onClick}
+    >
+      <Icon className={mobile ? 'h-5 w-5' : 'h-4 w-4'} />
+      {label}
+    </Link>
+  )
+})
 
 interface NavbarProps {
   user: SupabaseUser | null
@@ -37,11 +76,16 @@ export function Navbar({ user }: NavbarProps) {
     router.refresh()
   }
 
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuOpen(false)
+  }, [])
+
   const navLinks = user
     ? [
         { href: '/dashboard', label: 'Home', icon: Home },
         { href: '/search', label: 'Search', icon: Search },
         { href: '/listings/new', label: 'Post', icon: PlusCircle },
+        { href: '/my-listings', label: 'Listings', icon: Home },
         { href: '/messages', label: 'Messages', icon: MessageCircle },
         { href: '/saved', label: 'Saved', icon: Heart },
       ]
@@ -60,20 +104,14 @@ export function Navbar({ user }: NavbarProps) {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
+            {navLinks.map(({ href, label, icon }) => (
+              <NavLink
                 key={href}
                 href={href}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  pathname === href
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-100'
-                )}
-              >
-                <Icon className="h-4 w-4" />
-                {label}
-              </Link>
+                label={label}
+                icon={icon}
+                isActive={pathname === href}
+              />
             ))}
           </div>
 
@@ -104,6 +142,30 @@ export function Navbar({ user }: NavbarProps) {
                       >
                         <User className="h-4 w-4" />
                         Profile
+                      </Link>
+                      <Link
+                        href="/reviews"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <Star className="h-4 w-4" />
+                        Reviews
+                      </Link>
+                      <Link
+                        href="/expenses"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <Receipt className="h-4 w-4" />
+                        Expenses
+                      </Link>
+                      <Link
+                        href="/groups"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <Users className="h-4 w-4" />
+                        Co-Renter Groups
                       </Link>
                       <Link
                         href="/settings"
@@ -159,21 +221,16 @@ export function Navbar({ user }: NavbarProps) {
       {mobileMenuOpen && user && (
         <div className="md:hidden border-t border-gray-200 bg-white">
           <div className="px-2 py-3 space-y-1">
-            {navLinks.map(({ href, label, icon: Icon }) => (
-              <Link
+            {navLinks.map(({ href, label, icon }) => (
+              <NavLink
                 key={href}
                 href={href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium',
-                  pathname === href
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-gray-600 hover:bg-gray-100'
-                )}
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                <Icon className="h-5 w-5" />
-                {label}
-              </Link>
+                label={label}
+                icon={icon}
+                isActive={pathname === href}
+                onClick={closeMobileMenu}
+                mobile
+              />
             ))}
           </div>
         </div>

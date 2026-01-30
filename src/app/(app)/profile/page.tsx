@@ -14,6 +14,7 @@ import {
   CheckCircle,
   XCircle,
   Globe,
+  Star,
 } from 'lucide-react'
 
 export const metadata = {
@@ -41,6 +42,18 @@ export default async function ProfilePage() {
     .select('*')
     .eq('user_id', user.id)
     .single() as { data: any }
+
+  // Fetch reviews received
+  const { data: reviews } = await (supabase as any)
+    .from('reviews')
+    .select('overall_rating')
+    .eq('reviewee_id', user.id)
+    .eq('is_visible', true) as { data: any[] }
+
+  const reviewCount = reviews?.length || 0
+  const averageRating = reviewCount > 0
+    ? reviews.reduce((sum: number, r: any) => sum + parseFloat(r.overall_rating || 0), 0) / reviewCount
+    : null
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -81,6 +94,20 @@ export default async function ProfilePage() {
                 <div className="mt-3">
                   <VerificationBadge level={profile?.verification_level || 'basic'} />
                 </div>
+
+                {/* Rating Display */}
+                {reviewCount > 0 ? (
+                  <Link href="/reviews" className="mt-3 flex items-center justify-center gap-1 text-sm hover:opacity-80">
+                    <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                    <span className="font-medium">{averageRating?.toFixed(1)}</span>
+                    <span className="text-gray-500">({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})</span>
+                  </Link>
+                ) : (
+                  <Link href="/reviews" className="mt-3 flex items-center justify-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+                    <Star className="h-4 w-4" />
+                    <span>No reviews yet</span>
+                  </Link>
+                )}
               </div>
 
               <div className="mt-6 space-y-3">
