@@ -43,16 +43,7 @@ export async function GET(request: NextRequest) {
 
     let query = (supabase as any)
       .from('listings')
-      .select(`
-        *,
-        profiles (
-          id,
-          user_id,
-          name,
-          profile_photo,
-          verification_level
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
     // If fetching user's own listings, show all (active + inactive)
