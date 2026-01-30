@@ -37,10 +37,10 @@ export function ImageUploader({
       throw new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.')
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      throw new Error('File too large. Maximum size is 5MB.')
+      throw new Error('File too large. Maximum size is 10MB.')
     }
 
     const supabase = createClient()
@@ -253,7 +253,7 @@ export function ImageUploader({
                 Drag and drop images here, or click to browse
               </p>
               <p className="text-sm text-gray-400">
-                JPEG, PNG, WebP, GIF up to 5MB each
+                JPEG, PNG, WebP, GIF up to 10MB each
               </p>
               <p className="text-sm text-gray-400 mt-1">
                 {images.length} / {maxImages} images
