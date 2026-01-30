@@ -57,28 +57,27 @@ export default async function ListingPage({ params }: ListingPageProps) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Fetch listing with host profile
+  // Fetch listing first
   const { data: listing, error } = await (supabase as any)
     .from('listings')
-    .select(`
-      *,
-      profiles (
-        id,
-        user_id,
-        name,
-        bio,
-        profile_photo,
-        verification_level,
-        languages,
-        created_at
-      )
-    `)
+    .select('*')
     .eq('id', id)
     .single() as { data: any; error: any }
 
   if (error || !listing) {
+    console.error('Listing fetch error:', error, 'ID:', id)
     notFound()
   }
+
+  // Fetch host profile separately
+  const { data: profile } = await (supabase as any)
+    .from('profiles')
+    .select('id, user_id, name, bio, profile_photo, verification_level, languages, created_at')
+    .eq('user_id', listing.user_id)
+    .single() as { data: any }
+
+  // Attach profile to listing for easier access
+  listing.profiles = profile
 
   // Check if this is the owner's listing
   const isOwner = user?.id === listing.user_id
