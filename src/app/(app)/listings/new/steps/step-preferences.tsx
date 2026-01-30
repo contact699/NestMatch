@@ -38,7 +38,9 @@ export function StepPreferences({ register }: StepPreferencesProps) {
           </label>
           <input
             type="number"
-            {...register('roommate_age_min', { valueAsNumber: true })}
+            {...register('roommate_age_min', {
+              setValueAs: (v) => v === '' ? undefined : parseInt(v, 10)
+            })}
             placeholder="18"
             min={18}
             max={120}
@@ -51,7 +53,9 @@ export function StepPreferences({ register }: StepPreferencesProps) {
           </label>
           <input
             type="number"
-            {...register('roommate_age_max', { valueAsNumber: true })}
+            {...register('roommate_age_max', {
+              setValueAs: (v) => v === '' ? undefined : parseInt(v, 10)
+            })}
             placeholder="65"
             min={18}
             max={120}
