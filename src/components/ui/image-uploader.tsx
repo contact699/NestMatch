@@ -40,7 +40,15 @@ export function ImageUploader({
         body: formData,
       })
 
-      const result = await response.json()
+      const text = await response.text()
+
+      let result
+      try {
+        result = JSON.parse(text)
+      } catch {
+        console.error('Server response:', text)
+        throw new Error(text.substring(0, 100) || 'Server returned invalid response')
+      }
 
       if (!response.ok) {
         throw new Error(result.error || 'Upload failed')
