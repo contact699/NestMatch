@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+// Helper to handle NaN from empty number inputs
+const optionalNumber = z.preprocess(
+  (val) => (val === '' || Number.isNaN(val) ? undefined : val),
+  z.number().optional()
+)
+
 export const listingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']),
   title: z.string().min(5, 'Title must be at least 5 characters').max(100),
@@ -15,8 +21,8 @@ export const listingSchema = z.object({
   photos: z.array(z.string()),
   amenities: z.array(z.string()),
   roommate_gender_preference: z.enum(['male', 'female', 'any']).optional(),
-  roommate_age_min: z.number().min(18).optional(),
-  roommate_age_max: z.number().max(120).optional(),
+  roommate_age_min: optionalNumber.pipe(z.number().min(18).optional()),
+  roommate_age_max: optionalNumber.pipe(z.number().max(120).optional()),
   newcomer_friendly: z.boolean(),
   no_credit_history_ok: z.boolean(),
 })
