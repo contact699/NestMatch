@@ -99,10 +99,10 @@ export default function ProfileEditPage() {
       return
     }
 
-    // Validate file size (max 5MB for profile photos)
-    const maxSize = 5 * 1024 * 1024
+    // Validate file size (max 10MB for profile photos)
+    const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
-      setError('File too large. Maximum size is 5MB.')
+      setError('File too large. Maximum size is 10MB.')
       return
     }
 
@@ -254,7 +254,7 @@ export default function ProfileEditPage() {
                 </div>
                 <div className="text-sm text-gray-500">
                   <p>Click the camera icon to upload a photo</p>
-                  <p>JPEG, PNG, WebP, GIF up to 5MB</p>
+                  <p>JPEG, PNG, WebP, GIF up to 10MB</p>
                 </div>
                 <input
                   ref={fileInputRef}
