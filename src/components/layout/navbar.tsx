@@ -281,39 +281,38 @@ export function Navbar({ user }: NavbarProps) {
               </div>
             ) : (
               <>
-                <Link href="/login">
+                {/* Desktop sign in buttons */}
+                <Link href="/login" className="hidden sm:block">
                   <Button variant="ghost" size="sm">
                     Sign in
                   </Button>
                 </Link>
-                <Link href="/signup">
+                <Link href="/signup" className="hidden sm:block">
                   <Button variant="glow" size="sm">Get started</Button>
                 </Link>
               </>
             )}
 
-            {/* Mobile menu button */}
-            {user && (
-              <button
-                className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-all duration-300"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              >
-                <div className="relative w-5 h-5">
-                  <X
-                    className={cn(
-                      'h-5 w-5 absolute inset-0 transition-all duration-300',
-                      mobileMenuOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'
-                    )}
-                  />
-                  <Menu
-                    className={cn(
-                      'h-5 w-5 absolute inset-0 transition-all duration-300',
-                      mobileMenuOpen ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'
-                    )}
-                  />
-                </div>
-              </button>
-            )}
+            {/* Mobile menu button - show for all users */}
+            <button
+              className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-all duration-300"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              <div className="relative w-5 h-5">
+                <X
+                  className={cn(
+                    'h-5 w-5 absolute inset-0 transition-all duration-300',
+                    mobileMenuOpen ? 'opacity-100 rotate-0' : 'opacity-0 rotate-90'
+                  )}
+                />
+                <Menu
+                  className={cn(
+                    'h-5 w-5 absolute inset-0 transition-all duration-300',
+                    mobileMenuOpen ? 'opacity-0 -rotate-90' : 'opacity-100 rotate-0'
+                  )}
+                />
+              </div>
+            </button>
           </div>
         </div>
       </div>
@@ -322,25 +321,55 @@ export function Navbar({ user }: NavbarProps) {
       <div
         className={cn(
           'md:hidden border-t border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-out',
-          mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
-        {user && (
-          <div className="px-2 py-3 space-y-1">
-            {navLinks.map(({ href, label, icon, badge }) => (
-              <NavLink
-                key={href}
-                href={href}
-                label={label}
-                icon={icon}
-                isActive={pathname === href}
+        <div className="px-2 py-3 space-y-1">
+          {user ? (
+            <>
+              {navLinks.map(({ href, label, icon, badge }) => (
+                <NavLink
+                  key={href}
+                  href={href}
+                  label={label}
+                  icon={icon}
+                  isActive={pathname === href}
+                  onClick={closeMobileMenu}
+                  mobile
+                  badge={badge}
+                />
+              ))}
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                 onClick={closeMobileMenu}
-                mobile
-                badge={badge}
-              />
-            ))}
-          </div>
-        )}
+              >
+                <User className="h-5 w-5" />
+                <span className="font-medium">Sign in</span>
+              </Link>
+              <Link
+                href="/signup"
+                className="flex items-center gap-3 px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg transition-colors"
+                onClick={closeMobileMenu}
+              >
+                <Users className="h-5 w-5" />
+                <span className="font-medium">Get started</span>
+              </Link>
+              <hr className="my-2" />
+              <Link
+                href="/search"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={closeMobileMenu}
+              >
+                <Search className="h-5 w-5" />
+                <span className="font-medium">Browse listings</span>
+              </Link>
+            </>
+          )}
+        </div>
       </div>
     </nav>
   )

@@ -263,7 +263,7 @@ export default function ChatPage() {
   const messageGroups = groupMessagesByDate(messages)
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)]">
+    <div className="flex flex-col h-[calc(100vh-64px)] h-[calc(100dvh-64px)]">
       {/* Header */}
       <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-4">
@@ -471,7 +471,7 @@ export default function ChatPage() {
       </div>
 
       {/* Input */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
           <textarea
             ref={inputRef}
@@ -480,21 +480,26 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 resize-none px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
+            className="flex-1 resize-none px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32 text-base"
             style={{
               minHeight: '44px',
               height: 'auto',
+              fontSize: '16px', // Prevents iOS zoom on focus
             }}
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement
               target.style.height = 'auto'
               target.style.height = Math.min(target.scrollHeight, 128) + 'px'
             }}
+            onFocus={() => {
+              // Scroll to bottom when keyboard opens on mobile
+              setTimeout(() => scrollToBottom(), 300)
+            }}
           />
           <Button
             onClick={handleSend}
             disabled={!newMessage.trim() || isSending}
-            className="rounded-full w-11 h-11 p-0"
+            className="rounded-full w-11 h-11 p-0 flex-shrink-0"
           >
             {isSending ? (
               <Loader2 className="h-5 w-5 animate-spin" />
