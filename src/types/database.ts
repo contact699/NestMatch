@@ -1159,6 +1159,335 @@ export interface Database {
           updated_at?: string
         }
       }
+      // Resources Feature Tables
+      resource_categories: {
+        Row: {
+          id: string
+          slug: string
+          name: string
+          description: string | null
+          icon: string | null
+          display_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          name: string
+          description?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          name?: string
+          description?: string | null
+          icon?: string | null
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      resources: {
+        Row: {
+          id: string
+          category_id: string | null
+          slug: string
+          title: string
+          subtitle: string | null
+          content: Json
+          excerpt: string | null
+          provinces: string[]
+          tags: string[]
+          resource_type: string
+          featured: boolean
+          is_published: boolean
+          view_count: number
+          helpful_count: number
+          last_reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category_id?: string | null
+          slug: string
+          title: string
+          subtitle?: string | null
+          content?: Json
+          excerpt?: string | null
+          provinces?: string[]
+          tags?: string[]
+          resource_type?: string
+          featured?: boolean
+          is_published?: boolean
+          view_count?: number
+          helpful_count?: number
+          last_reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string | null
+          slug?: string
+          title?: string
+          subtitle?: string | null
+          content?: Json
+          excerpt?: string | null
+          provinces?: string[]
+          tags?: string[]
+          resource_type?: string
+          featured?: boolean
+          is_published?: boolean
+          view_count?: number
+          helpful_count?: number
+          last_reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      faqs: {
+        Row: {
+          id: string
+          category_id: string | null
+          question: string
+          answer: string
+          provinces: string[]
+          tags: string[]
+          display_order: number
+          is_published: boolean
+          helpful_count: number
+          not_helpful_count: number
+          last_reviewed_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          category_id?: string | null
+          question: string
+          answer: string
+          provinces?: string[]
+          tags?: string[]
+          display_order?: number
+          is_published?: boolean
+          helpful_count?: number
+          not_helpful_count?: number
+          last_reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string | null
+          question?: string
+          answer?: string
+          provinces?: string[]
+          tags?: string[]
+          display_order?: number
+          is_published?: boolean
+          helpful_count?: number
+          not_helpful_count?: number
+          last_reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      resource_bookmarks: {
+        Row: {
+          id: string
+          user_id: string
+          resource_id: string | null
+          faq_id: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          resource_id?: string | null
+          faq_id?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          resource_id?: string | null
+          faq_id?: string | null
+          created_at?: string
+        }
+      }
+      resource_votes: {
+        Row: {
+          id: string
+          user_id: string
+          resource_id: string | null
+          faq_id: string | null
+          vote_type: 'helpful' | 'not_helpful'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          resource_id?: string | null
+          faq_id?: string | null
+          vote_type: 'helpful' | 'not_helpful'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          resource_id?: string | null
+          faq_id?: string | null
+          vote_type?: 'helpful' | 'not_helpful'
+          created_at?: string
+        }
+      }
+      submitted_questions: {
+        Row: {
+          id: string
+          user_id: string | null
+          question: string
+          context: string | null
+          province: string | null
+          category_id: string | null
+          status: 'pending' | 'reviewed' | 'answered' | 'rejected'
+          admin_notes: string | null
+          answered_faq_id: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          question: string
+          context?: string | null
+          province?: string | null
+          category_id?: string | null
+          status?: 'pending' | 'reviewed' | 'answered' | 'rejected'
+          admin_notes?: string | null
+          answered_faq_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          question?: string
+          context?: string | null
+          province?: string | null
+          category_id?: string | null
+          status?: 'pending' | 'reviewed' | 'answered' | 'rejected'
+          admin_notes?: string | null
+          answered_faq_id?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      agreement_clauses: {
+        Row: {
+          id: string
+          clause_key: string
+          title: string
+          description: string | null
+          provinces: string[]
+          content_template: Json
+          question_flow: Json
+          category: string
+          is_required: boolean
+          display_order: number
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          clause_key: string
+          title: string
+          description?: string | null
+          provinces?: string[]
+          content_template?: Json
+          question_flow?: Json
+          category: string
+          is_required?: boolean
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          clause_key?: string
+          title?: string
+          description?: string | null
+          provinces?: string[]
+          content_template?: Json
+          question_flow?: Json
+          category?: string
+          is_required?: boolean
+          display_order?: number
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      generated_agreements: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          province: string
+          address: string | null
+          move_in_date: string | null
+          roommate_names: string[]
+          selected_clauses: string[]
+          answers: Json
+          generated_content: string | null
+          pdf_url: string | null
+          is_finalized: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string
+          province: string
+          address?: string | null
+          move_in_date?: string | null
+          roommate_names?: string[]
+          selected_clauses?: string[]
+          answers?: Json
+          generated_content?: string | null
+          pdf_url?: string | null
+          is_finalized?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          province?: string
+          address?: string | null
+          move_in_date?: string | null
+          roommate_names?: string[]
+          selected_clauses?: string[]
+          answers?: Json
+          generated_content?: string | null
+          pdf_url?: string | null
+          is_finalized?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1200,3 +1529,13 @@ export type ServiceProvider = Database['public']['Tables']['service_providers'][
 export type ServiceBooking = Database['public']['Tables']['service_bookings']['Row']
 export type ServiceReview = Database['public']['Tables']['service_reviews']['Row']
 export type InsuranceReference = Database['public']['Tables']['insurance_references']['Row']
+
+// Resources Feature type exports
+export type ResourceCategory = Database['public']['Tables']['resource_categories']['Row']
+export type Resource = Database['public']['Tables']['resources']['Row']
+export type FAQ = Database['public']['Tables']['faqs']['Row']
+export type ResourceBookmark = Database['public']['Tables']['resource_bookmarks']['Row']
+export type ResourceVote = Database['public']['Tables']['resource_votes']['Row']
+export type SubmittedQuestion = Database['public']['Tables']['submitted_questions']['Row']
+export type AgreementClause = Database['public']['Tables']['agreement_clauses']['Row']
+export type GeneratedAgreement = Database['public']['Tables']['generated_agreements']['Row']

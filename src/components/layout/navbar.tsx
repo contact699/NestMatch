@@ -20,6 +20,7 @@ import {
   Heart,
   Star,
   Receipt,
+  BookOpen,
   LucideIcon,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -170,6 +171,7 @@ export function Navbar({ user }: NavbarProps) {
         { href: '/my-listings', label: 'Listings', icon: Home },
         { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
         { href: '/saved', label: 'Saved', icon: Heart },
+        { href: '/resources', label: 'Resources', icon: BookOpen },
       ]
     : []
 
@@ -258,6 +260,14 @@ export function Navbar({ user }: NavbarProps) {
                       >
                         <Users className="h-4 w-4" />
                         Co-Renter Groups
+                      </Link>
+                      <Link
+                        href="/resources"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <BookOpen className="h-4 w-4" />
+                        Resources
                       </Link>
                       <Link
                         href="/settings"
@@ -366,6 +376,14 @@ export function Navbar({ user }: NavbarProps) {
               >
                 <Search className="h-5 w-5" />
                 <span className="font-medium">Browse listings</span>
+              </Link>
+              <Link
+                href="/resources"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                onClick={closeMobileMenu}
+              >
+                <BookOpen className="h-5 w-5" />
+                <span className="font-medium">Resources</span>
               </Link>
             </>
           )}

@@ -1,0 +1,233 @@
+[
+  {
+    "question": "What's the difference between being a tenant and a roommate?",
+    "answer": "A tenant has a direct legal relationship with the landlord, usually through a lease agreement. They have full protection under provincial tenancy laws. A roommate typically rents from the primary tenant, not the landlord. Roommates have fewer legal protections and their rights depend mainly on any agreement with the primary tenant. If you're a roommate, you're essentially a subtenant or guest of the main tenant.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["tenant-rights", "roommates", "lease"]
+  },
+  {
+    "question": "Can my landlord enter my apartment without permission?",
+    "answer": "In most provinces, landlords must give 24 hours written notice before entering your unit, and can only enter for specific reasons like repairs, showing the unit, or emergencies. They must enter at reasonable times unless it's an emergency. In Quebec, the rules are similar but details vary. Always check your provincial tenancy act for specific requirements.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["tenant-rights", "privacy", "landlord"]
+  },
+  {
+    "question": "How much can my landlord increase rent each year?",
+    "answer": "Rent increase rules vary significantly by province. Ontario and BC have rent control with annual guidelines (usually 1-3%). Quebec allows increases but tenants can refuse and have the TAL determine if it's fair. Alberta has no rent control - landlords can increase by any amount with proper notice. Some newer buildings may be exempt from rent control even in controlled provinces.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["rent", "tenant-rights", "rent-control"]
+  },
+  {
+    "question": "Can I have guests stay overnight?",
+    "answer": "Yes, tenants generally have the right to have guests, including overnight guests. However, if someone stays regularly (often defined as more than a few nights per week), they may be considered an occupant and may need to be added to the lease. Check your lease agreement and provincial laws for specific rules about occupants vs. guests.",
+    "category_slug": "roommates",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["guests", "tenant-rights", "roommates"]
+  },
+  {
+    "question": "What should I include in a roommate agreement?",
+    "answer": "A comprehensive roommate agreement should include: rent and utilities (amounts, due dates, payment methods), security deposit details, cleaning responsibilities and schedules, rules about guests and overnight visitors, quiet hours, shared supplies and groceries, use of common areas, parking, smoking/cannabis policies, pets, and how to handle conflicts or ending the arrangement.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["roommate-agreement", "tips", "moving-in"]
+  },
+  {
+    "question": "How do I fairly split rent with different sized rooms?",
+    "answer": "There are several fair methods: Square footage (measure each room and divide rent proportionally), market rate (research what similar rooms cost nearby), amenities-based (factor in private bathroom, closet size, natural light), or hybrid approaches. Use our Rent Split Calculator tool to help determine a fair split. Whatever method you choose, document it in your roommate agreement.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["rent", "roommates", "money"]
+  },
+  {
+    "question": "What's a reasonable security deposit amount?",
+    "answer": "Security deposit limits vary by province: Ontario allows last month's rent (no additional damage deposit). BC allows half month's rent, plus half month for pet deposit. Quebec prohibits security deposits entirely. Alberta allows one month's rent maximum. Always get a receipt and document the unit's condition at move-in with photos and a written inspection report.",
+    "category_slug": "finances",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["security-deposit", "money", "moving-in"]
+  },
+  {
+    "question": "How do I know if a rental listing is a scam?",
+    "answer": "Common red flags include: price significantly below market rate, landlord can't meet in person, request for money before viewing, pressure to decide immediately, only accepts wire transfers or gift cards, poor grammar suggesting foreign scammers, photos that look too professional or appear on multiple listings. Always view in person, verify ownership, and never send money without a signed lease and keys.",
+    "category_slug": "safety",
+    "provinces": [],
+    "tags": ["scams", "safety", "tips"]
+  },
+  {
+    "question": "Can my roommate legally kick me out?",
+    "answer": "If you're on the lease with the landlord, only the landlord can evict you through proper legal channels. If you're renting from another tenant (subletting), your rights depend on your agreement with them and provincial law. Generally, they must give reasonable notice. If you have no written agreement, you may have minimal protection - consult a legal clinic for advice specific to your situation.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["eviction", "roommates", "tenant-rights"]
+  },
+  {
+    "question": "How should we handle shared groceries and household supplies?",
+    "answer": "Common approaches include: split everything equally, each person buys their own food but splits household supplies, use a shared fund for communal items, or take turns buying certain items. Apps like Splitwise can track shared expenses. Whatever you choose, agree on it upfront and document in your roommate agreement to avoid future conflicts.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["roommates", "money", "tips"]
+  },
+  {
+    "question": "What if my roommate doesn't pay their share of rent?",
+    "answer": "If you're both on the lease, you may be jointly liable for the full rent - the landlord can pursue either of you. Try to work it out directly first. If the issue persists, check your lease type (joint vs. individual liability), document everything, and consider ending the roommate arrangement. If you're not on the lease, talk to the primary tenant about your options.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["rent", "roommates", "disputes"]
+  },
+  {
+    "question": "How do I handle a noisy roommate?",
+    "answer": "Start with a calm conversation about expectations. Agree on quiet hours and put them in writing. Consider noise-reducing solutions like rugs or white noise machines. If direct communication doesn't work, involve a neutral third party. Document ongoing issues in case the situation escalates. Remember that some noise is normal in shared living.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["roommates", "disputes", "communication"]
+  },
+  {
+    "question": "Can I sublet my room while I'm away?",
+    "answer": "Your right to sublet depends on your province and lease. In Ontario and Quebec, landlords generally cannot unreasonably refuse subletting. In other provinces, check your lease. Your landlord can set conditions (credit check, etc.) but can't charge a fee. Always get written permission and create a sublease agreement. You typically remain responsible for rent if the subtenant doesn't pay.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["subletting", "tenant-rights", "moving"]
+  },
+  {
+    "question": "What's the best way to find compatible roommates?",
+    "answer": "Be honest and detailed in your profile about lifestyle, schedule, and preferences. Ask specific questions about deal-breakers like cleanliness, guests, noise tolerance. Meet in person or video chat before deciding. Check references from previous roommates if possible. Trust your instincts - compatibility matters more than just affordability.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["tips", "compatibility", "searching"]
+  },
+  {
+    "question": "How long should I plan to live with a roommate before signing a lease?",
+    "answer": "There's no perfect answer, but a trial period of at least a few meetings and honest conversations is wise. Some people do a short-term arrangement first (like month-to-month) before committing to a longer lease. At minimum, meet multiple times in different settings and discuss all major lifestyle factors before signing anything long-term.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["tips", "lease", "searching"]
+  },
+  {
+    "question": "What utilities should I expect to pay on top of rent?",
+    "answer": "Common utilities include: electricity, gas/heating (if not included), water (sometimes included), internet, and sometimes cable. Ask specifically what's included in rent. Budget for renter's insurance too. In older buildings, heating can be significant in winter. Set up utilities in your name or your roommate's name and agree on how to split bills.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["utilities", "money", "budgeting"]
+  },
+  {
+    "question": "Do I need renter's insurance?",
+    "answer": "While not legally required in most cases, renter's insurance is highly recommended. It covers your belongings if stolen or damaged, provides liability protection if someone is injured in your unit, and can cover additional living expenses if you're displaced. It's surprisingly affordable - often $15-30/month. Some landlords require it as a lease condition.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["insurance", "money", "tips"]
+  },
+  {
+    "question": "How do I verify someone's identity before becoming roommates?",
+    "answer": "Request government-issued ID and verify names match. Check social media profiles. Ask for references from previous landlords or roommates. Consider a background or credit check (with their consent). Meet in public first. Trust your instincts - if something feels off, it probably is. On NestMatch, look for verified profiles.",
+    "category_slug": "safety",
+    "provinces": [],
+    "tags": ["safety", "verification", "tips"]
+  },
+  {
+    "question": "What should I do on move-in day?",
+    "answer": "Document everything with photos and videos before moving items in. Complete an inspection report noting any existing damage. Test all appliances and utilities. Get copies of all keys. Review the lease one more time. Exchange contact information with your landlord and roommates. Set up utilities in your name if needed. Start your roommate communication on the right foot.",
+    "category_slug": "moving",
+    "provinces": [],
+    "tags": ["moving-in", "checklist", "tips"]
+  },
+  {
+    "question": "Can my landlord refuse to add my roommate to the lease?",
+    "answer": "Generally, landlords can set reasonable criteria for tenants (credit check, references) but cannot discriminate based on protected grounds like race, family status, or disability. If you want to add someone to the lease, submit a formal request. The landlord may have the right to screen them. If refused without good reason, check with your provincial tenancy board.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["lease", "roommates", "landlord"]
+  },
+  {
+    "question": "What cleaning schedule works best for shared spaces?",
+    "answer": "Popular approaches include: rotating weekly chores, assigning specific tasks to each person, or cleaning together at a set time. Create a visible schedule or checklist. Be clear about standards - 'clean' means different things to different people. Review and adjust as needed. Some roommates hire a cleaner and split the cost to avoid conflicts.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["cleaning", "roommates", "tips"]
+  },
+  {
+    "question": "How do I handle a roommate who has frequent overnight guests?",
+    "answer": "First, review your roommate agreement or lease for any guest policies. Have an honest conversation about your concerns - focus on specific impacts (noise, shared space, bills) rather than personal judgments. Propose reasonable compromises like advance notice or guest limits. If guests are staying so often they're essentially living there, they may need to contribute to rent.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["guests", "roommates", "disputes"]
+  },
+  {
+    "question": "What's the proper way to end a roommate arrangement?",
+    "answer": "Check your lease and roommate agreement for notice requirements. Give as much notice as possible (typically 30-60 days minimum). Put your notice in writing. Discuss how to handle the security deposit and final bills. Complete a move-out inspection together. Leave the space clean. Handle the transition professionally even if the relationship soured.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["moving-out", "lease", "tips"]
+  },
+  {
+    "question": "Should I pay rent or security deposit in cash?",
+    "answer": "Avoid paying in cash whenever possible. Use e-transfer, cheque, or bank transfer to create a paper trail. If you must pay cash, always get a written receipt with date, amount, purpose, and landlord signature. This documentation is crucial if disputes arise later. Never pay a security deposit before signing a lease.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["rent", "security-deposit", "safety"]
+  },
+  {
+    "question": "How does NestMatch matching work?",
+    "answer": "NestMatch uses your lifestyle quiz responses to find compatible roommates. We consider factors like sleep schedule, cleanliness standards, social preferences, and deal-breakers. The more accurately you complete your profile, the better your matches. Our compatibility scores help you identify who might be a good fit, but we recommend meeting in person before making decisions.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["nestmatch", "matching", "app"]
+  },
+  {
+    "question": "What are the benefits of getting verified on NestMatch?",
+    "answer": "Verified profiles show you've confirmed your identity, building trust with potential roommates and landlords. Benefits include: appearing higher in search results, a verification badge on your profile, increased response rates, and demonstrating you're a serious, trustworthy user. Verification typically involves confirming your email, phone, and optionally ID.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["nestmatch", "verification", "app"]
+  },
+  {
+    "question": "Can my roommate's pet damage reduce my security deposit return?",
+    "answer": "This depends on your lease and provincial rules. If both names are on the lease, you may share liability. If only one person owns the pet and has a separate pet deposit (in provinces that allow it), that should cover pet damage. Document pre-existing damage and clarify pet responsibilities in your roommate agreement to avoid disputes.",
+    "category_slug": "finances",
+    "provinces": ["ON", "BC", "AB"],
+    "tags": ["pets", "security-deposit", "roommates"]
+  },
+  {
+    "question": "What if my roommate violates our agreement but isn't on the lease?",
+    "answer": "As the primary tenant, you have the right to ask them to leave with reasonable notice (check provincial guidelines - often 30 days). Document violations in writing. If they refuse to leave, you may need to seek legal advice or in extreme cases, contact the Landlord and Tenant Board. Never change locks or remove belongings illegally.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["roommates", "disputes", "eviction"]
+  },
+  {
+    "question": "How do I report a landlord for unsafe conditions?",
+    "answer": "Document issues with photos and written complaints. Contact your landlord in writing requesting repairs. If they don't respond, file a complaint with your provincial tenancy board or municipal property standards department. In emergencies (no heat in winter, gas leaks), call emergency services. Never withhold rent without following proper legal procedures.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["tenant-rights", "safety", "repairs"]
+  },
+  {
+    "question": "What happens to my lease if I break up with my roommate partner?",
+    "answer": "If both names are on the lease, you're both still legally responsible. Options include: one person takes over the lease (with landlord approval), both move out, or continue cohabiting. Some provinces allow one party to apply to remove themselves from the lease. Get any changes in writing and signed by all parties including the landlord.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["lease", "roommates", "relationships"]
+  },
+  {
+    "question": "Should I get everything in writing with my roommate?",
+    "answer": "Yes! A written roommate agreement prevents misunderstandings and provides documentation if disputes arise. Include: rent/utilities amounts and due dates, security deposit details, house rules, guest policies, cleaning responsibilities, and move-out procedures. Both parties should sign and keep copies. Our Agreement Generator tool can help create one.",
+    "category_slug": "roommates",
+    "provinces": [],
+    "tags": ["roommate-agreement", "tips", "documentation"]
+  },
+  {
+    "question": "How do I split utilities fairly when one roommate works from home?",
+    "answer": "Working from home does increase utility usage. Fair approaches include: a slightly higher utility share for the work-from-home person (often 55-60% vs 40-45%), or paying proportionally only for utilities affected by home use (electricity, internet) while splitting others equally. Discuss openly and agree on a method that feels fair to both parties.",
+    "category_slug": "finances",
+    "provinces": [],
+    "tags": ["utilities", "money", "remote-work"]
+  },
+  {
+    "question": "What's the difference between a sublet and a lease assignment?",
+    "answer": "In a sublet, you remain on the lease and are responsible for rent - you're essentially the subtenant's landlord temporarily. In an assignment (transfer), you permanently leave and the new tenant takes over your exact lease terms and relationship with the landlord. Quebec has strong assignment rights. Check your provincial rules and get landlord approval for either.",
+    "category_slug": "legal",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["subletting", "lease", "tenant-rights"]
+  }
+]

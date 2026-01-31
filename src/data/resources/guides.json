@@ -1,0 +1,469 @@
+[
+  {
+    "slug": "tenant-rights-ontario",
+    "title": "Tenant Rights in Ontario",
+    "subtitle": "Know your rights under the Residential Tenancies Act",
+    "provinces": ["ON"],
+    "tags": ["legal", "tenant-rights", "ontario", "rta"],
+    "resource_type": "guide",
+    "category_slug": "legal",
+    "featured": true,
+    "excerpt": "A comprehensive guide to understanding your rights as a tenant in Ontario, including lease agreements, rent increases, and eviction procedures.",
+    "content": [
+      {
+        "type": "callout",
+        "variant": "info",
+        "text": "This guide covers the Residential Tenancies Act (RTA) which applies to most rental housing in Ontario. Some accommodations like student residences or temporary lodging may have different rules."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "The Residential Tenancies Act (RTA)"
+      },
+      {
+        "type": "paragraph",
+        "text": "The RTA is the law that governs most residential rentals in Ontario. It sets out the rights and responsibilities of both landlords and tenants, and establishes the Landlord and Tenant Board (LTB) to resolve disputes."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Key Tenant Rights"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Right to a written lease (Standard Ontario Lease required since April 2018)",
+          "Right to reasonable enjoyment of your rental unit",
+          "Right to have guests and roommates (with some conditions)",
+          "Protection from illegal eviction - landlords must follow proper procedures",
+          "Right to privacy - landlords must give 24 hours notice before entry",
+          "Right to sublet with landlord consent (which cannot be unreasonably withheld)"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Rent Increases"
+      },
+      {
+        "type": "paragraph",
+        "text": "In Ontario, landlords can only increase rent once every 12 months by the provincial rent increase guideline (typically 1-2.5%). They must give 90 days written notice using the proper form (N1)."
+      },
+      {
+        "type": "callout",
+        "variant": "warning",
+        "text": "Buildings first occupied after November 15, 2018 are exempt from rent control. Landlords of these units can increase rent by any amount with proper notice."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Eviction Rules"
+      },
+      {
+        "type": "paragraph",
+        "text": "A landlord cannot simply ask you to leave. They must have a valid reason under the RTA, serve proper notice, and in most cases get an order from the LTB. Valid reasons include non-payment of rent, causing damage, illegal activity, or the landlord requiring the unit for their own use."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Roommate Situations"
+      },
+      {
+        "type": "paragraph",
+        "text": "If you're a roommate but not on the lease, you have fewer protections under the RTA. You're considered a \"guest\" of the primary tenant, not a tenant of the landlord. The primary tenant can ask you to leave with reasonable notice."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "text": "Always try to get your name on the lease if possible. This gives you direct protection under the RTA and ensures you have security of tenure."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Resources"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Landlord and Tenant Board: 1-888-332-3234",
+          "Community Legal Clinics: Free legal advice for low-income tenants",
+          "Tenant Hotline: 416-921-9494 (Toronto) or local tenant associations"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "tenant-rights-british-columbia",
+    "title": "Tenant Rights in British Columbia",
+    "subtitle": "Understanding the Residential Tenancy Act",
+    "provinces": ["BC"],
+    "tags": ["legal", "tenant-rights", "british-columbia", "rtb"],
+    "resource_type": "guide",
+    "category_slug": "legal",
+    "excerpt": "Everything you need to know about tenant protections in BC, from security deposits to dispute resolution.",
+    "content": [
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "BC's Residential Tenancy Act"
+      },
+      {
+        "type": "paragraph",
+        "text": "The Residential Tenancy Act (RTA) governs most residential tenancies in British Columbia. The Residential Tenancy Branch (RTB) administers this act and provides dispute resolution services."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Security Deposits"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Maximum security deposit is half of one month's rent",
+          "Landlord can also collect a pet damage deposit (additional half month)",
+          "Deposits must be returned with interest within 15 days of tenancy ending",
+          "Move-in and move-out condition inspections are required"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Rent Increases"
+      },
+      {
+        "type": "paragraph",
+        "text": "Landlords can increase rent once a year by the maximum allowable amount set by the province (typically inflation + 2%). Three months written notice is required on the approved form."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Ending a Tenancy"
+      },
+      {
+        "type": "paragraph",
+        "text": "Tenants on a month-to-month tenancy must give one full month's notice. Landlords have more limited reasons they can end a tenancy and must provide two months notice in most cases."
+      },
+      {
+        "type": "callout",
+        "variant": "info",
+        "text": "Landlords ending a tenancy for their own use must pay the tenant one month's rent as compensation. If they don't move in, the tenant may be entitled to additional compensation."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Contact RTB"
+      },
+      {
+        "type": "paragraph",
+        "text": "For questions or disputes, contact the Residential Tenancy Branch at 1-800-665-8779 or visit their website."
+      }
+    ]
+  },
+  {
+    "slug": "tenant-rights-quebec",
+    "title": "Tenant Rights in Quebec",
+    "subtitle": "Guide to the Régie du logement and Civil Code",
+    "provinces": ["QC"],
+    "tags": ["legal", "tenant-rights", "quebec", "tal"],
+    "resource_type": "guide",
+    "category_slug": "legal",
+    "excerpt": "Navigate Quebec's unique rental laws, including lease transfers, rent control, and the Tribunal administratif du logement.",
+    "content": [
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Quebec's Rental Laws"
+      },
+      {
+        "type": "paragraph",
+        "text": "Quebec has strong tenant protections under the Civil Code and the Tribunal administratif du logement (TAL, formerly Régie du logement). These laws apply to most residential leases."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "The Mandatory Lease"
+      },
+      {
+        "type": "paragraph",
+        "text": "Quebec requires the use of a mandatory lease form for most residential rentals. This standardized document ensures tenants receive all required information about their rights."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Lease Transfer (Cession de bail)"
+      },
+      {
+        "type": "paragraph",
+        "text": "Quebec allows tenants to transfer their lease to another person. The landlord can only refuse for serious reasons. This is different from subletting - the original tenant leaves permanently."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "text": "Lease transfers are a great way to help friends find apartments in tight rental markets. The new tenant takes over your exact lease terms, including rent amount."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Rent Increases"
+      },
+      {
+        "type": "paragraph",
+        "text": "Landlords can propose rent increases annually. Tenants have the right to refuse and have the TAL determine if the increase is justified. The TAL publishes annual guidelines for calculating reasonable increases."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Lease Renewal"
+      },
+      {
+        "type": "paragraph",
+        "text": "In Quebec, leases automatically renew unless proper notice is given. Tenants have strong renewal rights and cannot be evicted simply because the lease term ended."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Resources"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Tribunal administratif du logement: 1-800-683-2245",
+          "Comité logement (housing committees) in your area for free advice",
+          "RCLALQ (tenant rights organization): regroupementdescomiteslogement.qc.ca"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "tenant-rights-alberta",
+    "title": "Tenant Rights in Alberta",
+    "subtitle": "Understanding the Residential Tenancies Act",
+    "provinces": ["AB"],
+    "tags": ["legal", "tenant-rights", "alberta", "rtdrs"],
+    "resource_type": "guide",
+    "category_slug": "legal",
+    "excerpt": "Your guide to rental rights in Alberta, including security deposits, evictions, and the RTDRS dispute process.",
+    "content": [
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Alberta's Residential Tenancies Act"
+      },
+      {
+        "type": "paragraph",
+        "text": "The Residential Tenancies Act (RTA) governs residential rentals in Alberta. The Residential Tenancy Dispute Resolution Service (RTDRS) handles disputes, offering a faster alternative to court."
+      },
+      {
+        "type": "callout",
+        "variant": "warning",
+        "text": "Alberta does not have rent control. Landlords can increase rent by any amount, but must give proper notice (3 months for periodic tenancies)."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Security Deposits"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Maximum security deposit is one month's rent",
+          "Must be held in a trust account and earn interest",
+          "Landlord must return deposit within 10 days of move-out",
+          "A statement of deductions must be provided if any is withheld"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Eviction Rules"
+      },
+      {
+        "type": "paragraph",
+        "text": "Landlords must follow proper procedures to evict a tenant. Common grounds include non-payment of rent, substantial breach of the lease, or the landlord's own use. Notice periods vary from 14 days to 3 months depending on the reason."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Tenant Responsibilities"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Pay rent on time",
+          "Keep the unit reasonably clean",
+          "Report needed repairs to the landlord",
+          "Not disturb other tenants",
+          "Obtain permission before making changes to the unit"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Resources"
+      },
+      {
+        "type": "paragraph",
+        "text": "Contact the RTDRS at 310-0000 (in Alberta) or visit their website for dispute resolution services."
+      }
+    ]
+  },
+  {
+    "slug": "avoiding-rental-scams",
+    "title": "How to Avoid Rental Scams",
+    "subtitle": "Protect yourself from common rental fraud schemes",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["safety", "scams", "tips"],
+    "resource_type": "guide",
+    "category_slug": "safety",
+    "featured": true,
+    "excerpt": "Learn to identify and avoid rental scams that target people searching for roommates and apartments in Canada.",
+    "content": [
+      {
+        "type": "callout",
+        "variant": "warning",
+        "text": "Rental scams are increasingly sophisticated. Always trust your instincts - if something feels wrong, it probably is."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Common Red Flags"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Price is too good to be true for the location and size",
+          "Landlord is out of the country and can't show the unit",
+          "Asked to send money before seeing the place in person",
+          "Pressure to decide immediately or lose the unit",
+          "Landlord only communicates by email, refuses calls",
+          "Listing photos look professional or stolen from other sites",
+          "Asked to pay via wire transfer, gift cards, or cryptocurrency"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Verify Before You Pay"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Always view the unit in person before paying anything",
+          "Research the address - does it exist? Is it actually for rent?",
+          "Ask for ID from the landlord and verify they own the property",
+          "Search the listing photos using reverse image search",
+          "Check if the landlord's phone number matches their claimed location"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Safe Payment Practices"
+      },
+      {
+        "type": "paragraph",
+        "text": "Legitimate landlords will accept standard payment methods and provide receipts. Never pay using wire transfers, cryptocurrency, or gift cards - these are impossible to recover."
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "text": "Pay first and last month's rent only after signing a lease and receiving keys. Most provinces limit security deposits to specific amounts."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "What to Do If You're Scammed"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Report to your local police",
+          "File a complaint with the Canadian Anti-Fraud Centre: 1-888-495-8501",
+          "Report the listing to the platform where you found it",
+          "Contact your bank if you made payments - they may be able to help"
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "conflict-resolution-roommates",
+    "title": "Conflict Resolution with Roommates",
+    "subtitle": "How to handle disagreements and maintain a positive living situation",
+    "provinces": ["ON", "BC", "QC", "AB"],
+    "tags": ["roommates", "communication", "tips"],
+    "resource_type": "guide",
+    "category_slug": "roommates",
+    "excerpt": "Practical strategies for addressing and resolving conflicts with roommates, from minor annoyances to major disputes.",
+    "content": [
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Prevention is Key"
+      },
+      {
+        "type": "paragraph",
+        "text": "The best way to handle conflicts is to prevent them. Clear communication and written agreements from the start can prevent most roommate disputes."
+      },
+      {
+        "type": "list",
+        "items": [
+          "Create a roommate agreement covering chores, guests, quiet hours",
+          "Have regular check-ins to address small issues before they grow",
+          "Be clear about expectations from the beginning",
+          "Document shared expenses and keep receipts"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "When Conflict Arises"
+      },
+      {
+        "type": "paragraph",
+        "text": "Despite best efforts, conflicts happen. Here's how to handle them constructively:"
+      },
+      {
+        "type": "list",
+        "items": [
+          "Address issues promptly - don't let resentment build",
+          "Choose the right time - not when either party is tired or stressed",
+          "Use \"I\" statements: \"I feel frustrated when...\" not \"You always...\"",
+          "Focus on the behavior, not the person",
+          "Listen actively and try to understand their perspective"
+        ]
+      },
+      {
+        "type": "callout",
+        "variant": "tip",
+        "text": "Consider having difficult conversations in writing first. This gives both parties time to think and respond thoughtfully rather than react emotionally."
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "When to Involve Others"
+      },
+      {
+        "type": "paragraph",
+        "text": "Some situations may require outside help:"
+      },
+      {
+        "type": "list",
+        "items": [
+          "If direct communication hasn't worked after multiple attempts",
+          "When the issue involves safety or security",
+          "For disputes involving money owed",
+          "When the living situation becomes untenable"
+        ]
+      },
+      {
+        "type": "heading",
+        "level": 2,
+        "text": "Knowing When to Move On"
+      },
+      {
+        "type": "paragraph",
+        "text": "Sometimes, despite best efforts, a roommate situation just doesn't work out. It's okay to recognize this and make plans to move. Review your lease or roommate agreement for the proper process."
+      }
+    ]
+  }
+]

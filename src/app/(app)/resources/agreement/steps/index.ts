@@ -1,0 +1,6 @@
+export { StepBasics } from './step-basics'
+export { StepFinancial } from './step-financial'
+export { StepLifestyle } from './step-lifestyle'
+export { StepResponsibilities } from './step-responsibilities'
+export { StepReview } from './step-review'
+export { StepDownload } from './step-download'
