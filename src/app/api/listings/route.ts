@@ -25,6 +25,9 @@ const listingSchema = z.object({
   roommate_age_max: z.number().max(120).optional(),
   newcomer_friendly: z.boolean().default(false),
   no_credit_history_ok: z.boolean().default(false),
+  help_needed: z.boolean().default(false),
+  help_tasks: z.array(z.string()).optional(),
+  help_details: z.string().max(500).optional(),
 })
 
 export async function GET(request: NextRequest) {
@@ -157,6 +160,9 @@ export async function POST(request: NextRequest) {
         roommate_age_max: listingData.roommate_age_max || null,
         newcomer_friendly: listingData.newcomer_friendly,
         no_credit_history_ok: listingData.no_credit_history_ok,
+        help_needed: listingData.help_needed || false,
+        help_tasks: listingData.help_tasks || [],
+        help_details: listingData.help_details || null,
       })
       .select()
       .single() as { data: any; error: any }

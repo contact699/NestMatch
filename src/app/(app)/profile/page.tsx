@@ -18,6 +18,8 @@ import {
   Globe,
   Star,
   MapPin,
+  Home,
+  ChevronRight,
 } from 'lucide-react'
 import { HOUSEHOLD_SITUATIONS } from '@/lib/utils'
 
@@ -58,6 +60,19 @@ export default async function ProfilePage() {
   const averageRating = reviewCount > 0
     ? reviews.reduce((sum: number, r: any) => sum + parseFloat(r.overall_rating || 0), 0) / reviewCount
     : null
+
+  // Fetch user's listings count
+  const { data: listings } = await supabase
+    .from('listings')
+    .select('id, title, is_active')
+    .eq('host_id', user.id)
+    .order('created_at', { ascending: false })
+    .limit(3) as { data: any[] | null }
+
+  const { count: listingsCount } = await supabase
+    .from('listings')
+    .select('*', { count: 'exact', head: true })
+    .eq('host_id', user.id)
 
   return (
     <AnimatedPage>
@@ -204,6 +219,54 @@ export default async function ProfilePage() {
                   <p className="text-gray-400 italic">
                     Add a bio to tell potential roommates about yourself.
                   </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Your Listings */}
+            <Card variant="bordered" data-animate className="delay-250">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Home className="h-5 w-5" />
+                  Your Listings
+                </CardTitle>
+                <Link href="/my-listings">
+                  <Button size="sm" variant="outline">
+                    View All
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </Link>
+              </CardHeader>
+              <CardContent>
+                {listings && listings.length > 0 ? (
+                  <div className="space-y-3">
+                    {listings.map((listing) => (
+                      <Link
+                        key={listing.id}
+                        href={`/listings/${listing.id}`}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      >
+                        <span className="font-medium text-gray-900 truncate">{listing.title}</span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${listing.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                          {listing.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </Link>
+                    ))}
+                    {(listingsCount || 0) > 3 && (
+                      <p className="text-sm text-gray-500 text-center pt-2">
+                        +{(listingsCount || 0) - 3} more listings
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500 mb-3">You haven't posted any listings yet.</p>
+                    <Link href="/listings/new">
+                      <Button variant="glow" size="sm">
+                        Create Listing
+                      </Button>
+                    </Link>
+                  </div>
                 )}
               </CardContent>
             </Card>

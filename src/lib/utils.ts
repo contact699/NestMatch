@@ -156,6 +156,19 @@ export const BATHROOM_SIZES = [
   { value: 'half', label: 'Half bathroom', description: 'Toilet and sink only' },
 ]
 
+export const HELP_TASKS = [
+  { value: 'garbage', label: 'Take out garbage/recycling' },
+  { value: 'yard_work', label: 'Yard work/snow removal' },
+  { value: 'groceries', label: 'Grocery shopping' },
+  { value: 'cooking', label: 'Help with cooking/meals' },
+  { value: 'cleaning', label: 'Light cleaning/tidying' },
+  { value: 'errands', label: 'Running errands' },
+  { value: 'companionship', label: 'Companionship/check-ins' },
+  { value: 'pet_care', label: 'Pet care (walking/feeding)' },
+  { value: 'tech_help', label: 'Tech support/computer help' },
+  { value: 'transportation', label: 'Driving/transportation' },
+]
+
 export const AMENITIES = [
   'WiFi',
   'Laundry (In-unit)',

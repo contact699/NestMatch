@@ -1,17 +1,21 @@
 'use client'
 
-import { UseFormRegister, FieldErrors } from 'react-hook-form'
+import { UseFormRegister, FieldErrors, UseFormWatch, UseFormSetValue } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
-import { DollarSign, Bath } from 'lucide-react'
+import { DollarSign, Bath, HandHeart } from 'lucide-react'
 import { ListingFormData } from '../types'
-import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
+import { BATHROOM_TYPES, BATHROOM_SIZES, HELP_TASKS } from '@/lib/utils'
 
 interface StepDetailsProps {
   register: UseFormRegister<ListingFormData>
   errors: FieldErrors<ListingFormData>
+  watch: UseFormWatch<ListingFormData>
+  setValue: UseFormSetValue<ListingFormData>
 }
 
-export function StepDetails({ register, errors }: StepDetailsProps) {
+export function StepDetails({ register, errors, watch, setValue }: StepDetailsProps) {
+  const helpNeeded = watch('help_needed')
+  const selectedHelpTasks = watch('help_tasks') || []
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-medium text-gray-900">
@@ -148,6 +152,77 @@ export function StepDetails({ register, errors }: StepDetailsProps) {
             ))}
           </select>
         </div>
+      </div>
+
+      {/* Help Needed Section */}
+      <div className="space-y-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <HandHeart className="h-4 w-4" />
+          Help Exchange Program
+        </div>
+        <p className="text-sm text-gray-500">
+          Offer reduced rent in exchange for help around the house. Great for seniors or those needing assistance.
+        </p>
+
+        <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <input
+            type="checkbox"
+            {...register('help_needed')}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <span className="text-sm font-medium text-gray-900">Looking for help with household tasks</span>
+            <p className="text-xs text-gray-500">Rent may be reduced in exchange for assistance</p>
+          </div>
+        </label>
+
+        {helpNeeded && (
+          <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                What kind of help do you need?
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {HELP_TASKS.map((task) => (
+                  <label
+                    key={task.value}
+                    className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition-colors ${
+                      selectedHelpTasks.includes(task.value)
+                        ? 'border-blue-500 bg-blue-50'
+                        : 'border-gray-200 hover:bg-gray-50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedHelpTasks.includes(task.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setValue('help_tasks', [...selectedHelpTasks, task.value])
+                        } else {
+                          setValue('help_tasks', selectedHelpTasks.filter((t: string) => t !== task.value))
+                        }
+                      }}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">{task.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional details (optional)
+              </label>
+              <textarea
+                {...register('help_details')}
+                rows={3}
+                placeholder="Describe the help you need, expected hours per week, rent reduction offered, etc."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

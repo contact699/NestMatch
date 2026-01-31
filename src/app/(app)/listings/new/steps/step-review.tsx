@@ -3,7 +3,7 @@
 import { UseFormWatch } from 'react-hook-form'
 import { ListingFormData } from '../types'
 import { TYPE_LABELS } from './step-type'
-import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
+import { BATHROOM_TYPES, BATHROOM_SIZES, HELP_TASKS } from '@/lib/utils'
 
 interface StepReviewProps {
   watch: UseFormWatch<ListingFormData>
@@ -85,6 +85,28 @@ export function StepReview({ watch }: StepReviewProps) {
             </dd>
           </dl>
         </div>
+
+        {formData.help_needed && (
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-900 mb-2">Help Exchange</h4>
+            <dl className="grid grid-cols-1 gap-2 text-sm">
+              <dt className="text-blue-700">Tasks requested:</dt>
+              <dd className="text-blue-900">
+                {formData.help_tasks && formData.help_tasks.length > 0
+                  ? formData.help_tasks.map(task =>
+                      HELP_TASKS.find(t => t.value === task)?.label || task
+                    ).join(', ')
+                  : 'None specified'}
+              </dd>
+              {formData.help_details && (
+                <>
+                  <dt className="text-blue-700 mt-2">Details:</dt>
+                  <dd className="text-blue-900">{formData.help_details}</dd>
+                </>
+              )}
+            </dl>
+          </div>
+        )}
       </div>
     </div>
   )

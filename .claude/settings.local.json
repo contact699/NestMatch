@@ -19,7 +19,10 @@
       "Bash(del .env.vercel.local)",
       "Bash(npx supabase:*)",
       "Bash(git commit -m \"$\\(cat <<''EOF''\nImprove upload error handling and add API route config\n\n- Add runtime and dynamic config to upload route\n- Better error handling to show actual server response\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git fetch:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx vercel --prod)"
     ]
   }
 }

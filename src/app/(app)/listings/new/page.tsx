@@ -65,6 +65,8 @@ export default function NewListingPage() {
       bathroom_type: 'shared',
       newcomer_friendly: false,
       no_credit_history_ok: false,
+      help_needed: false,
+      help_tasks: [],
     },
   })
 
@@ -159,7 +161,7 @@ export default function NewListingPage() {
       case 2:
         return <StepLocation register={register} errors={errors} watch={watch} />
       case 3:
-        return <StepDetails register={register} errors={errors} />
+        return <StepDetails register={register} errors={errors} watch={watch} setValue={setValue} />
       case 4:
         return <StepAmenities watch={watch} setValue={setValue} />
       case 5:
