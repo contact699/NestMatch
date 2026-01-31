@@ -2,8 +2,9 @@
 
 import { UseFormRegister, FieldErrors } from 'react-hook-form'
 import { Input } from '@/components/ui/input'
-import { DollarSign } from 'lucide-react'
+import { DollarSign, Bath } from 'lucide-react'
 import { ListingFormData } from '../types'
+import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 
 interface StepDetailsProps {
   register: UseFormRegister<ListingFormData>
@@ -95,6 +96,59 @@ export function StepDetails({ register, errors }: StepDetailsProps) {
         />
         <span className="text-sm text-gray-700">Utilities included in rent</span>
       </label>
+
+      {/* Bathroom Section */}
+      <div className="space-y-4 pt-4 border-t border-gray-200">
+        <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+          <Bath className="h-4 w-4" />
+          Bathroom
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Bathroom Type *
+          </label>
+          <div className="space-y-2">
+            {BATHROOM_TYPES.map((type) => (
+              <label
+                key={type.value}
+                className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+              >
+                <input
+                  type="radio"
+                  {...register('bathroom_type')}
+                  value={type.value}
+                  className="mt-0.5 border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">{type.label}</span>
+                  <p className="text-xs text-gray-500">{type.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+          {errors.bathroom_type && (
+            <p className="mt-1 text-sm text-red-600">{errors.bathroom_type.message}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Bathroom Size (optional)
+          </label>
+          <select
+            {...register('bathroom_size')}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="">Not specified</option>
+            {BATHROOM_SIZES.map((size) => (
+              <option key={size.value} value={size.value}>
+                {size.label} - {size.description}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </div>
   )
 }

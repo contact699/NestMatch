@@ -17,13 +17,16 @@ interface QuizQuestion {
 const quizQuestions: QuizQuestion[] = [
   {
     id: 'work_schedule',
-    question: 'What is your typical work schedule?',
+    question: 'What is your typical schedule?',
     options: [
       { value: 'nine_to_five', label: '9-5 Office', description: 'Regular business hours' },
       { value: 'shift_work', label: 'Shift Work', description: 'Rotating or irregular hours' },
       { value: 'remote', label: 'Remote/WFH', description: 'Work from home most days' },
       { value: 'flexible', label: 'Flexible', description: 'Varies day to day' },
       { value: 'student', label: 'Student', description: 'Class schedule varies' },
+      { value: 'retired', label: 'Retired', description: 'No fixed work schedule' },
+      { value: 'not_working', label: 'Not Currently Working', description: 'Home most of the day' },
+      { value: 'job_seeking', label: 'Job Seeking', description: 'Schedule may change soon' },
     ],
   },
   {

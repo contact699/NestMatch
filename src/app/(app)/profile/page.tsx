@@ -7,6 +7,7 @@ import { VerificationBadge, Badge } from '@/components/ui/badge'
 import { AnimatedPage } from '@/components/ui/animated-page'
 import {
   User,
+  Users,
   Mail,
   Phone,
   Briefcase,
@@ -18,6 +19,7 @@ import {
   Star,
   MapPin,
 } from 'lucide-react'
+import { HOUSEHOLD_SITUATIONS } from '@/lib/utils'
 
 export const metadata = {
   title: 'Profile',
@@ -147,6 +149,17 @@ export default async function ProfilePage() {
                       <MapPin className="h-4 w-4 text-gray-400" />
                       <span className="text-gray-600">
                         {[profile.city, profile.province].filter(Boolean).join(', ')}
+                      </span>
+                    </div>
+                  )}
+                  {profile?.household_situation && (
+                    <div className="flex items-center gap-3 text-sm">
+                      <Users className="h-4 w-4 text-gray-400" />
+                      <span className="text-gray-600">
+                        {HOUSEHOLD_SITUATIONS.find(h => h.value === profile.household_situation)?.label || profile.household_situation}
+                        {profile.number_of_children && profile.number_of_children > 0 && (
+                          <span className="text-gray-400"> ({profile.number_of_children} {profile.number_of_children === 1 ? 'child' : 'children'})</span>
+                        )}
                       </span>
                     </div>
                   )}

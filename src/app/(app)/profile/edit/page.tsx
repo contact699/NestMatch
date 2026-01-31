@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Loader2, User, Camera, MapPin } from 'lucide-react'
 import Link from 'next/link'
-import { CANADIAN_PROVINCES, MAJOR_CITIES } from '@/lib/utils'
+import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -23,6 +23,8 @@ const profileSchema = z.object({
   languages: z.array(z.string()).optional(),
   city: z.string().optional(),
   province: z.string().optional(),
+  household_situation: z.enum(['alone', 'couple', 'single_parent', 'couple_with_children', 'with_roommate']).optional().nullable(),
+  number_of_children: z.number().min(1).max(10).optional().nullable(),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
@@ -48,6 +50,10 @@ export default function ProfileEditPage() {
   })
 
   const selectedProvince = watch('province')
+  const selectedHousehold = watch('household_situation')
+
+  // Get cities for selected province
+  const availableCities = selectedProvince ? CITIES_BY_PROVINCE[selectedProvince] || [] : []
 
   useEffect(() => {
     async function loadProfile() {
@@ -78,6 +84,8 @@ export default function ProfileEditPage() {
           languages: profile.languages || [],
           city: profile.city || '',
           province: profile.province || '',
+          household_situation: profile.household_situation,
+          number_of_children: profile.number_of_children,
         })
         setProfilePhoto(profile.profile_photo)
       }
@@ -176,6 +184,8 @@ export default function ProfileEditPage() {
         city: data.city || null,
         province: data.province || null,
         profile_photo: profilePhoto,
+        household_situation: data.household_situation || null,
+        number_of_children: data.number_of_children || null,
       })
       .eq('user_id', user.id)
 
@@ -319,9 +329,10 @@ export default function ProfileEditPage() {
                   <select
                     {...register('city')}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={!selectedProvince}
                   >
-                    <option value="">Select city</option>
-                    {MAJOR_CITIES.map((city) => (
+                    <option value="">{selectedProvince ? 'Select city' : 'Select province first'}</option>
+                    {availableCities.map((city) => (
                       <option key={city} value={city}>
                         {city}
                       </option>
@@ -337,6 +348,47 @@ export default function ProfileEditPage() {
                 label="Or enter your city"
                 placeholder="Enter your city if not in the list"
               />
+            </div>
+
+            {/* Household Situation */}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Household Situation (Optional)
+                </label>
+                <select
+                  {...register('household_situation')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Prefer not to say</option>
+                  {HOUSEHOLD_SITUATIONS.map((situation) => (
+                    <option key={situation.value} value={situation.value}>
+                      {situation.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  This helps hosts know who will be moving in
+                </p>
+              </div>
+
+              {(selectedHousehold === 'single_parent' || selectedHousehold === 'couple_with_children') && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Number of Children
+                  </label>
+                  <input
+                    type="number"
+                    {...register('number_of_children', {
+                      setValueAs: (v) => v === '' ? null : parseInt(v, 10)
+                    })}
+                    min="1"
+                    max="10"
+                    placeholder="How many children?"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -388,6 +440,45 @@ export default function ProfileEditPage() {
               error={errors.phone?.message}
               helperText="Used for verification. Never shared publicly."
             />
+
+            {/* Languages */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Languages You Speak
+              </label>
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
+                {LANGUAGES.map((language) => {
+                  const currentLanguages = watch('languages') || []
+                  const isSelected = currentLanguages.includes(language)
+                  return (
+                    <label
+                      key={language}
+                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                        isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          const current = watch('languages') || []
+                          if (e.target.checked) {
+                            setValue('languages', [...current, language])
+                          } else {
+                            setValue('languages', current.filter((l: string) => l !== language))
+                          }
+                        }}
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <span className="text-sm">{language}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Select all languages you're comfortable communicating in
+              </p>
+            </div>
 
             <div className="flex gap-4 pt-4">
               <Button type="submit" isLoading={isSaving} className="flex-1">

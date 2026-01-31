@@ -14,6 +14,8 @@ export const listingSchema = z.object({
   postal_code: z.string().optional(),
   photos: z.array(z.string()),
   amenities: z.array(z.string()),
+  bathroom_type: z.enum(['ensuite', 'private', 'shared']),
+  bathroom_size: z.enum(['full', 'three_quarter', 'half']).optional().nullable(),
   roommate_gender_preference: z.enum(['male', 'female', 'any']).optional(),
   roommate_age_min: z.number().min(18).optional(),
   roommate_age_max: z.number().max(120).optional(),

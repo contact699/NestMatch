@@ -3,6 +3,7 @@
 import { UseFormWatch } from 'react-hook-form'
 import { ListingFormData } from '../types'
 import { TYPE_LABELS } from './step-type'
+import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 
 interface StepReviewProps {
   watch: UseFormWatch<ListingFormData>
@@ -53,6 +54,13 @@ export function StepReview({ watch }: StepReviewProps) {
             <dd className="text-gray-900">{formData.available_date || '-'}</dd>
             <dt className="text-gray-500">Min Stay:</dt>
             <dd className="text-gray-900">{formData.minimum_stay} months</dd>
+            <dt className="text-gray-500">Bathroom:</dt>
+            <dd className="text-gray-900">
+              {BATHROOM_TYPES.find(b => b.value === formData.bathroom_type)?.label || 'Shared'}
+              {formData.bathroom_size && (
+                <span className="text-gray-500"> ({BATHROOM_SIZES.find(b => b.value === formData.bathroom_size)?.label})</span>
+              )}
+            </dd>
             <dt className="text-gray-500">Amenities:</dt>
             <dd className="text-gray-900">
               {formData.amenities?.length || 0} selected

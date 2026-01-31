@@ -62,6 +62,7 @@ export default function NewListingPage() {
       minimum_stay: 1,
       photos: [],
       amenities: [],
+      bathroom_type: 'shared',
       newcomer_friendly: false,
       no_credit_history_ok: false,
     },
@@ -78,7 +79,7 @@ export default function NewListingPage() {
         fieldsToValidate = ['city', 'province']
         break
       case 3:
-        fieldsToValidate = ['title', 'price', 'available_date', 'minimum_stay']
+        fieldsToValidate = ['title', 'price', 'available_date', 'minimum_stay', 'bathroom_type']
         break
       case 4:
         fieldsToValidate = ['amenities']
@@ -156,7 +157,7 @@ export default function NewListingPage() {
       case 1:
         return <StepType register={register} watch={watch} />
       case 2:
-        return <StepLocation register={register} errors={errors} />
+        return <StepLocation register={register} errors={errors} watch={watch} />
       case 3:
         return <StepDetails register={register} errors={errors} />
       case 4:

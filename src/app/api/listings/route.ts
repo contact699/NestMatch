@@ -18,6 +18,8 @@ const listingSchema = z.object({
   lng: z.number().optional(),
   photos: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
+  bathroom_type: z.enum(['ensuite', 'private', 'shared']).default('shared'),
+  bathroom_size: z.enum(['full', 'three_quarter', 'half']).optional().nullable(),
   roommate_gender_preference: z.enum(['male', 'female', 'any']).optional(),
   roommate_age_min: z.number().min(18).optional(),
   roommate_age_max: z.number().max(120).optional(),
@@ -35,6 +37,7 @@ export async function GET(request: NextRequest) {
     const minPrice = searchParams.get('minPrice')
     const maxPrice = searchParams.get('maxPrice')
     const type = searchParams.get('type')
+    const bathroomType = searchParams.get('bathroomType')
     const newcomerFriendly = searchParams.get('newcomerFriendly')
     const noCreditOk = searchParams.get('noCreditOk')
     const userId = searchParams.get('userId')
@@ -147,6 +150,8 @@ export async function POST(request: NextRequest) {
         lng: listingData.lng || null,
         photos: listingData.photos,
         amenities: listingData.amenities,
+        bathroom_type: listingData.bathroom_type || 'shared',
+        bathroom_size: listingData.bathroom_size || null,
         roommate_gender_preference: listingData.roommate_gender_preference || null,
         roommate_age_min: listingData.roommate_age_min || null,
         roommate_age_max: listingData.roommate_age_max || null,
