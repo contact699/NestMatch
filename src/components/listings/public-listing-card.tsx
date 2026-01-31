@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { formatPrice, formatDate } from '@/lib/utils'
+import { formatPrice, formatDate, BATHROOM_TYPES } from '@/lib/utils'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import {
@@ -12,6 +12,7 @@ import {
   Users,
   Leaf,
   Lock,
+  Bath,
 } from 'lucide-react'
 
 interface PublicListingCardProps {
@@ -23,6 +24,7 @@ interface PublicListingCardProps {
     province: string
     price: number
     type: 'room' | 'shared_room' | 'entire_place'
+    bathroom_type?: string | null
     photos: string[] | null
     newcomer_friendly: boolean
     no_credit_history_ok: boolean
@@ -122,6 +124,12 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
             <Home className="h-3 w-3" />
             {typeLabels[listing.type]}
           </span>
+          {listing.bathroom_type && (
+            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+              <Bath className="h-3 w-3" />
+              {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label.split(' ')[0] || listing.bathroom_type}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
             <Calendar className="h-3 w-3" />
             {formatDate(listing.available_date)}

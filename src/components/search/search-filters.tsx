@@ -3,12 +3,13 @@
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState, useTransition } from 'react'
 import { Button } from '@/components/ui/button'
-import { MAJOR_CITIES, CANADIAN_PROVINCES } from '@/lib/utils'
+import { CITIES_BY_PROVINCE, CANADIAN_PROVINCES, BATHROOM_TYPES } from '@/lib/utils'
 import {
   Search,
   MapPin,
   DollarSign,
   Leaf,
+  Bath,
 } from 'lucide-react'
 
 export function SearchFilters() {
@@ -23,9 +24,13 @@ export function SearchFilters() {
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
     type: searchParams.get('type') || '',
+    bathroomType: searchParams.get('bathroomType') || '',
     newcomerFriendly: searchParams.get('newcomerFriendly') === 'true',
     noCreditOk: searchParams.get('noCreditOk') === 'true',
   })
+
+  // Get cities for selected province
+  const availableCities = filters.province ? CITIES_BY_PROVINCE[filters.province] || [] : []
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,6 +44,7 @@ export function SearchFilters() {
     if (filters.minPrice) params.set('minPrice', filters.minPrice)
     if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
     if (filters.type) params.set('type', filters.type)
+    if (filters.bathroomType) params.set('bathroomType', filters.bathroomType)
     if (filters.newcomerFriendly) params.set('newcomerFriendly', 'true')
     if (filters.noCreditOk) params.set('noCreditOk', 'true')
 
@@ -69,28 +75,17 @@ export function SearchFilters() {
       </div>
 
       {/* Filter row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
-        {/* City */}
-        <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <select
-            value={filters.city}
-            onChange={(e) => handleChange('city', e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
-          >
-            <option value="">All Cities</option>
-            {MAJOR_CITIES.map((city) => (
-              <option key={city} value={city}>
-                {city}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Province */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3">
+        {/* Province - First for filtering cities */}
         <select
           value={filters.province}
-          onChange={(e) => handleChange('province', e.target.value)}
+          onChange={(e) => {
+            handleChange('province', e.target.value)
+            // Reset city when province changes
+            if (filters.city && !CITIES_BY_PROVINCE[e.target.value]?.includes(filters.city)) {
+              handleChange('city', '')
+            }
+          }}
           className="w-full px-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
         >
           <option value="">All Provinces</option>
@@ -100,6 +95,23 @@ export function SearchFilters() {
             </option>
           ))}
         </select>
+
+        {/* City - Filtered by province */}
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <select
+            value={filters.city}
+            onChange={(e) => handleChange('city', e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+          >
+            <option value="">{filters.province ? 'All Cities' : 'Select Province First'}</option>
+            {availableCities.map((city) => (
+              <option key={city} value={city}>
+                {city}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Min Price */}
         <div className="relative">
@@ -136,6 +148,23 @@ export function SearchFilters() {
           <option value="shared_room">Shared Room</option>
           <option value="entire_place">Entire Place</option>
         </select>
+
+        {/* Bathroom Type */}
+        <div className="relative">
+          <Bath className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <select
+            value={filters.bathroomType}
+            onChange={(e) => handleChange('bathroomType', e.target.value)}
+            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+          >
+            <option value="">Any Bathroom</option>
+            {BATHROOM_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Search Button */}
         <Button type="submit" variant="glow" className="w-full" isLoading={isPending}>

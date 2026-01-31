@@ -19,6 +19,7 @@ interface SearchPageProps {
     minPrice?: string
     maxPrice?: string
     type?: string
+    bathroomType?: string
     newcomerFriendly?: string
     noCreditOk?: string
     q?: string
@@ -56,6 +57,9 @@ async function SearchResults({
   }
   if (searchParams.type) {
     query = query.eq('type', searchParams.type)
+  }
+  if (searchParams.bathroomType) {
+    query = query.eq('bathroom_type', searchParams.bathroomType)
   }
   if (searchParams.newcomerFriendly === 'true') {
     query = query.eq('newcomer_friendly', true)

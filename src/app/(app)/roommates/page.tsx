@@ -14,7 +14,7 @@ import {
   MessageCircle,
   SlidersHorizontal,
 } from 'lucide-react'
-import { CANADIAN_PROVINCES, MAJOR_CITIES } from '@/lib/utils'
+import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE } from '@/lib/utils'
 
 interface Profile {
   id: string
@@ -217,7 +217,30 @@ export default function RoommatesPage() {
 
         {/* Expanded filters */}
         <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'}`}>
-          {/* City */}
+          {/* Province - First for filtering cities */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+            <select
+              value={filters.province}
+              onChange={(e) => {
+                const newProvince = e.target.value
+                // Reset city if current city is not in new province
+                const availableCities = newProvince ? CITIES_BY_PROVINCE[newProvince] || [] : []
+                const newCity = availableCities.includes(filters.city) ? filters.city : ''
+                setFilters({ ...filters, province: newProvince, city: newCity })
+              }}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+            >
+              <option value="">All Provinces</option>
+              {CANADIAN_PROVINCES.map((province) => (
+                <option key={province.value} value={province.value}>
+                  {province.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* City - Filtered by province */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
             <select
@@ -225,27 +248,10 @@ export default function RoommatesPage() {
               onChange={(e) => setFilters({ ...filters, city: e.target.value })}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
             >
-              <option value="">All Cities</option>
-              {MAJOR_CITIES.map((city) => (
+              <option value="">{filters.province ? 'All Cities' : 'Select Province First'}</option>
+              {(filters.province ? CITIES_BY_PROVINCE[filters.province] || [] : []).map((city) => (
                 <option key={city} value={city}>
                   {city}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Province */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-            <select
-              value={filters.province}
-              onChange={(e) => setFilters({ ...filters, province: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
-            >
-              <option value="">All Provinces</option>
-              {CANADIAN_PROVINCES.map((province) => (
-                <option key={province.value} value={province.value}>
-                  {province.label}
                 </option>
               ))}
             </select>

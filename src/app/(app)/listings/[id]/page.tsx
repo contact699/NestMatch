@@ -22,7 +22,9 @@ import {
   Leaf,
   Eye,
   Edit,
+  Bath,
 } from 'lucide-react'
+import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 
@@ -191,6 +193,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   <Home className="h-4 w-4" />
                   {typeLabels[listing.type]}
                 </span>
+                {listing.bathroom_type && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm transition-all hover:bg-blue-100">
+                    <Bath className="h-4 w-4" />
+                    {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label || listing.bathroom_type}
+                    {listing.bathroom_size && (
+                      <span className="text-blue-500">
+                        ({BATHROOM_SIZES.find(s => s.value === listing.bathroom_size)?.label})
+                      </span>
+                    )}
+                  </span>
+                )}
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm transition-all hover:bg-gray-200">
                   <Calendar className="h-4 w-4" />
                   Available {formatDate(listing.available_date)}
@@ -359,12 +372,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
                     <dt className="text-gray-500">Last updated</dt>
                     <dd className="text-gray-900">{formatDate(listing.updated_at)}</dd>
                   </div>
-                  {listing.postal_code && (
-                    <div className="flex justify-between">
-                      <dt className="text-gray-500">Postal code</dt>
-                      <dd className="text-gray-900">{listing.postal_code}</dd>
-                    </div>
-                  )}
                 </dl>
               </CardContent>
             </Card>

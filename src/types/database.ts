@@ -29,6 +29,7 @@ export interface Database {
           languages: string[] | null
           city: string | null
           province: string | null
+          is_admin: boolean
           created_at: string
           updated_at: string
         }
@@ -51,6 +52,7 @@ export interface Database {
           languages?: string[] | null
           city?: string | null
           province?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -73,6 +75,7 @@ export interface Database {
           languages?: string[] | null
           city?: string | null
           province?: string | null
+          is_admin?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -170,11 +173,16 @@ export interface Database {
           lng: number | null
           photos: string[]
           amenities: string[]
+          bathroom_type: 'ensuite' | 'private' | 'shared' | null
+          bathroom_size: 'full' | 'three_quarter' | 'half' | null
           roommate_gender_preference: 'male' | 'female' | 'any' | null
           roommate_age_min: number | null
           roommate_age_max: number | null
           newcomer_friendly: boolean
           no_credit_history_ok: boolean
+          help_needed: boolean
+          help_tasks: string[] | null
+          help_details: string | null
           is_active: boolean
           is_verified: boolean
           views_count: number
@@ -199,11 +207,16 @@ export interface Database {
           lng?: number | null
           photos?: string[]
           amenities?: string[]
+          bathroom_type?: 'ensuite' | 'private' | 'shared' | null
+          bathroom_size?: 'full' | 'three_quarter' | 'half' | null
           roommate_gender_preference?: 'male' | 'female' | 'any' | null
           roommate_age_min?: number | null
           roommate_age_max?: number | null
           newcomer_friendly?: boolean
           no_credit_history_ok?: boolean
+          help_needed?: boolean
+          help_tasks?: string[] | null
+          help_details?: string | null
           is_active?: boolean
           is_verified?: boolean
           views_count?: number
@@ -228,11 +241,16 @@ export interface Database {
           lng?: number | null
           photos?: string[]
           amenities?: string[]
+          bathroom_type?: 'ensuite' | 'private' | 'shared' | null
+          bathroom_size?: 'full' | 'three_quarter' | 'half' | null
           roommate_gender_preference?: 'male' | 'female' | 'any' | null
           roommate_age_min?: number | null
           roommate_age_max?: number | null
           newcomer_friendly?: boolean
           no_credit_history_ok?: boolean
+          help_needed?: boolean
+          help_tasks?: string[] | null
+          help_details?: string | null
           is_active?: boolean
           is_verified?: boolean
           views_count?: number

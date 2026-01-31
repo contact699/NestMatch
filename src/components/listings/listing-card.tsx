@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { formatPrice, formatDate, getRelativeTime } from '@/lib/utils'
+import { formatPrice, formatDate, getRelativeTime, BATHROOM_TYPES } from '@/lib/utils'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { Card } from '@/components/ui/card'
@@ -14,6 +14,7 @@ import {
   Users,
   Leaf,
   Clock,
+  Bath,
 } from 'lucide-react'
 import type { Listing, Profile } from '@/types/database'
 
@@ -126,6 +127,12 @@ export function ListingCard({
             <Home className="h-3 w-3" />
             {typeLabels[listing.type]}
           </span>
+          {listing.bathroom_type && (
+            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+              <Bath className="h-3 w-3" />
+              {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label.split(' ')[0] || listing.bathroom_type}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
             <Calendar className="h-3 w-3" />
             {formatDate(listing.available_date)}
