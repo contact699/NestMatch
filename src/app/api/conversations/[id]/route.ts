@@ -16,9 +16,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       error: authError,
     } = await supabase.auth.getUser()
 
-    if (authError || !user) {
+    if (authError) {
+      console.error('Auth error in conversation GET:', authError)
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Authentication error', details: authError.message },
+        { status: 401 }
+      )
+    }
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Unauthorized - no user' },
         { status: 401 }
       )
     }
@@ -40,7 +48,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .eq('id', id)
       .single() as { data: any; error: any }
 
-    if (error || !conversation) {
+    if (error) {
+      console.error('Conversation query error:', error)
+      return NextResponse.json(
+        { error: 'Conversation not found', details: error.message },
+        { status: 404 }
+      )
+    }
+
+    if (!conversation) {
       return NextResponse.json(
         { error: 'Conversation not found' },
         { status: 404 }
@@ -48,9 +64,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if user is a participant
-    if (!conversation.participant_ids.includes(user.id)) {
+    if (!conversation.participant_ids || !conversation.participant_ids.includes(user.id)) {
       return NextResponse.json(
-        { error: 'Forbidden' },
+        { error: 'Forbidden - not a participant' },
         { status: 403 }
       )
     }
@@ -79,7 +95,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     console.error('Error in GET /api/conversations/[id]:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: String(error) },
       { status: 500 }
     )
   }

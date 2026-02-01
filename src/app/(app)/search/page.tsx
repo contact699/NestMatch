@@ -1,173 +1,169 @@
-import { Suspense } from 'react'
-import { createClient } from '@/lib/supabase/server'
-import { createClient as createDirectClient } from '@supabase/supabase-js'
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { ListingCard, ListingCardSkeleton } from '@/components/listings/listing-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { AnimatedPage } from '@/components/ui/animated-page'
 import { SearchFilters } from '@/components/search/search-filters'
-import { Home } from 'lucide-react'
+import { Home, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
-export const metadata = {
-  title: 'Search Rooms',
-  description: 'Find your perfect room in Canada',
+interface Listing {
+  id: string
+  title: string
+  description: string | null
+  city: string
+  province: string
+  price: number
+  type: 'room' | 'shared_room' | 'entire_place'
+  photos: string[] | null
+  newcomer_friendly: boolean
+  no_credit_history_ok: boolean
+  utilities_included: boolean
+  available_date: string
+  bathroom_type: string
+  created_at: string
+  user_id: string
 }
 
-interface SearchPageProps {
-  searchParams: Promise<{
-    city?: string
-    province?: string
-    minPrice?: string
-    maxPrice?: string
-    type?: string
-    bathroomType?: string
-    newcomerFriendly?: string
-    noCreditOk?: string
-    q?: string
-  }>
-}
+export default function SearchPage() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const [listings, setListings] = useState<Listing[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
-async function SearchResults({
-  searchParams,
-}: {
-  searchParams: Awaited<SearchPageProps['searchParams']>
-}) {
-  const supabase = await createClient()
+  // Get current user
+  useEffect(() => {
+    async function getUser() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      setCurrentUserId(user?.id || null)
+    }
+    getUser()
+  }, [])
 
-  // Get current user for compatibility scoring
-  const { data: { user } } = await supabase.auth.getUser()
+  // Fetch listings when search params change
+  useEffect(() => {
+    async function fetchListings() {
+      setIsLoading(true)
+      setError(null)
 
-  // Use a direct client for public listing queries to avoid RLS/session issues
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+      try {
+        // Build query string from search params
+        const params = new URLSearchParams()
 
-  if (!supabaseUrl || !supabaseKey) {
-    console.error('Missing Supabase env vars:', { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey })
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Configuration error. Please try again.</p>
-      </div>
-    )
-  }
+        const city = searchParams.get('city')
+        const province = searchParams.get('province')
+        const minPrice = searchParams.get('minPrice')
+        const maxPrice = searchParams.get('maxPrice')
+        const type = searchParams.get('type')
+        const bathroomType = searchParams.get('bathroomType')
+        const newcomerFriendly = searchParams.get('newcomerFriendly')
+        const noCreditOk = searchParams.get('noCreditOk')
+        const q = searchParams.get('q')
 
-  const publicClient = createDirectClient(supabaseUrl, supabaseKey)
+        if (city) params.set('city', city)
+        if (province) params.set('province', province)
+        if (minPrice) params.set('minPrice', minPrice)
+        if (maxPrice) params.set('maxPrice', maxPrice)
+        if (type) params.set('type', type)
+        if (bathroomType) params.set('bathroomType', bathroomType)
+        if (newcomerFriendly) params.set('newcomerFriendly', newcomerFriendly)
+        if (noCreditOk) params.set('noCreditOk', noCreditOk)
+        if (q) params.set('q', q)
 
-  let query = publicClient
-    .from('listings')
-    .select('*')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
+        const queryString = params.toString()
+        const url = queryString ? `/api/listings?${queryString}` : '/api/listings'
 
-  // Apply filters
-  if (searchParams.city) {
-    query = query.ilike('city', `%${searchParams.city}%`)
-  }
-  if (searchParams.province) {
-    query = query.eq('province', searchParams.province)
-  }
-  if (searchParams.minPrice) {
-    query = query.gte('price', parseInt(searchParams.minPrice))
-  }
-  if (searchParams.maxPrice) {
-    query = query.lte('price', parseInt(searchParams.maxPrice))
-  }
-  if (searchParams.type) {
-    query = query.eq('type', searchParams.type)
-  }
-  if (searchParams.bathroomType) {
-    query = query.eq('bathroom_type', searchParams.bathroomType)
-  }
-  if (searchParams.newcomerFriendly === 'true') {
-    query = query.eq('newcomer_friendly', true)
-  }
-  if (searchParams.noCreditOk === 'true') {
-    query = query.eq('no_credit_history_ok', true)
-  }
-  if (searchParams.q) {
-    // Search in title, description, city, and province
-    query = query.or(
-      `title.ilike.%${searchParams.q}%,description.ilike.%${searchParams.q}%,city.ilike.%${searchParams.q}%,province.ilike.%${searchParams.q}%`
-    )
-  }
+        const response = await fetch(url)
 
-  const { data: listings, error } = await query.limit(24) as { data: any[] | null; error: any }
+        if (!response.ok) {
+          throw new Error('Failed to fetch listings')
+        }
 
-  if (error) {
-    console.error('Error fetching listings:', error)
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500">Error loading listings. Please try again.</p>
-      </div>
-    )
-  }
+        const data = await response.json()
+        setListings(data.listings || [])
+      } catch (err) {
+        console.error('Error fetching listings:', err)
+        setError('Failed to load listings. Please try again.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-  if (!listings || listings.length === 0) {
-    return (
-      <div className="text-center py-12" data-animate>
-        <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
-        <p className="text-gray-500 mb-4">
-          Try adjusting your filters or search in a different area.
-        </p>
-        <a href="/search">
-          <Button variant="outline">Clear filters</Button>
-        </a>
-      </div>
-    )
-  }
+    fetchListings()
+  }, [searchParams])
 
-  // Stagger delay classes
+  // Stagger delay classes for animation
   const getDelayClass = (index: number) => {
     const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-600']
     return delays[index % delays.length]
   }
 
   return (
-    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      {listings.map((listing, index) => (
-        <div key={listing.id} data-animate className={getDelayClass(index)}>
-          <ListingCard
-            listing={listing as any}
-            currentUserId={user?.id}
-          />
-        </div>
-      ))}
-    </div>
-  )
-}
-
-export default async function SearchPage({ searchParams }: SearchPageProps) {
-  const params = await searchParams
-
-  return (
-    <AnimatedPage>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Header */}
-        <div className="mb-8" data-animate>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Find a room</h1>
-          <p className="text-gray-600">
-            Browse verified listings across Canada
-          </p>
-        </div>
-
-        {/* Search & Filters */}
-        <Card variant="glass" className="p-4 mb-8 animate-fade-in-down" data-animate>
-          <Suspense fallback={<div className="h-32 animate-pulse bg-gray-100 rounded-lg" />}>
-            <SearchFilters />
-          </Suspense>
-        </Card>
-
-        {/* Results */}
-        <Suspense
-          fallback={
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              <ListingCardSkeleton count={6} />
-            </div>
-          }
-        >
-          <SearchResults searchParams={params} />
-        </Suspense>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Search Header */}
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Find a room</h1>
+        <p className="text-gray-600">
+          Browse verified listings across Canada
+        </p>
       </div>
-    </AnimatedPage>
+
+      {/* Search & Filters */}
+      <Card variant="glass" className="p-4 mb-8">
+        <SearchFilters />
+      </Card>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
+              <div className="h-48 bg-gray-200" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-3/4" />
+                <div className="h-4 bg-gray-200 rounded w-1/2" />
+                <div className="h-4 bg-gray-200 rounded w-1/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading listings</h3>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Try again
+          </Button>
+        </div>
+      ) : listings.length === 0 ? (
+        <div className="text-center py-12">
+          <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
+          <p className="text-gray-500 mb-4">
+            Try adjusting your filters or search in a different area.
+          </p>
+          <Button variant="outline" onClick={() => router.push('/search')}>
+            Clear filters
+          </Button>
+        </div>
+      ) : (
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {listings.map((listing, index) => (
+            <div key={listing.id} className={getDelayClass(index)}>
+              <ListingCard
+                listing={listing as any}
+                currentUserId={currentUserId}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

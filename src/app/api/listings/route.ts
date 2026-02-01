@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+
+// Direct client for public queries (bypasses RLS issues with server client)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const listingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']),
@@ -32,7 +37,6 @@ const listingSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient()
     const { searchParams } = new URL(request.url)
 
     const city = searchParams.get('city')
@@ -44,10 +48,14 @@ export async function GET(request: NextRequest) {
     const newcomerFriendly = searchParams.get('newcomerFriendly')
     const noCreditOk = searchParams.get('noCreditOk')
     const userId = searchParams.get('userId')
+    const q = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '24')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    let query = (supabase as any)
+    // Use direct client for public queries (same pattern as /api/listings/public)
+    const supabase = createDirectClient(supabaseUrl, supabaseAnonKey)
+
+    let query = supabase
       .from('listings')
       .select('*')
       .order('created_at', { ascending: false })
@@ -74,16 +82,25 @@ export async function GET(request: NextRequest) {
     if (type) {
       query = query.eq('type', type)
     }
+    if (bathroomType) {
+      query = query.eq('bathroom_type', bathroomType)
+    }
     if (newcomerFriendly === 'true') {
       query = query.eq('newcomer_friendly', true)
     }
     if (noCreditOk === 'true') {
       query = query.eq('no_credit_history_ok', true)
     }
+    if (q) {
+      // Search in title, description, city, and province
+      query = query.or(
+        `title.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,province.ilike.%${q}%`
+      )
+    }
 
     query = query.range(offset, offset + limit - 1)
 
-    const { data: listings, error } = await query as { data: any[] | null; error: any }
+    const { data: listings, error } = await query
 
     if (error) {
       console.error('Error fetching listings:', error)
@@ -93,7 +110,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    return NextResponse.json({ listings })
+    return NextResponse.json({ listings: listings || [] })
   } catch (error) {
     console.error('Error in GET /api/listings:', error)
     return NextResponse.json(
