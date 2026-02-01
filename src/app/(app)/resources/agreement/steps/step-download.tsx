@@ -1,71 +1,165 @@
 'use client'
 
 import { useState } from 'react'
-import { Download, Copy, Check, FileText, Printer, Loader2 } from 'lucide-react'
+import { pdf } from '@react-pdf/renderer'
+import { Download, FileText, Loader2, Check, Share2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { LegalDisclaimer, PROVINCES } from '@/components/resources'
-import { AgreementFormData } from '../types'
+import { AgreementPDF } from '@/components/resources/agreement/agreement-pdf'
 
 interface StepDownloadProps {
-  formData: AgreementFormData
-  generatedContent: string
+  data: {
+    title: string
+    address: string
+    province: string
+    moveInDate: string
+    roommates: string[]
+    clauses: { title: string; content: string }[]
+  }
+  onBack: () => void
 }
 
-export function StepDownload({ formData, generatedContent }: StepDownloadProps) {
+export function StepDownload({ data, onBack }: StepDownloadProps) {
+  const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [isPrinting, setIsPrinting] = useState(false)
 
-  const copyToClipboard = async () => {
+  const generatePDF = async () => {
+    setIsGenerating(true)
     try {
-      await navigator.clipboard.writeText(generatedContent)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+      const doc = (
+        <AgreementPDF
+          title={data.title}
+          address={data.address}
+          province={data.province}
+          moveInDate={data.moveInDate}
+          roommates={data.roommates}
+          clauses={data.clauses}
+          generatedAt={new Date().toLocaleDateString('en-CA', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
+        />
+      )
+
+      const blob = await pdf(doc).toBlob()
+      const url = URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to generate PDF:', error)
+    } finally {
+      setIsGenerating(false)
     }
   }
 
-  const handlePrint = () => {
-    setIsPrinting(true)
-    setTimeout(() => {
-      window.print()
-      setIsPrinting(false)
-    }, 100)
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy link:', err)
+    }
   }
 
-  const downloadAsTxt = () => {
-    const blob = new Blob([generatedContent], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `roommate-agreement-${new Date().toISOString().split('T')[0]}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: data.title,
+          text: 'Check out this roommate agreement from NestMatch',
+          url: window.location.href,
+        })
+      } catch (err) {
+        // User cancelled or share failed
+        console.error('Share failed:', err)
+      }
+    } else {
+      // Fallback to copy link
+      copyLink()
+    }
   }
 
-  const provinceName = PROVINCES.find((p) => p.code === formData.province)?.name || formData.province
+  const handleStartNew = () => {
+    window.location.reload()
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">Your Agreement is Ready</h3>
-        <p className="text-sm text-gray-500">
-          Download, copy, or print your customized roommate agreement
+      {/* Success Icon and Heading */}
+      <div className="text-center">
+        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+          <FileText className="h-8 w-8 text-green-600" />
+        </div>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+          Your Agreement is Ready!
+        </h3>
+        <p className="text-gray-500">
+          Download your customized roommate agreement as a PDF
         </p>
       </div>
 
-      {/* Legal Disclaimer */}
-      <LegalDisclaimer variant="banner" />
+      {/* Agreement Summary */}
+      <div className="bg-gray-50 rounded-lg p-6 space-y-4">
+        <h4 className="font-medium text-gray-900">Agreement Summary</h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-gray-500">Title:</span>
+            <p className="font-medium text-gray-900">{data.title}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Property:</span>
+            <p className="font-medium text-gray-900">{data.address}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Province:</span>
+            <p className="font-medium text-gray-900">{data.province}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Move-in Date:</span>
+            <p className="font-medium text-gray-900">{data.moveInDate}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Roommates:</span>
+            <p className="font-medium text-gray-900">{data.roommates.length}</p>
+          </div>
+          <div>
+            <span className="text-gray-500">Clauses:</span>
+            <p className="font-medium text-gray-900">{data.clauses.length}</p>
+          </div>
+        </div>
+      </div>
 
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={downloadAsTxt}>
-          <Download className="h-4 w-4 mr-2" />
-          Download as Text
-        </Button>
-        <Button variant="outline" onClick={copyToClipboard}>
+      {/* Download Button */}
+      <Button
+        onClick={generatePDF}
+        disabled={isGenerating}
+        className="w-full"
+        size="lg"
+      >
+        {isGenerating ? (
+          <>
+            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+            Generating PDF...
+          </>
+        ) : (
+          <>
+            <Download className="h-5 w-5 mr-2" />
+            Download PDF
+          </>
+        )}
+      </Button>
+
+      {/* Copy Link and Share Buttons */}
+      <div className="flex gap-3">
+        <Button variant="outline" onClick={copyLink} className="flex-1">
           {copied ? (
             <>
               <Check className="h-4 w-4 mr-2" />
@@ -74,72 +168,34 @@ export function StepDownload({ formData, generatedContent }: StepDownloadProps) 
           ) : (
             <>
               <Copy className="h-4 w-4 mr-2" />
-              Copy to Clipboard
+              Copy Link
             </>
           )}
         </Button>
-        <Button variant="outline" onClick={handlePrint} disabled={isPrinting}>
-          {isPrinting ? (
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-          ) : (
-            <Printer className="h-4 w-4 mr-2" />
-          )}
-          Print
+        <Button variant="outline" onClick={handleShare} className="flex-1">
+          <Share2 className="h-4 w-4 mr-2" />
+          Share
         </Button>
       </div>
 
-      {/* Preview */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Agreement Preview</span>
-          </div>
-          <span className="text-xs text-gray-500">{provinceName}</span>
-        </div>
-        <div className="p-6 bg-white max-h-[500px] overflow-y-auto">
-          <pre className="whitespace-pre-wrap font-sans text-sm text-gray-700 leading-relaxed">
-            {generatedContent}
-          </pre>
-        </div>
-      </div>
-
-      {/* Signature Section Info */}
+      {/* Warning */}
       <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <h4 className="font-medium text-amber-800 mb-2">Next Steps</h4>
-        <ol className="list-decimal list-inside text-sm text-amber-700 space-y-1">
-          <li>Review the agreement with all roommates</li>
-          <li>Make any necessary changes together</li>
-          <li>Print copies for everyone to sign</li>
-          <li>Keep a signed copy for your records</li>
-        </ol>
+        <p className="text-sm text-amber-800">
+          <strong>Important:</strong> This agreement is a template and does not constitute legal advice.
+          Review the document with all roommates before signing and consider consulting a legal professional
+          for advice specific to your situation.
+        </p>
       </div>
 
-      {/* Print styles */}
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .border-gray-200.rounded-lg.overflow-hidden,
-          .border-gray-200.rounded-lg.overflow-hidden * {
-            visibility: visible;
-          }
-          .border-gray-200.rounded-lg.overflow-hidden {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            border: none;
-          }
-          .bg-gray-50 {
-            display: none !important;
-          }
-          .max-h-\\[500px\\] {
-            max-height: none !important;
-          }
-        }
-      `}</style>
+      {/* Navigation Buttons */}
+      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+        <Button variant="outline" onClick={onBack} className="flex-1">
+          Back to Review
+        </Button>
+        <Button variant="ghost" onClick={handleStartNew} className="flex-1">
+          Start New Agreement
+        </Button>
+      </div>
     </div>
   )
 }

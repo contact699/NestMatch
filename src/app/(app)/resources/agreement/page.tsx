@@ -38,6 +38,152 @@ const STEPS = [
   { id: 6, title: 'Download', icon: Download, description: 'Get your agreement' },
 ]
 
+const formatTime = (time: string | undefined) => {
+  if (!time) return ''
+  const [hours, minutes] = time.split(':')
+  const hour = parseInt(hours)
+  const ampm = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+  return `${displayHour}:${minutes} ${ampm}`
+}
+
+const ordinal = (n: number) => {
+  const s = ['th', 'st', 'nd', 'rd']
+  const v = n % 100
+  return n + (s[(v - 20) % 10] || s[v] || s[0])
+}
+
+function generateClausesFromFormData(data: AgreementFormData): { title: string; content: string }[] {
+  const clauses: { title: string; content: string }[] = []
+  const roommates = data.roommateNames.filter(Boolean)
+
+  // Financial Terms
+  const rentContent = data.rentSplitMethod === 'equal'
+    ? `Total Monthly Rent: $${data.totalRent.toLocaleString()}. Rent will be split equally among all roommates ($${Math.round(data.totalRent / roommates.length).toLocaleString()} per person). Payment is due on the ${ordinal(data.rentDueDate)} of each month via ${data.paymentMethod.replace('_', ' ')}.`
+    : `Total Monthly Rent: $${data.totalRent.toLocaleString()}. Rent splits: ${data.rentSplits.map(split => `${split.name}: $${split.amount.toLocaleString()}`).join(', ')}. Payment is due on the ${ordinal(data.rentDueDate)} of each month via ${data.paymentMethod.replace('_', ' ')}.`
+
+  clauses.push({
+    title: 'Rent and Payment',
+    content: rentContent,
+  })
+
+  // Utilities
+  if (!data.utilitiesIncluded) {
+    const utilitiesContent = data.utilitiesSplit === 'equal'
+      ? 'Utilities are not included in rent and will be split equally among all roommates.'
+      : data.utilitiesSplit === 'usage'
+      ? 'Utilities are not included in rent and will be divided based on individual usage where measurable.'
+      : 'Utilities are not included in rent and will be paid on a rotating basis each month.'
+    clauses.push({
+      title: 'Utilities',
+      content: utilitiesContent,
+    })
+  }
+
+  // Quiet Hours
+  if (data.quietHoursStart && data.quietHoursEnd) {
+    clauses.push({
+      title: 'Quiet Hours',
+      content: `Quiet hours are from ${formatTime(data.quietHoursStart)} to ${formatTime(data.quietHoursEnd)}. During these hours, all roommates agree to keep noise to a minimum.`,
+    })
+  }
+
+  // Guest Policy
+  const guestContent = {
+    notify: 'Roommates should notify each other when having guests over, especially for extended visits.',
+    limit: `Overnight guests are limited to ${data.overnightGuestLimit || 3} nights per week per roommate. Guests staying longer should be discussed with all roommates.`,
+    approval: 'Overnight guests require advance notice and approval from other roommates.',
+    flexible: 'No specific guest restrictions are in place. Roommates agree to be considerate and communicate when hosting guests.',
+  }[data.guestPolicy]
+
+  clauses.push({
+    title: 'Guest Policy',
+    content: guestContent,
+  })
+
+  // Smoking Policy
+  const smokingContent = {
+    no_smoking: 'Smoking is not permitted anywhere on the premises.',
+    outside_only: 'Smoking is only permitted outside the unit, at least 3 meters from windows and doors.',
+    designated_area: 'Smoking is only permitted in designated areas agreed upon by all roommates.',
+  }[data.smokingPolicy]
+
+  clauses.push({
+    title: 'Smoking Policy',
+    content: smokingContent,
+  })
+
+  // Cannabis Policy (only if different from smoking)
+  if (data.cannabisPolicy !== 'same_as_smoking') {
+    const cannabisContent = {
+      no_cannabis: 'Cannabis use is not permitted on the premises.',
+      outside_only: 'Cannabis use is only permitted outside the unit.',
+      designated_area: 'Cannabis use is only permitted in designated areas agreed upon by all roommates.',
+      same_as_smoking: '',
+    }[data.cannabisPolicy]
+
+    if (cannabisContent) {
+      clauses.push({
+        title: 'Cannabis Policy',
+        content: cannabisContent,
+      })
+    }
+  }
+
+  // Pets
+  clauses.push({
+    title: 'Pet Policy',
+    content: data.petsAllowed
+      ? `Pets are allowed in this residence.${data.petDetails ? ` Details: ${data.petDetails}` : ''} Pet owners are responsible for their pets' behavior, cleaning, and any damage caused.`
+      : 'No pets are allowed in this residence without the written consent of all roommates.',
+  })
+
+  // Cleaning
+  const cleaningContent = {
+    rotating: 'Cleaning duties will rotate weekly among all roommates. A schedule will be posted in a common area.',
+    assigned: 'Each roommate is responsible for specific cleaning areas as agreed upon.',
+    as_needed: 'Roommates will clean common areas as needed, with the expectation that everyone contributes fairly.',
+    hired: 'Professional cleaning services will be hired and the cost split equally among all roommates.',
+  }[data.cleaningSchedule]
+
+  clauses.push({
+    title: 'Cleaning Responsibilities',
+    content: cleaningContent,
+  })
+
+  // Shared Supplies
+  const suppliesContent = {
+    split: 'Costs for shared household supplies (toilet paper, cleaning products, etc.) will be split equally. Roommates agree to track these expenses and settle monthly.',
+    rotate: 'Roommates will take turns purchasing shared household supplies on a rotating basis.',
+    individual: 'Each roommate is responsible for purchasing their own supplies. Any shared items must be agreed upon separately.',
+  }[data.sharedSuppliesApproach]
+
+  clauses.push({
+    title: 'Shared Supplies',
+    content: suppliesContent,
+  })
+
+  // Notice to Leave
+  clauses.push({
+    title: 'Notice to Leave',
+    content: `Any roommate wishing to leave must provide at least ${data.noticeToLeave} days written notice to all other roommates.`,
+  })
+
+  // Dispute Resolution
+  const disputeContent = {
+    direct: 'Disputes should first be addressed through direct, respectful conversation between the parties involved.',
+    written: 'Disputes should be communicated in writing to allow all parties time to consider responses.',
+    mediation: 'If direct resolution fails, roommates agree to seek third-party mediation before taking further action.',
+  }[data.disputeResolution]
+
+  clauses.push({
+    title: 'Dispute Resolution',
+    content: disputeContent,
+  })
+
+  return clauses
+}
+
 export default function AgreementGeneratorPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [generatedContent, setGeneratedContent] = useState('')
@@ -112,7 +258,28 @@ export default function AgreementGeneratorPage() {
       case 5:
         return <StepReview watch={watch} />
       case 6:
-        return <StepDownload formData={watch()} generatedContent={generatedContent} />
+        const formData = watch()
+        const provinceName = {
+          ON: 'Ontario',
+          BC: 'British Columbia',
+          QC: 'Quebec',
+          AB: 'Alberta',
+        }[formData.province] || formData.province
+
+        // Transform form data to PDF-compatible format
+        const pdfData = {
+          title: `Roommate Agreement - ${formData.address.split(',')[0] || formData.address}`,
+          address: formData.address,
+          province: provinceName,
+          moveInDate: new Date(formData.moveInDate).toLocaleDateString('en-CA', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          roommates: formData.roommateNames.filter(Boolean),
+          clauses: generateClausesFromFormData(formData),
+        }
+        return <StepDownload data={pdfData} onBack={prevStep} />
       default:
         return null
     }
