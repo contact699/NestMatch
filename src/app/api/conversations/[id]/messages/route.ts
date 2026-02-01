@@ -84,16 +84,21 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    // Mark unread messages as read
+    // Mark unread messages as read (wrapped in try-catch to not fail the request)
     const unreadMessageIds = (messages || [])
       .filter((m: any) => m.sender_id !== user.id && !m.read_at)
       .map((m: any) => m.id)
 
     if (unreadMessageIds.length > 0) {
-      await (supabase as any)
-        .from('messages')
-        .update({ read_at: new Date().toISOString() })
-        .in('id', unreadMessageIds)
+      try {
+        await (supabase as any)
+          .from('messages')
+          .update({ read_at: new Date().toISOString() })
+          .in('id', unreadMessageIds)
+      } catch (updateError) {
+        // Don't fail the request if marking as read fails
+        console.error('Error marking messages as read:', updateError)
+      }
     }
 
     // Return messages in chronological order

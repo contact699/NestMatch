@@ -38,10 +38,19 @@ async function SearchResults({
   const { data: { user } } = await supabase.auth.getUser()
 
   // Use a direct client for public listing queries to avoid RLS/session issues
-  const publicClient = createDirectClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase env vars:', { supabaseUrl: !!supabaseUrl, supabaseKey: !!supabaseKey })
+    return (
+      <div className="text-center py-12">
+        <p className="text-gray-500">Configuration error. Please try again.</p>
+      </div>
+    )
+  }
+
+  const publicClient = createDirectClient(supabaseUrl, supabaseKey)
 
   let query = publicClient
     .from('listings')
@@ -75,8 +84,9 @@ async function SearchResults({
     query = query.eq('no_credit_history_ok', true)
   }
   if (searchParams.q) {
+    // Search in title, description, city, and province
     query = query.or(
-      `title.ilike.%${searchParams.q}%,description.ilike.%${searchParams.q}%`
+      `title.ilike.%${searchParams.q}%,description.ilike.%${searchParams.q}%,city.ilike.%${searchParams.q}%,province.ilike.%${searchParams.q}%`
     )
   }
 
