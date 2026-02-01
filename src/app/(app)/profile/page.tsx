@@ -65,14 +65,14 @@ export default async function ProfilePage() {
   const { data: listings } = await supabase
     .from('listings')
     .select('id, title, is_active')
-    .eq('host_id', user.id)
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false })
     .limit(3) as { data: any[] | null }
 
   const { count: listingsCount } = await supabase
     .from('listings')
     .select('*', { count: 'exact', head: true })
-    .eq('host_id', user.id)
+    .eq('user_id', user.id)
 
   return (
     <AnimatedPage>

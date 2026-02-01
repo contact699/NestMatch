@@ -187,6 +187,14 @@ export default function ChatPage() {
         // Remove optimistic message on failure
         setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id))
         setNewMessage(messageContent)
+      } else {
+        // Success - remove optimistic message, real-time subscription will add the real one
+        const data = await response.json()
+        if (data.message) {
+          setMessages((prev) =>
+            prev.map((m) => m.id === optimisticMessage.id ? data.message : m)
+          )
+        }
       }
     } catch {
       // Remove optimistic message on error

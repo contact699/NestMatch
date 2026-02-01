@@ -291,6 +291,13 @@ export function Navbar({ user }: NavbarProps) {
               </div>
             ) : (
               <>
+                {/* Mobile sign in button - visible in header */}
+                <Link href="/login" className="sm:hidden">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <User className="h-4 w-4" />
+                    Sign in
+                  </Button>
+                </Link>
                 {/* Desktop sign in buttons */}
                 <Link href="/login" className="hidden sm:block">
                   <Button variant="ghost" size="sm">
