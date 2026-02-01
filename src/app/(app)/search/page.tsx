@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { ListingCard, ListingCardSkeleton } from '@/components/listings/listing-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -36,7 +37,13 @@ async function SearchResults({
   // Get current user for compatibility scoring
   const { data: { user } } = await supabase.auth.getUser()
 
-  let query = supabase
+  // Use a direct client for public listing queries to avoid RLS/session issues
+  const publicClient = createDirectClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
+  let query = publicClient
     .from('listings')
     .select('*')
     .eq('is_active', true)

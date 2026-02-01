@@ -131,6 +131,13 @@ export default function ChatPage() {
           },
           (payload) => {
             const newMsg = payload.new as Message
+
+            // Skip messages from current user - they're handled by the API response
+            // This prevents race conditions between realtime and API response
+            if (newMsg.sender_id === user.id) {
+              return
+            }
+
             setMessages((prev) => {
               // Avoid duplicates
               if (prev.some((m) => m.id === newMsg.id)) {
@@ -139,10 +146,8 @@ export default function ChatPage() {
               return [...prev, newMsg]
             })
 
-            // Mark as read if from other user
-            if (newMsg.sender_id !== user.id) {
-              fetch(`/api/messages/${newMsg.id}/read`, { method: 'PUT' })
-            }
+            // Mark as read since it's from other user
+            fetch(`/api/messages/${newMsg.id}/read`, { method: 'PUT' })
           }
         )
         .subscribe()
