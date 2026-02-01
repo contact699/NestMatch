@@ -22,7 +22,13 @@
       "Bash(git commit:*)",
       "Bash(git fetch:*)",
       "Bash(npm run type-check:*)",
-      "Bash(npx vercel --prod)"
+      "Bash(npx vercel --prod)",
+      "Bash(dir /s /b \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\\\\.claude\")",
+      "Bash(ls:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Bash(npm ls:*)",
+      "Bash(git diff:*)"
     ]
   }
 }
