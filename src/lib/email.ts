@@ -1,6 +1,14 @@
 import { Resend } from 'resend'
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+// Lazy initialization to avoid build errors when API key is not set
+let resendClient: Resend | null = null
+
+function getResendClient(): Resend {
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
 
 export async function sendEmail({
   to,
@@ -17,6 +25,7 @@ export async function sendEmail({
   }
 
   try {
+    const resend = getResendClient()
     const { data, error } = await resend.emails.send({
       from: process.env.EMAIL_FROM || 'NestMatch <noreply@nestmatch.com>',
       to,

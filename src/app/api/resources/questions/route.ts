@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { z } from 'zod'
+import { sendEmail } from '@/lib/email'
+import { questionReceivedEmail } from '@/lib/email-templates'
 
 const questionSchema = z.object({
   question: z.string().min(10, 'Question must be at least 10 characters').max(500),
@@ -56,6 +58,26 @@ export async function POST(request: NextRequest) {
         { error: 'Failed to submit question' },
         { status: 500 }
       )
+    }
+
+    // Send confirmation email if user has email (fire and forget)
+    if (user?.email) {
+      const { data: profile } = await (supabase as any)
+        .from('profiles')
+        .select('name')
+        .eq('user_id', user.id)
+        .single()
+
+      const emailContent = questionReceivedEmail({
+        userName: (profile as { name?: string })?.name || 'there',
+        question: body.question,
+      })
+
+      // Fire and forget - don't await to avoid blocking response
+      sendEmail({
+        to: user.email,
+        ...emailContent,
+      }).catch((err) => console.error('Error sending confirmation email:', err))
     }
 
     return NextResponse.json({ question: submittedQuestion }, { status: 201 })
