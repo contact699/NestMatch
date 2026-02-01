@@ -1230,6 +1230,8 @@ export interface Database {
           view_count: number
           helpful_count: number
           last_reviewed_at: string | null
+          publish_at: string | null
+          unpublish_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1249,6 +1251,8 @@ export interface Database {
           view_count?: number
           helpful_count?: number
           last_reviewed_at?: string | null
+          publish_at?: string | null
+          unpublish_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1268,6 +1272,8 @@ export interface Database {
           view_count?: number
           helpful_count?: number
           last_reviewed_at?: string | null
+          publish_at?: string | null
+          unpublish_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1285,6 +1291,8 @@ export interface Database {
           helpful_count: number
           not_helpful_count: number
           last_reviewed_at: string | null
+          publish_at: string | null
+          unpublish_at: string | null
           created_at: string
           updated_at: string
         }
@@ -1300,6 +1308,8 @@ export interface Database {
           helpful_count?: number
           not_helpful_count?: number
           last_reviewed_at?: string | null
+          publish_at?: string | null
+          unpublish_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -1315,6 +1325,8 @@ export interface Database {
           helpful_count?: number
           not_helpful_count?: number
           last_reviewed_at?: string | null
+          publish_at?: string | null
+          unpublish_at?: string | null
           created_at?: string
           updated_at?: string
         }
