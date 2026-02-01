@@ -14,6 +14,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '20')
     const offset = parseInt(searchParams.get('offset') || '0')
 
+    const now = new Date().toISOString()
+
     let query = (supabase as any)
       .from('resources')
       .select(`
@@ -21,6 +23,8 @@ export async function GET(request: NextRequest) {
         category:resource_categories(id, slug, name)
       `)
       .eq('is_published', true)
+      .or(`publish_at.is.null,publish_at.lte.${now}`)
+      .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
       .order('created_at', { ascending: false })
 
     // Full-text search
