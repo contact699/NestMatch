@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const updateGroupSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -17,22 +14,9 @@ const updateGroupSchema = z.object({
 })
 
 // Get a specific group
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     const { data: group, error } = await (supabase as any)
       .from('co_renter_groups')
@@ -66,83 +50,53 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (error || !group) {
-      return NextResponse.json(
-        { error: 'Group not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Group not found')
     }
 
     // Verify user is a member
-    const isMember = group.members?.some((m: any) => m.user?.user_id === user.id)
+    const isMember = group.members?.some((m: any) => m.user?.user_id === userId)
     if (!isMember) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Access denied')
     }
 
-    const userMember = group.members?.find((m: any) => m.user?.user_id === user.id)
+    const userMember = group.members?.find((m: any) => m.user?.user_id === userId)
 
-    return NextResponse.json({
+    return apiResponse({
       group: {
         ...group,
         user_role: userMember?.role || 'member',
         is_admin: userMember?.role === 'admin',
       },
-    })
-  } catch (error) {
-    console.error('Error in GET /api/groups/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)
 
 // Update a group (admin only)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Check if user is admin of the group
     const { data: membership } = await (supabase as any)
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admins can update the group' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Only admins can update the group')
     }
 
-    const body = await request.json()
-    const validationResult = updateGroupSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let updateInput: z.infer<typeof updateGroupSchema>
+    try {
+      updateInput = await parseBody(req, updateGroupSchema)
+    } catch {
+      throw new ValidationError('Invalid group data')
     }
 
     const updateData: Record<string, any> = {
@@ -155,8 +109,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     ]
 
     for (const field of allowedFields) {
-      if (validationResult.data[field as keyof typeof validationResult.data] !== undefined) {
-        updateData[field] = validationResult.data[field as keyof typeof validationResult.data]
+      if (updateInput[field as keyof typeof updateInput] !== undefined) {
+        updateData[field] = updateInput[field as keyof typeof updateInput]
       }
     }
 
@@ -179,55 +133,34 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (updateError) {
-      console.error('Error updating group:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update group' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ group })
-  } catch (error) {
-    console.error('Error in PUT /api/groups/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ group }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'co_renter_group',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)
 
 // Delete a group (admin only)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Check if user is admin of the group
     const { data: membership } = await (supabase as any)
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admins can delete the group' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Only admins can delete the group')
     }
 
     // Delete in order: invitations, members, then group
@@ -246,20 +179,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .delete()
       .eq('id', id)
 
-    if (deleteError) {
-      console.error('Error deleting group:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to delete group' },
-        { status: 500 }
-      )
-    }
+    if (deleteError) throw deleteError
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/groups/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'co_renter_group',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)

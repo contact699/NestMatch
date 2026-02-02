@@ -1,23 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 
 // Get user's pending invitations (across all groups)
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     const { data: invitations, error } = await (supabase as any)
       .from('co_renter_invitations')
       .select(`
@@ -46,24 +32,12 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .eq('invitee_id', user.id)
+      .eq('invitee_id', userId)
       .eq('status', 'pending')
-      .order('created_at', { ascending: false }) as { data: any[]; error: any }
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching invitations:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch invitations' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ invitations: invitations || [] })
-  } catch (error) {
-    console.error('Error in GET /api/invitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ invitations: invitations || [] }, 200, requestId)
   }
-}
+)

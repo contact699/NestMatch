@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody, NotFoundError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createExpenseSchema = z.object({
   listing_id: z.string().uuid(),
@@ -18,23 +19,9 @@ const createExpenseSchema = z.object({
 })
 
 // Get expenses for a listing or user
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
     const listingId = searchParams.get('listing_id')
     const status = searchParams.get('status')
 
@@ -76,20 +63,14 @@ export async function GET(request: NextRequest) {
 
     query = query.order('created_at', { ascending: false })
 
-    const { data: expenses, error } = await query as { data: any[]; error: any }
+    const { data: expenses, error } = await query
 
-    if (error) {
-      console.error('Error fetching expenses:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch expenses' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Filter to only show expenses where user is involved
     const userExpenses = (expenses || []).filter((expense: any) =>
-      expense.created_by === user.id ||
-      expense.shares?.some((share: any) => share.user_id === user.id)
+      expense.created_by === userId ||
+      expense.shares?.some((share: any) => share.user_id === userId)
     )
 
     // Calculate user's pending amount
@@ -97,76 +78,50 @@ export async function GET(request: NextRequest) {
     let totalOwing = 0
 
     for (const expense of userExpenses) {
-      const userShare = expense.shares?.find((s: any) => s.user_id === user.id)
+      const userShare = expense.shares?.find((s: any) => s.user_id === userId)
       if (userShare && userShare.status === 'pending') {
         totalOwed += userShare.amount
       }
-      if (expense.created_by === user.id) {
+      if (expense.created_by === userId) {
         const pendingShares = expense.shares?.filter(
-          (s: any) => s.user_id !== user.id && s.status === 'pending'
+          (s: any) => s.user_id !== userId && s.status === 'pending'
         )
         totalOwing += pendingShares?.reduce((sum: number, s: any) => sum + s.amount, 0) || 0
       }
     }
 
-    return NextResponse.json({
+    return apiResponse({
       expenses: userExpenses,
       summary: {
-        total_owed: totalOwed, // What user owes others
-        total_owing: totalOwing, // What others owe user
+        total_owed: totalOwed,
+        total_owing: totalOwing,
       },
-    })
-  } catch (error) {
-    console.error('Error in GET /api/expenses:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)
 
 // Create a new shared expense
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof createExpenseSchema>
+    try {
+      body = await parseBody(req, createExpenseSchema)
+    } catch {
+      throw new ValidationError('Invalid expense data')
     }
 
-    const body = await request.json()
+    const { listing_id, title, description, total_amount, category, split_type, due_date, shares } = body
 
-    const validationResult = createExpenseSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { listing_id, title, description, total_amount, category, split_type, due_date, shares } = validationResult.data
-
-    // Verify user is associated with this listing (owner or has a cohabitation)
+    // Verify listing exists
     const { data: listing } = await (supabase as any)
       .from('listings')
       .select('user_id')
       .eq('id', listing_id)
-      .single() as { data: any }
+      .single()
 
-    // For now, just verify the listing exists
     if (!listing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Listing not found')
     }
 
     // Calculate shares based on split type
@@ -190,7 +145,7 @@ export async function POST(request: NextRequest) {
       .from('shared_expenses')
       .insert({
         listing_id,
-        created_by: user.id,
+        created_by: userId,
         title,
         description,
         total_amount,
@@ -202,13 +157,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (expenseError) {
-      console.error('Error creating expense:', expenseError)
-      return NextResponse.json(
-        { error: 'Failed to create expense' },
-        { status: 500 }
-      )
-    }
+    if (expenseError) throw expenseError
 
     // Create shares
     const shareInserts = calculatedShares.map((s) => ({
@@ -216,8 +165,8 @@ export async function POST(request: NextRequest) {
       user_id: s.user_id,
       amount: s.amount,
       percentage: s.percentage || null,
-      status: s.user_id === user.id ? 'paid' : 'pending', // Creator's share is auto-paid
-      paid_at: s.user_id === user.id ? new Date().toISOString() : null,
+      status: s.user_id === userId ? 'paid' : 'pending',
+      paid_at: s.user_id === userId ? new Date().toISOString() : null,
     }))
 
     const { error: sharesError } = await (supabase as any)
@@ -225,17 +174,13 @@ export async function POST(request: NextRequest) {
       .insert(shareInserts)
 
     if (sharesError) {
-      console.error('Error creating shares:', sharesError)
       // Rollback expense
       await (supabase as any)
         .from('shared_expenses')
         .delete()
         .eq('id', expense.id)
 
-      return NextResponse.json(
-        { error: 'Failed to create expense shares' },
-        { status: 500 }
-      )
+      throw sharesError
     }
 
     // Fetch complete expense with shares
@@ -255,12 +200,13 @@ export async function POST(request: NextRequest) {
       .eq('id', expense.id)
       .single()
 
-    return NextResponse.json({ expense: completeExpense }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/expenses:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ expense: completeExpense }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'shared_expense',
+      getResourceId: (_req, res) => res?.expense?.id,
+    },
   }
-}
+)

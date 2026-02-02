@@ -1,107 +1,82 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
+const batchSchema = z.object({
+  userIds: z.array(z.string().uuid()),
+})
 
-    // Get current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
     const otherUserId = searchParams.get('userId')
 
     if (!otherUserId) {
-      return NextResponse.json(
-        { error: 'userId parameter required' },
-        { status: 400 }
-      )
+      return apiResponse({ error: 'userId parameter required' }, 400, requestId)
     }
 
     // Call the database function to calculate compatibility
     const { data, error } = await (supabase as any).rpc('calculate_compatibility', {
-      user_id_1: user.id,
+      user_id_1: userId,
       user_id_2: otherUserId,
     })
 
-    if (error) {
-      console.error('Error calculating compatibility:', error)
-      return NextResponse.json(
-        { error: 'Failed to calculate compatibility' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ score: data || 0 })
-  } catch (error) {
-    console.error('Error in GET /api/compatibility:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ score: data || 0 }, 200, requestId)
   }
-}
+)
 
 // Batch compatibility scores for multiple users
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Get current user
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof batchSchema>
+    try {
+      body = await parseBody(req, batchSchema)
+    } catch {
+      throw new ValidationError('userIds array required')
     }
 
-    const { userIds } = await request.json()
+    const { userIds } = body
 
-    if (!userIds || !Array.isArray(userIds)) {
-      return NextResponse.json(
-        { error: 'userIds array required' },
-        { status: 400 }
-      )
-    }
+    // Filter out the current user from the list
+    const otherUserIds = userIds.filter(id => id !== userId)
 
-    // Calculate compatibility for each user
+    // Initialize scores with self-match
     const scores: Record<string, number> = {}
+    if (userIds.includes(userId)) {
+      scores[userId] = 100 // Perfect match with yourself
+    }
 
-    for (const otherUserId of userIds) {
-      if (otherUserId === user.id) {
-        scores[otherUserId] = 100 // Perfect match with yourself
-        continue
+    if (otherUserIds.length === 0) {
+      return apiResponse({ scores }, 200, requestId)
+    }
+
+    // Use batch calculation for efficiency (single DB call instead of N calls)
+    const { data, error } = await (supabase as any).rpc('batch_calculate_compatibility', {
+      current_user_id: userId,
+      other_user_ids: otherUserIds,
+    })
+
+    if (error) {
+      // Fallback to individual calculations if batch fails
+      for (const otherUserId of otherUserIds) {
+        const { data: score } = await (supabase as any).rpc('calculate_compatibility', {
+          user_id_1: userId,
+          user_id_2: otherUserId,
+        })
+        scores[otherUserId] = score || 0
       }
-
-      const { data, error } = await (supabase as any).rpc('calculate_compatibility', {
-        user_id_1: user.id,
-        user_id_2: otherUserId,
-      })
-
-      if (!error) {
-        scores[otherUserId] = data || 0
+    } else if (data) {
+      // Map batch results to scores object
+      for (const result of data) {
+        scores[result.user_id] = result.score || 0
       }
     }
 
-    return NextResponse.json({ scores })
-  } catch (error) {
-    console.error('Error in POST /api/compatibility:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+    return apiResponse({ scores }, 200, requestId)
+  },
+  { rateLimit: 'search' }
+)

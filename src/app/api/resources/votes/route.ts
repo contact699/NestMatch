@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const voteSchema = z.object({
   type: z.enum(['resource', 'faq']),
@@ -8,33 +9,17 @@ const voteSchema = z.object({
   voteType: z.enum(['helpful', 'not_helpful']).nullable(),
 })
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof voteSchema>
+    try {
+      body = await parseBody(req, voteSchema)
+    } catch {
+      throw new ValidationError('Invalid vote data')
     }
 
-    const body = await request.json()
-    const validationResult = voteSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { type, itemId, voteType } = validationResult.data
+    const { type, itemId, voteType } = body
 
     const columnName = type === 'resource' ? 'resource_id' : 'faq_id'
     const tableName = type === 'resource' ? 'resources' : 'faqs'
@@ -43,7 +28,7 @@ export async function POST(request: NextRequest) {
     const { data: existingVote } = await (supabase as any)
       .from('resource_votes')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq(columnName, itemId)
       .single()
 
@@ -71,13 +56,13 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      return NextResponse.json({ vote: null })
+      return apiResponse({ vote: null }, 200, requestId)
     }
 
     if (existingVote) {
       if (existingVote.vote_type === voteType) {
         // Same vote, do nothing
-        return NextResponse.json({ vote: existingVote })
+        return apiResponse({ vote: existingVote }, 200, requestId)
       }
 
       // Change vote
@@ -88,13 +73,7 @@ export async function POST(request: NextRequest) {
         .select()
         .single()
 
-      if (error) {
-        console.error('Error updating vote:', error)
-        return NextResponse.json(
-          { error: 'Failed to update vote' },
-          { status: 500 }
-        )
-      }
+      if (error) throw error
 
       // Update counts
       const { data: item } = await (supabase as any)
@@ -118,12 +97,12 @@ export async function POST(request: NextRequest) {
           .eq('id', itemId)
       }
 
-      return NextResponse.json({ vote })
+      return apiResponse({ vote }, 200, requestId)
     }
 
     // Create new vote
     const insertData: any = {
-      user_id: user.id,
+      user_id: userId,
       vote_type: voteType,
       [columnName]: itemId,
     }
@@ -134,13 +113,7 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
-      console.error('Error creating vote:', error)
-      return NextResponse.json(
-        { error: 'Failed to create vote' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Update count
     const incrementField = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count'
@@ -157,12 +130,6 @@ export async function POST(request: NextRequest) {
         .eq('id', itemId)
     }
 
-    return NextResponse.json({ vote }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/resources/votes:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ vote }, 201, requestId)
   }
-}
+)

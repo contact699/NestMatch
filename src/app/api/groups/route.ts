@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createGroupSchema = z.object({
   name: z.string().min(1).max(255),
@@ -12,23 +13,9 @@ const createGroupSchema = z.object({
 })
 
 // Get user's co-renter groups
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
 
     // Get groups where user is a member
@@ -64,24 +51,18 @@ export async function GET(request: NextRequest) {
 
     query = query.order('created_at', { ascending: false })
 
-    const { data: allGroups, error } = await query as { data: any[]; error: any }
+    const { data: allGroups, error } = await query
 
-    if (error) {
-      console.error('Error fetching groups:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch groups' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Filter to only groups where user is a member
     const userGroups = (allGroups || []).filter((group: any) =>
-      group.members?.some((m: any) => m.user?.user_id === user.id)
+      group.members?.some((m: any) => m.user?.user_id === userId)
     )
 
     // Add user's role to each group
     const enrichedGroups = userGroups.map((group: any) => {
-      const userMember = group.members?.find((m: any) => m.user?.user_id === user.id)
+      const userMember = group.members?.find((m: any) => m.user?.user_id === userId)
       return {
         ...group,
         user_role: userMember?.role || 'member',
@@ -90,41 +71,19 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ groups: enrichedGroups })
-  } catch (error) {
-    console.error('Error in GET /api/groups:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ groups: enrichedGroups }, 200, requestId)
   }
-}
+)
 
 // Create a new co-renter group
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
-    const validationResult = createGroupSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let groupData: z.infer<typeof createGroupSchema>
+    try {
+      groupData = await parseBody(req, createGroupSchema)
+    } catch {
+      throw new ValidationError('Invalid group data')
     }
 
     const {
@@ -134,7 +93,7 @@ export async function POST(request: NextRequest) {
       combined_budget_max,
       target_move_date,
       preferred_cities,
-    } = validationResult.data
+    } = groupData
 
     // Create group
     const { data: group, error: groupError } = await (supabase as any)
@@ -151,36 +110,26 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (groupError) {
-      console.error('Error creating group:', groupError)
-      return NextResponse.json(
-        { error: 'Failed to create group' },
-        { status: 500 }
-      )
-    }
+    if (groupError) throw groupError
 
     // Add creator as admin member
     const { error: memberError } = await (supabase as any)
       .from('co_renter_members')
       .insert({
         group_id: group.id,
-        user_id: user.id,
+        user_id: userId,
         role: 'admin',
-        budget_contribution: combined_budget_min ? combined_budget_min / 2 : null, // Default to half
+        budget_contribution: combined_budget_min ? combined_budget_min / 2 : null,
       })
 
     if (memberError) {
-      console.error('Error adding member:', memberError)
       // Rollback group creation
       await (supabase as any)
         .from('co_renter_groups')
         .delete()
         .eq('id', group.id)
 
-      return NextResponse.json(
-        { error: 'Failed to create group membership' },
-        { status: 500 }
-      )
+      throw memberError
     }
 
     // Fetch complete group with members
@@ -202,12 +151,14 @@ export async function POST(request: NextRequest) {
       .eq('id', group.id)
       .single()
 
-    return NextResponse.json({ group: completeGroup }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/groups:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ group: completeGroup }, 201, requestId)
+  },
+  {
+    rateLimit: 'groupCreate',
+    audit: {
+      action: 'create',
+      resourceType: 'co_renter_group',
+      getResourceId: (_req, res) => res?.group?.id,
+    },
   }
-}
+)

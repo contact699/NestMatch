@@ -1,6 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { z } from 'zod'
+import { withApiHandler, withPublicHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 const updateListingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']).optional(),
@@ -26,17 +31,15 @@ const updateListingSchema = z.object({
   is_active: z.boolean().optional(),
 })
 
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+export const GET = withPublicHandler(
+  async (req, { requestId, params }) => {
+    const { id } = params
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
+    // Use direct client for public queries
+    const supabase = createDirectClient(supabaseUrl, supabaseAnonKey)
 
     // Get the listing with profile info
-    const { data: listing, error } = await (supabase as any)
+    const { data: listing, error } = await supabase
       .from('listings')
       .select(`
         *,
@@ -51,90 +54,52 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (error) {
       if (error.code === 'PGRST116') {
-        return NextResponse.json(
-          { error: 'Listing not found' },
-          { status: 404 }
-        )
+        throw new NotFoundError('Listing not found')
       }
-      console.error('Error fetching listing:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch listing' },
-        { status: 500 }
-      )
+      throw error
     }
 
     // Increment view count (fire and forget)
-    ;(supabase as any)
+    supabase
       .from('listings')
-      .update({ views_count: (listing.views_count || 0) + 1 })
+      .update({ views_count: ((listing as any).views_count || 0) + 1 })
       .eq('id', id)
       .then(() => {})
 
-    return NextResponse.json({ listing })
-  } catch (error) {
-    console.error('Error in GET /api/listings/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ listing }, 200, requestId)
   }
-}
+)
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Check if user owns this listing
     const { data: existingListing, error: fetchError } = await (supabase as any)
       .from('listings')
       .select('user_id')
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (fetchError || !existingListing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Listing not found')
     }
 
-    if (existingListing.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      )
+    if (existingListing.user_id !== userId) {
+      throw new AuthorizationError('Forbidden')
     }
-
-    const body = await request.json()
 
     // Validate input
-    const validationResult = updateListingSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    let updateData: z.infer<typeof updateListingSchema>
+    try {
+      updateData = await parseBody(req, updateListingSchema)
+    } catch {
+      throw new ValidationError('Invalid listing data')
     }
-
-    const updateData = validationResult.data
 
     // Update listing
     const { data: listing, error } = await (supabase as any)
@@ -142,85 +107,56 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .update(updateData)
       .eq('id', id)
       .select()
-      .single() as { data: any; error: any }
+      .single()
 
-    if (error) {
-      console.error('Error updating listing:', error)
-      return NextResponse.json(
-        { error: 'Failed to update listing' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ listing })
-  } catch (error) {
-    console.error('Error in PUT /api/listings/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ listing }, 200, requestId)
+  },
+  {
+    rateLimit: 'listingUpdate',
+    audit: {
+      action: 'update',
+      resourceType: 'listing',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Check if user owns this listing
     const { data: existingListing, error: fetchError } = await (supabase as any)
       .from('listings')
       .select('user_id')
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (fetchError || !existingListing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Listing not found')
     }
 
-    if (existingListing.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      )
+    if (existingListing.user_id !== userId) {
+      throw new AuthorizationError('Forbidden')
     }
 
     // Delete listing
     const { error } = await (supabase as any)
       .from('listings')
       .delete()
-      .eq('id', id) as { error: any }
+      .eq('id', id)
 
-    if (error) {
-      console.error('Error deleting listing:', error)
-      return NextResponse.json(
-        { error: 'Failed to delete listing' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/listings/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'listing',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)

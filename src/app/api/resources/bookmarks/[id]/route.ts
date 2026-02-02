@@ -1,32 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
+    const { searchParams } = new URL(req.url)
     const type = searchParams.get('type')
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
 
     let query = (supabase as any)
       .from('resource_bookmarks')
       .delete()
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
 
     if (type === 'resource') {
       query = query.eq('resource_id', id)
@@ -39,20 +23,8 @@ export async function DELETE(
 
     const { error } = await query
 
-    if (error) {
-      console.error('Error deleting bookmark:', error)
-      return NextResponse.json(
-        { error: 'Failed to delete bookmark' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/resources/bookmarks/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
   }
-}
+)

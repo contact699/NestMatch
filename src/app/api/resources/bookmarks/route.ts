@@ -1,28 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const bookmarkSchema = z.object({
   type: z.enum(['resource', 'faq']),
   itemId: z.string().uuid(),
 })
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     const { data: bookmarks, error } = await (supabase as any)
       .from('resource_bookmarks')
       .select(`
@@ -30,57 +17,29 @@ export async function GET(request: NextRequest) {
         resource:resources(*),
         faq:faqs(*)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching bookmarks:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch bookmarks' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ bookmarks })
-  } catch (error) {
-    console.error('Error in GET /api/resources/bookmarks:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ bookmarks }, 200, requestId)
   }
-}
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof bookmarkSchema>
+    try {
+      body = await parseBody(req, bookmarkSchema)
+    } catch {
+      throw new ValidationError('Invalid bookmark data')
     }
 
-    const body = await request.json()
-    const validationResult = bookmarkSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { type, itemId } = validationResult.data
+    const { type, itemId } = body
 
     const insertData: any = {
-      user_id: user.id,
+      user_id: userId,
     }
 
     if (type === 'resource') {
@@ -98,24 +57,11 @@ export async function POST(request: NextRequest) {
     if (error) {
       // Check if it's a duplicate
       if (error.code === '23505') {
-        return NextResponse.json(
-          { error: 'Already bookmarked' },
-          { status: 409 }
-        )
+        throw new ValidationError('Already bookmarked')
       }
-      console.error('Error creating bookmark:', error)
-      return NextResponse.json(
-        { error: 'Failed to create bookmark' },
-        { status: 500 }
-      )
+      throw error
     }
 
-    return NextResponse.json({ bookmark }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/resources/bookmarks:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ bookmark }, 201, requestId)
   }
-}
+)

@@ -1,30 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET() {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (_req, { supabase, requestId }) => {
+    const { data: faqs, error } = await supabase
+      .from('faqs')
+      .select('*')
+      .order('display_order')
 
-  const { data: faqs, error: fetchError } = await supabase
-    .from('faqs')
-    .select('*')
-    .order('display_order')
+    if (error) throw error
 
-  if (fetchError) {
-    return NextResponse.json({ error: 'Failed to fetch FAQs' }, { status: 500 })
+    return apiResponse({ faqs }, 200, requestId)
   }
+)
 
-  return NextResponse.json({ faqs })
-}
+export const POST = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const body = await req.json()
 
-export async function POST(request: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
-
-  try {
-    const body = await request.json()
-
-    const { data: faq, error: insertError } = await supabase
+    const { data: faq, error } = await supabase
       .from('faqs')
       .insert({
         question: body.question,
@@ -38,14 +32,15 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      return NextResponse.json({ error: 'Failed to create FAQ' }, { status: 500 })
-    }
+    if (error) throw error
 
-    return NextResponse.json({ faq }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating FAQ:', error)
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    return apiResponse({ faq }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'faq',
+      getResourceId: (_req, res) => res?.faq?.id,
+    },
   }
-}
+)

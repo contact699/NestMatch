@@ -1,13 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withPublicHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params
+export const GET = withPublicHandler(
+  async (req, { requestId, params }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
+    const { id } = params
 
     // Try to find by slug first, then by ID
     let query = (supabase as any)
@@ -30,10 +28,7 @@ export async function GET(
     const { data: resource, error } = await query.single()
 
     if (error || !resource) {
-      return NextResponse.json(
-        { error: 'Resource not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Resource not found')
     }
 
     // Increment view count (fire and forget)
@@ -43,12 +38,6 @@ export async function GET(
       .eq('id', resource.id)
       .then(() => {})
 
-    return NextResponse.json({ resource })
-  } catch (error) {
-    console.error('Error in GET /api/resources/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ resource }, 200, requestId)
   }
-}
+)

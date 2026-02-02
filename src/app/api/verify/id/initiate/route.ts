@@ -1,58 +1,34 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 import { initiateIDVerification } from '@/lib/services/certn'
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any; error: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Check if already has pending or completed ID verification
     const { data: existingVerification } = await (supabase as any)
       .from('verifications')
       .select('id, status')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('type', 'id')
       .in('status', ['pending', 'completed'])
-      .single() as { data: any; error: any }
+      .single()
 
     if (existingVerification) {
       if (existingVerification.status === 'completed') {
-        return NextResponse.json(
-          { error: 'ID verification already completed' },
-          { status: 409 }
-        )
+        return apiResponse({ error: 'ID verification already completed' }, 409, requestId)
       }
-      return NextResponse.json(
-        { error: 'ID verification already in progress' },
-        { status: 409 }
-      )
+      return apiResponse({ error: 'ID verification already in progress' }, 409, requestId)
     }
 
     // Parse name into first and last
@@ -68,43 +44,36 @@ export async function POST(request: NextRequest) {
     )
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      )
+      return apiResponse({ error: result.error }, 400, requestId)
     }
 
     // Create verification record
     const { data: verification, error } = await (supabase as any)
       .from('verifications')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         type: 'id',
         provider: 'certn',
         external_id: result.applicationId,
         status: 'pending',
       })
       .select()
-      .single() as { data: any; error: any }
+      .single()
 
-    if (error) {
-      console.error('Error creating verification record:', error)
-      return NextResponse.json(
-        { error: 'Failed to create verification record' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       verification_id: verification.id,
       message: 'ID verification initiated. You will receive an email from Certn to complete the process.',
-    })
-  } catch (error) {
-    console.error('Error in POST /api/verify/id/initiate:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    rateLimit: 'idVerify',
+    audit: {
+      action: 'verification_start',
+      resourceType: 'id_verification',
+      getResourceId: (_req, res) => res?.verification_id,
+    },
   }
-}
+)

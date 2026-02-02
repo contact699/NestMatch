@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createInvitationSchema = z.object({
   invitee_id: z.string().uuid(),
@@ -17,36 +14,20 @@ const respondInvitationSchema = z.object({
 })
 
 // Get invitations for a group
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: groupId } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const groupId = params.id
 
     // Verify user is a member
     const { data: membership } = await (supabase as any)
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!membership) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Access denied')
     }
 
     const { data: invitations, error } = await (supabase as any)
@@ -66,83 +47,50 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('group_id', groupId)
-      .order('created_at', { ascending: false }) as { data: any[]; error: any }
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching invitations:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch invitations' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ invitations: invitations || [] })
-  } catch (error) {
-    console.error('Error in GET /api/groups/[id]/invitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ invitations: invitations || [] }, 200, requestId)
   }
-}
+)
 
 // Send an invitation (admin only)
-export async function POST(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: groupId } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const groupId = params.id
 
     // Verify user is admin
     const { data: membership } = await (supabase as any)
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!membership || membership.role !== 'admin') {
-      return NextResponse.json(
-        { error: 'Only admins can send invitations' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Only admins can send invitations')
     }
 
-    const body = await request.json()
-    const validationResult = createInvitationSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let body: z.infer<typeof createInvitationSchema>
+    try {
+      body = await parseBody(req, createInvitationSchema)
+    } catch {
+      throw new ValidationError('Invalid invitation data')
     }
 
-    const { invitee_id } = validationResult.data
+    const { invitee_id } = body
 
     // Check if invitee exists
     const { data: invitee } = await (supabase as any)
       .from('profiles')
       .select('user_id')
       .eq('user_id', invitee_id)
-      .single() as { data: any }
+      .single()
 
     if (!invitee) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('User not found')
     }
 
     // Check if invitee is already a member
@@ -151,13 +99,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .select('id')
       .eq('group_id', groupId)
       .eq('user_id', invitee_id)
-      .single() as { data: any }
+      .single()
 
     if (existingMember) {
-      return NextResponse.json(
-        { error: 'User is already a member of this group' },
-        { status: 400 }
-      )
+      return apiResponse({ error: 'User is already a member of this group' }, 400, requestId)
     }
 
     // Check for existing pending invitation
@@ -167,13 +112,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .eq('group_id', groupId)
       .eq('invitee_id', invitee_id)
       .eq('status', 'pending')
-      .single() as { data: any }
+      .single()
 
     if (existingInvitation) {
-      return NextResponse.json(
-        { error: 'A pending invitation already exists for this user' },
-        { status: 400 }
-      )
+      return apiResponse({ error: 'A pending invitation already exists for this user' }, 400, requestId)
     }
 
     // Create invitation
@@ -181,7 +123,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .from('co_renter_invitations')
       .insert({
         group_id: groupId,
-        inviter_id: user.id,
+        inviter_id: userId,
         invitee_id,
         status: 'pending',
       })
@@ -195,55 +137,34 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (inviteError) {
-      console.error('Error creating invitation:', inviteError)
-      return NextResponse.json(
-        { error: 'Failed to create invitation' },
-        { status: 500 }
-      )
-    }
+    if (inviteError) throw inviteError
 
-    // TODO: Send notification to invitee
-
-    return NextResponse.json({ invitation }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/groups/[id]/invitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ invitation }, 201, requestId)
+  },
+  {
+    rateLimit: 'invitationSend',
+    audit: {
+      action: 'create',
+      resourceType: 'co_renter_invitation',
+      getResourceId: (_req, res) => res?.invitation?.id,
+    },
   }
-}
+)
 
 // Respond to an invitation (accept/decline)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: groupId } = await params
-    const supabase = await createClient()
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const groupId = params.id
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Validate input
+    let body: z.infer<typeof respondInvitationSchema>
+    try {
+      body = await parseBody(req, respondInvitationSchema)
+    } catch {
+      throw new ValidationError('Invalid response data')
     }
 
-    const body = await request.json()
-    const validationResult = respondInvitationSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { invitation_id, response, budget_contribution } = validationResult.data
+    const { invitation_id, response, budget_contribution } = body
 
     // Get the invitation
     const { data: invitation } = await (supabase as any)
@@ -251,28 +172,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select('*')
       .eq('id', invitation_id)
       .eq('group_id', groupId)
-      .single() as { data: any }
+      .single()
 
     if (!invitation) {
-      return NextResponse.json(
-        { error: 'Invitation not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Invitation not found')
     }
 
     // Verify user is the invitee
-    if (invitation.invitee_id !== user.id) {
-      return NextResponse.json(
-        { error: 'You can only respond to your own invitations' },
-        { status: 403 }
-      )
+    if (invitation.invitee_id !== userId) {
+      throw new AuthorizationError('You can only respond to your own invitations')
     }
 
     if (invitation.status !== 'pending') {
-      return NextResponse.json(
-        { error: 'This invitation has already been responded to' },
-        { status: 400 }
-      )
+      return apiResponse({ error: 'This invitation has already been responded to' }, 400, requestId)
     }
 
     // Update invitation status
@@ -291,29 +203,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         .from('co_renter_members')
         .insert({
           group_id: groupId,
-          user_id: user.id,
+          user_id: userId,
           role: 'member',
           budget_contribution: budget_contribution || null,
         })
 
-      if (memberError) {
-        console.error('Error adding member:', memberError)
-        return NextResponse.json(
-          { error: 'Failed to join group' },
-          { status: 500 }
-        )
-      }
+      if (memberError) throw memberError
     }
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       message: response === 'accept' ? 'You have joined the group' : 'Invitation declined',
-    })
-  } catch (error) {
-    console.error('Error in PUT /api/groups/[id]/invitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'co_renter_invitation',
+    },
   }
-}
+)

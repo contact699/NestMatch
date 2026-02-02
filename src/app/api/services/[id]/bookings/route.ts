@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createBookingSchema = z.object({
   service_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -22,24 +19,11 @@ const updateBookingSchema = z.object({
 })
 
 // Get bookings for a service provider
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: providerId } = await params
-    const supabase = await createClient()
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id: providerId } = params
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const role = searchParams.get('role') // 'provider' or 'customer'
 
@@ -48,9 +32,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       .from('service_providers')
       .select('user_id')
       .eq('id', providerId)
-      .single() as { data: any }
+      .single()
 
-    const isProvider = provider?.user_id === user.id
+    const isProvider = provider?.user_id === userId
 
     let query = (supabase as any)
       .from('service_bookings')
@@ -77,12 +61,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     // Filter by role if specified
     if (role === 'customer') {
-      query = query.eq('customer_id', user.id)
+      query = query.eq('customer_id', userId)
     } else if (role === 'provider' && isProvider) {
       // Provider sees all their bookings
     } else {
       // Default: only show user's own bookings
-      query = query.eq('customer_id', user.id)
+      query = query.eq('customer_id', userId)
     }
 
     if (status) {
@@ -91,91 +75,55 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     query = query.order('service_date', { ascending: true })
 
-    const { data: bookings, error } = await query as { data: any[]; error: any }
+    const { data: bookings, error } = await query
 
-    if (error) {
-      console.error('Error fetching bookings:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch bookings' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ bookings: bookings || [] })
-  } catch (error) {
-    console.error('Error in GET /api/services/[id]/bookings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ bookings: bookings || [] }, 200, requestId)
   }
-}
+)
 
 // Create a booking
-export async function POST(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: providerId } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id: providerId } = params
 
     // Verify provider exists and is active
     const { data: provider } = await (supabase as any)
       .from('service_providers')
       .select('id, is_active, user_id')
       .eq('id', providerId)
-      .single() as { data: any }
+      .single()
 
     if (!provider) {
-      return NextResponse.json(
-        { error: 'Service provider not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Service provider not found')
     }
 
     if (!provider.is_active) {
-      return NextResponse.json(
-        { error: 'This service provider is not currently accepting bookings' },
-        { status: 400 }
-      )
+      throw new ValidationError('This service provider is not currently accepting bookings')
     }
 
     // Cannot book your own service
-    if (provider.user_id === user.id) {
-      return NextResponse.json(
-        { error: 'You cannot book your own service' },
-        { status: 400 }
-      )
+    if (provider.user_id === userId) {
+      throw new ValidationError('You cannot book your own service')
     }
 
-    const body = await request.json()
-    const validationResult = createBookingSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let body: z.infer<typeof createBookingSchema>
+    try {
+      body = await parseBody(req, createBookingSchema)
+    } catch {
+      throw new ValidationError('Invalid booking data')
     }
 
-    const { service_date, details } = validationResult.data
+    const { service_date, details } = body
 
     // Create booking
     const { data: booking, error: createError } = await (supabase as any)
       .from('service_bookings')
       .insert({
         provider_id: providerId,
-        customer_id: user.id,
+        customer_id: userId,
         service_date,
         details,
         status: 'requested',
@@ -189,55 +137,33 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (createError) {
-      console.error('Error creating booking:', createError)
-      return NextResponse.json(
-        { error: 'Failed to create booking' },
-        { status: 500 }
-      )
-    }
+    if (createError) throw createError
 
-    // TODO: Send notification to provider
-
-    return NextResponse.json({ booking }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/services/[id]/bookings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ booking }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'service_booking',
+      getResourceId: (_req, res) => res?.booking?.id,
+    },
   }
-}
+)
 
 // Update booking status (provider only, or customer for cancellation)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: providerId } = await params
-    const supabase = await createClient()
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id: providerId } = params
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Validate input
+    let body: z.infer<typeof updateBookingSchema>
+    try {
+      body = await parseBody(req, updateBookingSchema)
+    } catch {
+      throw new ValidationError('Invalid booking update data')
     }
 
-    const body = await request.json()
-    const validationResult = updateBookingSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { booking_id, status, total_amount } = validationResult.data
+    const { booking_id, status, total_amount } = body
 
     // Get booking
     const { data: booking } = await (supabase as any)
@@ -248,34 +174,25 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `)
       .eq('id', booking_id)
       .eq('provider_id', providerId)
-      .single() as { data: any }
+      .single()
 
     if (!booking) {
-      return NextResponse.json(
-        { error: 'Booking not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Booking not found')
     }
 
-    const isProvider = booking.provider?.user_id === user.id
-    const isCustomer = booking.customer_id === user.id
+    const isProvider = booking.provider?.user_id === userId
+    const isCustomer = booking.customer_id === userId
 
     // Check permissions
     if (status === 'cancelled') {
       // Both can cancel
       if (!isProvider && !isCustomer) {
-        return NextResponse.json(
-          { error: 'Access denied' },
-          { status: 403 }
-        )
+        throw new AuthorizationError('Access denied')
       }
     } else {
       // Only provider can confirm/complete
       if (!isProvider) {
-        return NextResponse.json(
-          { error: 'Only the service provider can update booking status' },
-          { status: 403 }
-        )
+        throw new AuthorizationError('Only the service provider can update booking status')
       }
     }
 
@@ -295,20 +212,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select()
       .single()
 
-    if (updateError) {
-      console.error('Error updating booking:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update booking' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ booking: updatedBooking })
-  } catch (error) {
-    console.error('Error in PUT /api/services/[id]/bookings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ booking: updatedBooking }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'service_booking',
+    },
   }
-}
+)

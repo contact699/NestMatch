@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 import {
   createConnectAccount,
   createAccountLink,
@@ -7,42 +7,25 @@ import {
 } from '@/lib/services/stripe'
 
 // Start or continue Connect onboarding
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Check if user already has a Connect account
     let { data: payoutAccount } = await (supabase as any)
       .from('payout_accounts')
       .select('*')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     let stripeAccountId: string
 
@@ -64,9 +47,9 @@ export async function POST(request: NextRequest) {
             details_submitted: account.details_submitted,
             updated_at: new Date().toISOString(),
           })
-          .eq('user_id', user.id)
+          .eq('user_id', userId)
 
-        return NextResponse.json({
+        return apiResponse({
           status: 'complete',
           account: {
             id: account.id,
@@ -74,26 +57,22 @@ export async function POST(request: NextRequest) {
             payouts_enabled: account.payouts_enabled,
             details_submitted: account.details_submitted,
           },
-        })
+        }, 200, requestId)
       }
     } else {
       // Create new Connect account
-      const account = await createConnectAccount(profile.email, user.id)
+      const account = await createConnectAccount(profile.email, userId)
       stripeAccountId = account.id
 
       // Save to database
-      const { error: insertError } = await (supabase as any)
+      await (supabase as any)
         .from('payout_accounts')
         .insert({
-          user_id: user.id,
+          user_id: userId,
           stripe_connect_account_id: account.id,
           account_type: 'express',
           status: 'pending',
         })
-
-      if (insertError) {
-        console.error('Error saving payout account:', insertError)
-      }
     }
 
     // Create account link for onboarding
@@ -111,18 +90,18 @@ export async function POST(request: NextRequest) {
         onboarding_url: accountLink.url,
         updated_at: new Date().toISOString(),
       })
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
 
-    return NextResponse.json({
+    return apiResponse({
       status: 'onboarding',
       onboarding_url: accountLink.url,
       expires_at: new Date(accountLink.expires_at * 1000).toISOString(),
-    })
-  } catch (error) {
-    console.error('Error in POST /api/connect/onboard:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'connect_account',
+    },
   }
-}
+)

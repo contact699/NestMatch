@@ -1,32 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 import {
   createPaymentIntent,
   getOrCreateCustomer,
   calculatePlatformFee,
 } from '@/lib/services/stripe'
 
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
-
 // Pay for an expense share
-export async function POST(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: expenseId } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id: expenseId } = params
 
     // Get expense and user's share
     const { data: expense } = await (supabase as any)
@@ -40,13 +24,10 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', expenseId)
-      .single() as { data: any }
+      .single()
 
     if (!expense) {
-      return NextResponse.json(
-        { error: 'Expense not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Expense not found')
     }
 
     // Get user's share
@@ -54,52 +35,43 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       .from('expense_shares')
       .select('*')
       .eq('expense_id', expenseId)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!share) {
-      return NextResponse.json(
-        { error: 'You do not have a share in this expense' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('You do not have a share in this expense')
     }
 
     if (share.status === 'paid') {
-      return NextResponse.json(
-        { error: 'This share has already been paid' },
-        { status: 400 }
-      )
+      throw new ValidationError('This share has already been paid')
     }
 
     // Get payer profile
     const { data: payerProfile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!payerProfile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer(
-      user.id,
+      userId,
       payerProfile.email,
       payerProfile.name
     )
 
     // Check if creator has a Connect account for direct payment
     let recipientConnectAccountId: string | undefined
-    if (expense.created_by !== user.id) {
+    if (expense.created_by !== userId) {
       const { data: payoutAccount } = await (supabase as any)
         .from('payout_accounts')
         .select('stripe_connect_account_id, charges_enabled')
         .eq('user_id', expense.created_by)
-        .single() as { data: any }
+        .single()
 
       if (payoutAccount?.charges_enabled) {
         recipientConnectAccountId = payoutAccount.stripe_connect_account_id
@@ -115,7 +87,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       metadata: {
         expense_id: expenseId,
         share_id: share.id,
-        payer_id: user.id,
+        payer_id: userId,
         recipient_id: expense.created_by,
       },
     })
@@ -126,7 +98,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     const { data: payment } = await (supabase as any)
       .from('payments')
       .insert({
-        payer_id: user.id,
+        payer_id: userId,
         recipient_id: expense.created_by,
         listing_id: expense.listing_id,
         amount: share.amount,
@@ -153,17 +125,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       })
       .eq('id', share.id)
 
-    return NextResponse.json({
+    return apiResponse({
       payment_intent_id: paymentIntent.id,
       client_secret: paymentIntent.client_secret,
       amount: share.amount,
       payment_id: payment?.id,
-    })
-  } catch (error) {
-    console.error('Error in POST /api/expenses/[id]/pay:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    rateLimit: 'paymentCreate',
+    audit: {
+      action: 'create',
+      resourceType: 'expense_payment',
+      getResourceId: (_req, res) => res?.payment_id,
+    },
   }
-}
+)

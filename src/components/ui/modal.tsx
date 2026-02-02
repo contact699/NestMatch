@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,6 +19,12 @@ interface ModalProps {
   closeOnEscape?: boolean
   /** Additional class name for the modal container */
   className?: string
+  /** Accessible label for the modal */
+  ariaLabel?: string
+  /** ID of element that labels the modal (typically the title) */
+  ariaLabelledBy?: string
+  /** ID of element that describes the modal */
+  ariaDescribedBy?: string
 }
 
 const sizeClasses = {
@@ -53,11 +59,36 @@ export function Modal({
   closeOnBackdrop = true,
   closeOnEscape = true,
   className,
+  ariaLabel,
+  ariaLabelledBy,
+  ariaDescribedBy,
 }: ModalProps) {
-  const handleEscape = useCallback(
+  const modalRef = useRef<HTMLDivElement>(null)
+  const previousActiveElement = useRef<HTMLElement | null>(null)
+
+  // Handle keyboard events
+  const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape' && closeOnEscape) {
         onClose()
+        return
+      }
+
+      // Focus trap - Tab navigation
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        const firstElement = focusableElements[0]
+        const lastElement = focusableElements[focusableElements.length - 1]
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement?.focus()
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement?.focus()
+        }
       }
     },
     [onClose, closeOnEscape]
@@ -65,15 +96,32 @@ export function Modal({
 
   useEffect(() => {
     if (isOpen) {
-      document.addEventListener('keydown', handleEscape)
+      // Store current focus to return later
+      previousActiveElement.current = document.activeElement as HTMLElement
+
+      // Add keyboard listener
+      document.addEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'hidden'
+
+      // Focus first focusable element in modal
+      requestAnimationFrame(() => {
+        const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        firstFocusable?.focus()
+      })
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape)
+      document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
+
+      // Return focus to previous element
+      if (!isOpen && previousActiveElement.current) {
+        previousActiveElement.current.focus()
+      }
     }
-  }, [isOpen, handleEscape])
+  }, [isOpen, handleKeyDown])
 
   if (!isOpen) return null
 
@@ -88,6 +136,7 @@ export function Modal({
 
       {/* Modal */}
       <div
+        ref={modalRef}
         className={cn(
           'relative bg-white rounded-xl w-full max-h-[90vh] overflow-y-auto shadow-xl',
           sizeClasses[size],
@@ -95,6 +144,9 @@ export function Modal({
         )}
         role="dialog"
         aria-modal="true"
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        aria-describedby={ariaDescribedBy}
       >
         {children}
       </div>
@@ -138,14 +190,16 @@ export function ModalHeader({ children, onClose, className }: ModalHeaderProps) 
 interface ModalTitleProps {
   children: React.ReactNode
   className?: string
+  /** ID for aria-labelledby reference */
+  id?: string
 }
 
 /**
  * Modal title text.
  */
-export function ModalTitle({ children, className }: ModalTitleProps) {
+export function ModalTitle({ children, className, id = 'modal-title' }: ModalTitleProps) {
   return (
-    <h2 className={cn('text-lg font-semibold text-gray-900', className)}>
+    <h2 id={id} className={cn('text-lg font-semibold text-gray-900', className)}>
       {children}
     </h2>
   )

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody, NotFoundError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 import {
   getOrCreateCustomer,
   createSetupIntent,
@@ -10,39 +11,31 @@ import {
   setDefaultPaymentMethod,
 } from '@/lib/services/stripe'
 
+const addMethodSchema = z.object({
+  payment_method_id: z.string(),
+  set_as_default: z.boolean().optional(),
+})
+
+const deleteMethodSchema = z.object({
+  payment_method_id: z.string(),
+})
+
 // Get payment methods and setup intent
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(user.id, profile.email, profile.name)
+    const customer = await getOrCreateCustomer(userId, profile.email, profile.name)
 
     // Get payment methods from Stripe
     const stripePaymentMethods = await listPaymentMethods(customer.id)
@@ -51,8 +44,8 @@ export async function GET(request: NextRequest) {
     const { data: localMethods } = await (supabase as any)
       .from('payment_methods')
       .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }) as { data: any[] }
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
     // Create a setup intent for adding new payment methods
     const setupIntent = await createSetupIntent(customer.id)
@@ -76,72 +69,42 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({
+    return apiResponse({
       payment_methods: paymentMethods,
       setup_intent: {
         client_secret: setupIntent.client_secret,
       },
       customer_id: customer.id,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/payments/methods:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
-
-const addMethodSchema = z.object({
-  payment_method_id: z.string(),
-  set_as_default: z.boolean().optional(),
-})
+)
 
 // Add a payment method
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof addMethodSchema>
+    try {
+      body = await parseBody(req, addMethodSchema)
+    } catch {
+      throw new ValidationError('Invalid payment method data')
     }
 
-    const body = await request.json()
-
-    const validationResult = addMethodSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { payment_method_id, set_as_default } = validationResult.data
+    const { payment_method_id, set_as_default } = body
 
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!profile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(user.id, profile.email, profile.name)
+    const customer = await getOrCreateCustomer(userId, profile.email, profile.name)
 
     // Attach payment method to customer
     const paymentMethod = await attachPaymentMethod(payment_method_id, customer.id)
@@ -154,14 +117,14 @@ export async function POST(request: NextRequest) {
       await (supabase as any)
         .from('payment_methods')
         .update({ is_default: false })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
     }
 
     // Save to local database
-    const { data: savedMethod, error: saveError } = await (supabase as any)
+    await (supabase as any)
       .from('payment_methods')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         stripe_payment_method_id: payment_method_id,
         type: paymentMethod.type,
         last_four: paymentMethod.card?.last4 || null,
@@ -170,14 +133,8 @@ export async function POST(request: NextRequest) {
         exp_year: paymentMethod.card?.exp_year || null,
         is_default: set_as_default || false,
       })
-      .select()
-      .single()
 
-    if (saveError) {
-      console.error('Error saving payment method:', saveError)
-    }
-
-    return NextResponse.json({
+    return apiResponse({
       payment_method: {
         id: paymentMethod.id,
         type: paymentMethod.type,
@@ -189,62 +146,39 @@ export async function POST(request: NextRequest) {
         } : null,
         is_default: set_as_default || false,
       },
-    }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/payments/methods:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'payment_method',
+    },
   }
-}
-
-const deleteMethodSchema = z.object({
-  payment_method_id: z.string(),
-})
+)
 
 // Remove a payment method
-export async function DELETE(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof deleteMethodSchema>
+    try {
+      body = await parseBody(req, deleteMethodSchema)
+    } catch {
+      throw new ValidationError('payment_method_id is required')
     }
 
-    const body = await request.json()
-
-    const validationResult = deleteMethodSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { payment_method_id } = validationResult.data
+    const { payment_method_id } = body
 
     // Verify user owns this payment method
     const { data: localMethod } = await (supabase as any)
       .from('payment_methods')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('stripe_payment_method_id', payment_method_id)
-      .single() as { data: any }
+      .single()
 
     if (!localMethod) {
-      return NextResponse.json(
-        { error: 'Payment method not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Payment method not found')
     }
 
     // Detach from Stripe
@@ -256,12 +190,12 @@ export async function DELETE(request: NextRequest) {
       .delete()
       .eq('stripe_payment_method_id', payment_method_id)
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/payments/methods:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'payment_method',
+    },
   }
-}
+)

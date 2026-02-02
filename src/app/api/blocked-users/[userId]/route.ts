@@ -1,49 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 
-interface RouteParams {
-  params: Promise<{ userId: string }>
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { userId: blockedUserId } = await params
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const blockedUserId = params.userId
 
     // Unblock user
     const { error } = await (supabase as any)
       .from('blocked_users')
       .delete()
-      .eq('user_id', user.id)
-      .eq('blocked_user_id', blockedUserId) as { error: any }
+      .eq('user_id', userId)
+      .eq('blocked_user_id', blockedUserId)
 
-    if (error) {
-      console.error('Error unblocking user:', error)
-      return NextResponse.json(
-        { error: 'Failed to unblock user' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/blocked-users/[userId]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'blocked_user',
+    },
   }
-}
+)

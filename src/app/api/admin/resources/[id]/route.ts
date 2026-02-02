@@ -1,37 +1,28 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
 
-  const { data: resource, error: fetchError } = await supabase
-    .from('resources')
-    .select('*')
-    .eq('id', id)
-    .single()
+    const { data: resource, error: fetchError } = await supabase
+      .from('resources')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-  if (fetchError || !resource) {
-    return NextResponse.json({ error: 'Resource not found' }, { status: 404 })
+    if (fetchError || !resource) {
+      throw new NotFoundError('Resource not found')
+    }
+
+    return apiResponse({ resource }, 200, requestId)
   }
+)
 
-  return NextResponse.json({ resource })
-}
-
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
-
-  try {
-    const body = await request.json()
+export const PUT = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
+    const body = await req.json()
 
     const { data: resource, error: updateError } = await supabase
       .from('resources')
@@ -53,34 +44,37 @@ export async function PUT(
       .select()
       .single()
 
-    if (updateError) {
-      console.error('Update error:', updateError)
-      return NextResponse.json({ error: 'Failed to update resource' }, { status: 500 })
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ resource })
-  } catch (error) {
-    console.error('Error updating resource:', error)
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    return apiResponse({ resource }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'resource',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const DELETE = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
 
-  const { error: deleteError } = await supabase
-    .from('resources')
-    .delete()
-    .eq('id', id)
+    const { error: deleteError } = await supabase
+      .from('resources')
+      .delete()
+      .eq('id', id)
 
-  if (deleteError) {
-    return NextResponse.json({ error: 'Failed to delete resource' }, { status: 500 })
+    if (deleteError) throw deleteError
+
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'resource',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-
-  return NextResponse.json({ success: true })
-}
+)

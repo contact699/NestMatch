@@ -34,12 +34,24 @@ export function LoadingSpinner({
   className,
   text,
 }: LoadingSpinnerProps) {
+  const label = text || 'Loading'
+
   return (
-    <div className={cn('flex flex-col items-center justify-center', className)}>
+    <div
+      className={cn('flex flex-col items-center justify-center', className)}
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
       <Loader2
         className={cn('animate-spin text-blue-600', sizeClasses[size])}
+        aria-hidden="true"
       />
-      {text && <p className="mt-4 text-gray-500 text-sm">{text}</p>}
+      {text ? (
+        <p className="mt-4 text-gray-500 text-sm">{text}</p>
+      ) : (
+        <span className="sr-only">{label}</span>
+      )}
     </div>
   )
 }
@@ -64,6 +76,9 @@ export function PageLoading({ text = 'Loading...', minHeight = '400px' }: PageLo
     <div
       className="flex items-center justify-center"
       style={{ minHeight }}
+      role="progressbar"
+      aria-valuetext={text}
+      aria-label="Page loading"
     >
       <LoadingSpinner size="lg" text={text} />
     </div>

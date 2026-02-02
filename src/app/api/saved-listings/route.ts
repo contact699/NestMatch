@@ -1,23 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody, NotFoundError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
+const saveSchema = z.object({
+  listing_id: z.string().uuid('Invalid listing ID'),
+})
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get saved listings with full listing data
     const { data: savedListings, error } = await (supabase as any)
       .from('saved_listings')
@@ -35,116 +26,72 @@ export async function GET(request: NextRequest) {
           )
         )
       `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }) as { data: any[] | null; error: any }
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching saved listings:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch saved listings' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Transform the data to include listing directly
     const listings = (savedListings || [])
-      .filter((s) => s.listings !== null)
-      .map((s) => ({
+      .filter((s: any) => s.listings !== null)
+      .map((s: any) => ({
         ...s.listings,
         saved_at: s.created_at,
         saved_id: s.id,
       }))
 
-    return NextResponse.json({ listings })
-  } catch (error) {
-    console.error('Error in GET /api/saved-listings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ listings }, 200, requestId)
   }
-}
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof saveSchema>
+    try {
+      body = await parseBody(req, saveSchema)
+    } catch {
+      throw new ValidationError('listing_id is required')
     }
 
-    const body = await request.json()
     const { listing_id } = body
-
-    if (!listing_id) {
-      return NextResponse.json(
-        { error: 'listing_id is required' },
-        { status: 400 }
-      )
-    }
 
     // Check if listing exists
     const { data: listing, error: listingError } = await (supabase as any)
       .from('listings')
       .select('id')
       .eq('id', listing_id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (listingError || !listing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Listing not found')
     }
 
     // Check if already saved
     const { data: existing } = await (supabase as any)
       .from('saved_listings')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('listing_id', listing_id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'Listing already saved' },
-        { status: 409 }
-      )
+      return apiResponse({ error: 'Listing already saved' }, 409, requestId)
     }
 
     // Save listing
     const { data: saved, error } = await (supabase as any)
       .from('saved_listings')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         listing_id,
       })
       .select()
-      .single() as { data: any; error: any }
+      .single()
 
-    if (error) {
-      console.error('Error saving listing:', error)
-      return NextResponse.json(
-        { error: 'Failed to save listing' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ saved }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/saved-listings:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+    return apiResponse({ saved }, 201, requestId)
+  },
+  { rateLimit: 'default' }
+)

@@ -1,30 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET() {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (_req, { supabase, requestId }) => {
+    const { data: resources, error } = await supabase
+      .from('resources')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  const { data: resources, error: fetchError } = await supabase
-    .from('resources')
-    .select('*')
-    .order('created_at', { ascending: false })
+    if (error) throw error
 
-  if (fetchError) {
-    return NextResponse.json({ error: 'Failed to fetch resources' }, { status: 500 })
+    return apiResponse({ resources }, 200, requestId)
   }
+)
 
-  return NextResponse.json({ resources })
-}
+export const POST = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const body = await req.json()
 
-export async function POST(request: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
-
-  try {
-    const body = await request.json()
-
-    const { data: resource, error: insertError } = await supabase
+    const { data: resource, error } = await supabase
       .from('resources')
       .insert({
         title: body.title,
@@ -42,14 +36,15 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      return NextResponse.json({ error: 'Failed to create resource' }, { status: 500 })
-    }
+    if (error) throw error
 
-    return NextResponse.json({ resource }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating resource:', error)
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    return apiResponse({ resource }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'resource',
+      getResourceId: (_req, res) => res?.resource?.id,
+    },
   }
-}
+)

@@ -1,8 +1,9 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withPublicHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET() {
-  try {
+export const GET = withPublicHandler(
+  async (req, { requestId }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
 
     const { data: categories, error } = await (supabase as any)
@@ -11,20 +12,8 @@ export async function GET() {
       .eq('is_active', true)
       .order('display_order', { ascending: true })
 
-    if (error) {
-      console.error('Error fetching categories:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch categories' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ categories })
-  } catch (error) {
-    console.error('Error in GET /api/resources/categories:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ categories }, 200, requestId)
   }
-}
+)

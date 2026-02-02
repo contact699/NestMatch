@@ -1,27 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
 
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
-
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: messageId } = await params
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const messageId = params.id
 
     // Get message and verify user can mark it as read
     const { data: message, error: messageError } = await (supabase as any)
@@ -35,52 +17,31 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', messageId)
-      .single() as { data: any; error: any }
+      .single()
 
     if (messageError || !message) {
-      return NextResponse.json(
-        { error: 'Message not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Message not found')
     }
 
     const conversation = message.conversations as any
 
     // User must be a participant and not the sender
-    if (!conversation.participant_ids.includes(user.id)) {
-      return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
-      )
+    if (!conversation.participant_ids.includes(userId)) {
+      throw new AuthorizationError('Forbidden')
     }
 
-    if (message.sender_id === user.id) {
-      return NextResponse.json(
-        { error: 'Cannot mark your own message as read' },
-        { status: 400 }
-      )
+    if (message.sender_id === userId) {
+      return apiResponse({ error: 'Cannot mark your own message as read' }, 400, requestId)
     }
 
     // Mark as read
     const { error } = await (supabase as any)
       .from('messages')
       .update({ read_at: new Date().toISOString() })
-      .eq('id', messageId) as { error: any }
+      .eq('id', messageId)
 
-    if (error) {
-      console.error('Error marking message as read:', error)
-      return NextResponse.json(
-        { error: 'Failed to mark message as read' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in PUT /api/messages/[id]/read:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
   }
-}
+)

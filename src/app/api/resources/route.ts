@@ -1,10 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withPublicHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET(request: NextRequest) {
-  try {
+export const GET = withPublicHandler(
+  async (req, { requestId }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
+
+    const { searchParams } = new URL(req.url)
 
     const search = searchParams.get('q')
     const category = searchParams.get('category')
@@ -68,25 +70,14 @@ export async function GET(request: NextRequest) {
 
     const { data: resources, error, count } = await query
 
-    if (error) {
-      console.error('Error fetching resources:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch resources' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({
+    return apiResponse({
       resources,
       total: count,
       limit,
       offset,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/resources:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
-  }
-}
+    }, 200, requestId)
+  },
+  { rateLimit: 'search' }
+)

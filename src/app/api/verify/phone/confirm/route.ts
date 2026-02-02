@@ -1,51 +1,31 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { verifyCode } from '@/lib/services/twilio'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { verifyCode } from '@/lib/services/twilio'
+import { ValidationError } from '@/lib/error-reporter'
 
 const verifySchema = z.object({
   phone: z.string().min(10, 'Invalid phone number'),
   code: z.string().length(6, 'Code must be 6 digits'),
 })
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Validate input
-    const validationResult = verifySchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Invalid input', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    let phone: string, code: string
+    try {
+      const body = await parseBody(req, verifySchema)
+      phone = body.phone
+      code = body.code
+    } catch {
+      throw new ValidationError('Invalid input')
     }
-
-    const { phone, code } = validationResult.data
 
     // Verify code with Twilio
     const result = await verifyCode(phone, code)
 
     if (!result.success) {
-      return NextResponse.json(
-        { error: result.error },
-        { status: 400 }
-      )
+      return apiResponse({ error: result.error }, 400, requestId)
     }
 
     // Update profile with verified phone
@@ -55,39 +35,34 @@ export async function POST(request: NextRequest) {
         phone,
         phone_verified: true,
       })
-      .eq('user_id', user.id) as { error: any }
+      .eq('user_id', userId)
 
-    if (updateError) {
-      console.error('Error updating profile:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update profile' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
     // Update verification level if email is also verified
     const { data: profile } = await (supabase as any)
       .from('profiles')
       .select('email_verified')
-      .eq('user_id', user.id)
-      .single() as { data: any; error: any }
+      .eq('user_id', userId)
+      .single()
 
     if (profile?.email_verified) {
       await (supabase as any)
         .from('profiles')
         .update({ verification_level: 'verified' })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
     }
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       message: 'Phone verified successfully',
-    })
-  } catch (error) {
-    console.error('Error in POST /api/verify/phone/confirm:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    rateLimit: 'phoneVerify',
+    audit: {
+      action: 'verification_complete',
+      resourceType: 'phone_verification',
+    },
   }
-}
+)

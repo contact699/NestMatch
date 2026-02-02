@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const updateCohabitationSchema = z.object({
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -12,22 +9,9 @@ const updateCohabitationSchema = z.object({
 })
 
 // Get a specific cohabitation
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     const { data: cohabitation, error } = await (supabase as any)
       .from('cohabitation_periods')
@@ -69,109 +53,76 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (error || !cohabitation) {
-      return NextResponse.json(
-        { error: 'Cohabitation not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Cohabitation not found')
     }
 
     // Verify user is a participant
-    if (cohabitation.provider_id !== user.id && cohabitation.seeker_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Access denied' },
-        { status: 403 }
-      )
+    if (cohabitation.provider_id !== userId && cohabitation.seeker_id !== userId) {
+      throw new AuthorizationError('Access denied')
     }
 
     // Add review status
     const userHasReviewed = cohabitation.reviews?.some(
-      (r: any) => r.reviewer_id === user.id
+      (r: any) => r.reviewer_id === userId
     )
     const canReview = !userHasReviewed && (
       cohabitation.status === 'completed' ||
       (cohabitation.status === 'active' && cohabitation.start_date && new Date(cohabitation.start_date) < new Date())
     )
 
-    return NextResponse.json({
+    return apiResponse({
       cohabitation: {
         ...cohabitation,
         user_has_reviewed: userHasReviewed,
         can_review: canReview,
-        is_provider: cohabitation.provider_id === user.id,
+        is_provider: cohabitation.provider_id === userId,
       },
-    })
-  } catch (error) {
-    console.error('Error in GET /api/cohabitations/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)
 
 // Update a cohabitation (provider only)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Get existing cohabitation
     const { data: existingCohabitation } = await (supabase as any)
       .from('cohabitation_periods')
       .select('*')
       .eq('id', id)
-      .single() as { data: any }
+      .single()
 
     if (!existingCohabitation) {
-      return NextResponse.json(
-        { error: 'Cohabitation not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Cohabitation not found')
     }
 
     // Only provider can update
-    if (existingCohabitation.provider_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Only the provider can update the cohabitation' },
-        { status: 403 }
-      )
+    if (existingCohabitation.provider_id !== userId) {
+      throw new AuthorizationError('Only the provider can update the cohabitation')
     }
 
-    const body = await request.json()
-    const validationResult = updateCohabitationSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let body: z.infer<typeof updateCohabitationSchema>
+    try {
+      body = await parseBody(req, updateCohabitationSchema)
+    } catch {
+      throw new ValidationError('Invalid cohabitation data')
     }
 
     const updateData: Record<string, any> = {
       updated_at: new Date().toISOString(),
     }
 
-    if (validationResult.data.end_date !== undefined) {
-      updateData.end_date = validationResult.data.end_date
+    if (body.end_date !== undefined) {
+      updateData.end_date = body.end_date
     }
 
-    if (validationResult.data.status !== undefined) {
-      updateData.status = validationResult.data.status
+    if (body.status !== undefined) {
+      updateData.status = body.status
     }
 
     const { data: cohabitation, error: updateError } = await (supabase as any)
@@ -195,20 +146,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (updateError) {
-      console.error('Error updating cohabitation:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update cohabitation' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ cohabitation })
-  } catch (error) {
-    console.error('Error in PUT /api/cohabitations/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ cohabitation }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'cohabitation',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)

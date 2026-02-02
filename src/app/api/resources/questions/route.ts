@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 import { sendEmail } from '@/lib/email'
 import { questionReceivedEmail } from '@/lib/email-templates'
 
@@ -11,38 +12,22 @@ const questionSchema = z.object({
   categoryId: z.string().uuid().optional(),
 })
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof questionSchema>
+    try {
+      body = await parseBody(req, questionSchema)
+    } catch {
+      throw new ValidationError('Invalid question data')
     }
 
-    const body = await request.json()
-    const validationResult = questionSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { question, context, province, categoryId } = validationResult.data
+    const { question, context, province, categoryId } = body
 
     const { data: submittedQuestion, error } = await (supabase as any)
       .from('submitted_questions')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         question,
         context: context || null,
         province: province || null,
@@ -52,20 +37,15 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (error) {
-      console.error('Error submitting question:', error)
-      return NextResponse.json(
-        { error: 'Failed to submit question' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Send confirmation email if user has email (fire and forget)
-    if (user?.email) {
+    const { data: userData } = await supabase.auth.getUser()
+    if (userData?.user?.email) {
       const { data: profile } = await (supabase as any)
         .from('profiles')
         .select('name')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single()
 
       const emailContent = questionReceivedEmail({
@@ -75,37 +55,17 @@ export async function POST(request: NextRequest) {
 
       // Fire and forget - don't await to avoid blocking response
       sendEmail({
-        to: user.email,
+        to: userData.user.email,
         ...emailContent,
       }).catch((err) => console.error('Error sending confirmation email:', err))
     }
 
-    return NextResponse.json({ question: submittedQuestion }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/resources/questions:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ question: submittedQuestion }, 201, requestId)
   }
-}
+)
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     const { data: questions, error } = await (supabase as any)
       .from('submitted_questions')
       .select(`
@@ -113,23 +73,11 @@ export async function GET(request: NextRequest) {
         category:resource_categories(id, name),
         answered_faq:faqs(id, question, answer)
       `)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching questions:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch questions' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ questions })
-  } catch (error) {
-    console.error('Error in GET /api/resources/questions:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ questions }, 200, requestId)
   }
-}
+)

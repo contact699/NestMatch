@@ -1,27 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET(request: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
 
-  const { searchParams } = new URL(request.url)
-  const status = searchParams.get('status')
+    let query = supabase
+      .from('submitted_questions')
+      .select('*')
+      .order('created_at', { ascending: false })
 
-  let query = supabase
-    .from('submitted_questions')
-    .select('*')
-    .order('created_at', { ascending: false })
+    if (status) {
+      query = query.eq('status', status)
+    }
 
-  if (status) {
-    query = query.eq('status', status)
+    const { data: questions, error: fetchError } = await query
+
+    if (fetchError) throw fetchError
+
+    return apiResponse({ questions }, 200, requestId)
   }
-
-  const { data: questions, error: fetchError } = await query
-
-  if (fetchError) {
-    return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 })
-  }
-
-  return NextResponse.json({ questions })
-}
+)

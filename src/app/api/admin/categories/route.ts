@@ -1,30 +1,24 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET() {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (_req, { supabase, requestId }) => {
+    const { data: categories, error } = await supabase
+      .from('resource_categories')
+      .select('*')
+      .order('display_order')
 
-  const { data: categories, error: fetchError } = await supabase
-    .from('resource_categories')
-    .select('*')
-    .order('display_order')
+    if (error) throw error
 
-  if (fetchError) {
-    return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 })
+    return apiResponse({ categories }, 200, requestId)
   }
+)
 
-  return NextResponse.json({ categories })
-}
+export const POST = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const body = await req.json()
 
-export async function POST(request: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
-
-  try {
-    const body = await request.json()
-
-    const { data: category, error: insertError } = await supabase
+    const { data: category, error } = await supabase
       .from('resource_categories')
       .insert({
         name: body.name,
@@ -37,14 +31,15 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (insertError) {
-      console.error('Insert error:', insertError)
-      return NextResponse.json({ error: 'Failed to create category' }, { status: 500 })
-    }
+    if (error) throw error
 
-    return NextResponse.json({ category }, { status: 201 })
-  } catch (error) {
-    console.error('Error creating category:', error)
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
+    return apiResponse({ category }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'resource_category',
+      getResourceId: (_req, res) => res?.category?.id,
+    },
   }
-}
+)

@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createCohabitationSchema = z.object({
   listing_id: z.string().uuid(),
@@ -10,24 +11,10 @@ const createCohabitationSchema = z.object({
 })
 
 // Get cohabitations for the current user
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
-    const status = searchParams.get('status') // 'active', 'completed', 'cancelled'
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
+    const status = searchParams.get('status')
     const listingId = searchParams.get('listing_id')
 
     let query = (supabase as any)
@@ -58,7 +45,7 @@ export async function GET(request: NextRequest) {
           created_at
         )
       `)
-      .or(`provider_id.eq.${user.id},seeker_id.eq.${user.id}`)
+      .or(`provider_id.eq.${userId},seeker_id.eq.${userId}`)
 
     if (status) {
       query = query.eq('status', status)
@@ -70,20 +57,14 @@ export async function GET(request: NextRequest) {
 
     query = query.order('created_at', { ascending: false })
 
-    const { data: cohabitations, error } = await query as { data: any[]; error: any }
+    const { data: cohabitations, error } = await query
 
-    if (error) {
-      console.error('Error fetching cohabitations:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch cohabitations' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Add review status for each cohabitation
     const enrichedCohabitations = (cohabitations || []).map((cohab: any) => {
       const userHasReviewed = cohab.reviews?.some(
-        (r: any) => r.reviewer_id === user.id
+        (r: any) => r.reviewer_id === userId
       )
       const canReview = !userHasReviewed && (
         cohab.status === 'completed' ||
@@ -94,68 +75,40 @@ export async function GET(request: NextRequest) {
         ...cohab,
         user_has_reviewed: userHasReviewed,
         can_review: canReview,
-        is_provider: cohab.provider_id === user.id,
+        is_provider: cohab.provider_id === userId,
       }
     })
 
-    return NextResponse.json({ cohabitations: enrichedCohabitations })
-  } catch (error) {
-    console.error('Error in GET /api/cohabitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ cohabitations: enrichedCohabitations }, 200, requestId)
   }
-}
+)
 
 // Create a new cohabitation period (provider only)
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof createCohabitationSchema>
+    try {
+      body = await parseBody(req, createCohabitationSchema)
+    } catch {
+      throw new ValidationError('Invalid cohabitation data')
     }
 
-    const body = await request.json()
-
-    const validationResult = createCohabitationSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { listing_id, seeker_id, start_date, end_date } = validationResult.data
+    const { listing_id, seeker_id, start_date, end_date } = body
 
     // Verify user owns the listing
     const { data: listing } = await (supabase as any)
       .from('listings')
       .select('user_id')
       .eq('id', listing_id)
-      .single() as { data: any }
+      .single()
 
     if (!listing) {
-      return NextResponse.json(
-        { error: 'Listing not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Listing not found')
     }
 
-    if (listing.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'Only the listing owner can create cohabitation records' },
-        { status: 403 }
-      )
+    if (listing.user_id !== userId) {
+      throw new AuthorizationError('Only the listing owner can create cohabitation records')
     }
 
     // Verify seeker exists
@@ -163,13 +116,10 @@ export async function POST(request: NextRequest) {
       .from('profiles')
       .select('user_id')
       .eq('user_id', seeker_id)
-      .single() as { data: any }
+      .single()
 
     if (!seeker) {
-      return NextResponse.json(
-        { error: 'Seeker profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Seeker profile not found')
     }
 
     // Check for existing active cohabitation with same seeker
@@ -179,12 +129,13 @@ export async function POST(request: NextRequest) {
       .eq('listing_id', listing_id)
       .eq('seeker_id', seeker_id)
       .eq('status', 'active')
-      .single() as { data: any }
+      .single()
 
     if (existingActive) {
-      return NextResponse.json(
+      return apiResponse(
         { error: 'An active cohabitation already exists for this listing and seeker' },
-        { status: 400 }
+        400,
+        requestId
       )
     }
 
@@ -193,7 +144,7 @@ export async function POST(request: NextRequest) {
       .from('cohabitation_periods')
       .insert({
         listing_id,
-        provider_id: user.id,
+        provider_id: userId,
         seeker_id,
         start_date,
         end_date: end_date || null,
@@ -216,20 +167,15 @@ export async function POST(request: NextRequest) {
       `)
       .single()
 
-    if (insertError) {
-      console.error('Error creating cohabitation:', insertError)
-      return NextResponse.json(
-        { error: 'Failed to create cohabitation' },
-        { status: 500 }
-      )
-    }
+    if (insertError) throw insertError
 
-    return NextResponse.json({ cohabitation }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/cohabitations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ cohabitation }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'cohabitation',
+      getResourceId: (_req, res) => res?.cohabitation?.id,
+    },
   }
-}
+)

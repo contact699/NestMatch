@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const updateMemberSchema = z.object({
   member_id: z.string().uuid(),
@@ -17,48 +14,30 @@ const removeMemberSchema = z.object({
 })
 
 // Update a member's details (admin only, or self for budget)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: groupId } = await params
-    const supabase = await createClient()
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const groupId = params.id
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Validate input
+    let body: z.infer<typeof updateMemberSchema>
+    try {
+      body = await parseBody(req, updateMemberSchema)
+    } catch {
+      throw new ValidationError('Invalid member data')
     }
 
-    const body = await request.json()
-    const validationResult = updateMemberSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { member_id, budget_contribution, role } = validationResult.data
+    const { member_id, budget_contribution, role } = body
 
     // Get current user's membership
     const { data: currentMember } = await (supabase as any)
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!currentMember) {
-      return NextResponse.json(
-        { error: 'You are not a member of this group' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('You are not a member of this group')
     }
 
     // Get target member
@@ -67,31 +46,22 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select('*')
       .eq('id', member_id)
       .eq('group_id', groupId)
-      .single() as { data: any }
+      .single()
 
     if (!targetMember) {
-      return NextResponse.json(
-        { error: 'Member not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Member not found')
     }
 
     const isAdmin = currentMember.role === 'admin'
-    const isSelf = targetMember.user_id === user.id
+    const isSelf = targetMember.user_id === userId
 
     // Check permissions
     if (role && !isAdmin) {
-      return NextResponse.json(
-        { error: 'Only admins can change member roles' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Only admins can change member roles')
     }
 
     if (budget_contribution !== undefined && !isAdmin && !isSelf) {
-      return NextResponse.json(
-        { error: 'You can only update your own budget contribution' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('You can only update your own budget contribution')
     }
 
     // Build update data
@@ -110,12 +80,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
-          .eq('role', 'admin') as { data: any[] }
+          .eq('role', 'admin')
 
         if (admins?.length === 1) {
-          return NextResponse.json(
+          return apiResponse(
             { error: 'Cannot remove the last admin. Promote another member first.' },
-            { status: 400 }
+            400,
+            requestId
           )
         }
       }
@@ -136,67 +107,43 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (updateError) {
-      console.error('Error updating member:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update member' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ member })
-  } catch (error) {
-    console.error('Error in PUT /api/groups/[id]/members:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ member }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'co_renter_member',
+    },
   }
-}
+)
 
 // Remove a member (admin only, or self to leave)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id: groupId } = await params
-    const supabase = await createClient()
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const groupId = params.id
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    // Validate input
+    let body: z.infer<typeof removeMemberSchema>
+    try {
+      body = await parseBody(req, removeMemberSchema)
+    } catch {
+      throw new ValidationError('member_id is required')
     }
 
-    const body = await request.json()
-    const validationResult = removeMemberSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
-    }
-
-    const { member_id } = validationResult.data
+    const { member_id } = body
 
     // Get current user's membership
     const { data: currentMember } = await (supabase as any)
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!currentMember) {
-      return NextResponse.json(
-        { error: 'You are not a member of this group' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('You are not a member of this group')
     }
 
     // Get target member
@@ -205,24 +152,18 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .select('*')
       .eq('id', member_id)
       .eq('group_id', groupId)
-      .single() as { data: any }
+      .single()
 
     if (!targetMember) {
-      return NextResponse.json(
-        { error: 'Member not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Member not found')
     }
 
     const isAdmin = currentMember.role === 'admin'
-    const isSelf = targetMember.user_id === user.id
+    const isSelf = targetMember.user_id === userId
 
     // Check permissions
     if (!isAdmin && !isSelf) {
-      return NextResponse.json(
-        { error: 'Only admins can remove other members' },
-        { status: 403 }
-      )
+      throw new AuthorizationError('Only admins can remove other members')
     }
 
     // Prevent removing the last admin (unless leaving)
@@ -231,7 +172,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         .from('co_renter_members')
         .select('id')
         .eq('group_id', groupId)
-        .eq('role', 'admin') as { data: any[] }
+        .eq('role', 'admin')
 
       if (admins?.length === 1) {
         // Check if there are other members to promote
@@ -239,15 +180,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
-          .neq('id', member_id) as { data: any[] }
+          .neq('id', member_id)
 
         if (otherMembers && otherMembers.length > 0) {
-          return NextResponse.json(
+          return apiResponse(
             { error: 'Cannot leave as the last admin. Promote another member first or delete the group.' },
-            { status: 400 }
+            400,
+            requestId
           )
         }
-        // If no other members, allow leaving and group will be orphaned (or could auto-delete)
       }
     }
 
@@ -256,23 +197,17 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       .delete()
       .eq('id', member_id)
 
-    if (deleteError) {
-      console.error('Error removing member:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to remove member' },
-        { status: 500 }
-      )
-    }
+    if (deleteError) throw deleteError
 
-    return NextResponse.json({
+    return apiResponse({
       success: true,
       message: isSelf ? 'You have left the group' : 'Member removed from group',
-    })
-  } catch (error) {
-    console.error('Error in DELETE /api/groups/[id]/members:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'co_renter_member',
+    },
   }
-}
+)

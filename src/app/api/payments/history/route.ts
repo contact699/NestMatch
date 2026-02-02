@@ -1,24 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') // 'sent', 'received', or 'all'
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '20')
@@ -46,12 +31,12 @@ export async function GET(request: NextRequest) {
 
     // Filter by type
     if (type === 'sent') {
-      query = query.eq('payer_id', user.id)
+      query = query.eq('payer_id', userId)
     } else if (type === 'received') {
-      query = query.eq('recipient_id', user.id)
+      query = query.eq('recipient_id', userId)
     } else {
       // All payments involving the user
-      query = query.or(`payer_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      query = query.or(`payer_id.eq.${userId},recipient_id.eq.${userId}`)
     }
 
     // Filter by status
@@ -64,15 +49,9 @@ export async function GET(request: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
-    const { data: payments, error, count } = await query as { data: any[]; error: any; count: number }
+    const { data: payments, error } = await query
 
-    if (error) {
-      console.error('Error fetching payments:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch payment history' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Get total count for pagination
     let countQuery = (supabase as any)
@@ -80,18 +59,18 @@ export async function GET(request: NextRequest) {
       .select('*', { count: 'exact', head: true })
 
     if (type === 'sent') {
-      countQuery = countQuery.eq('payer_id', user.id)
+      countQuery = countQuery.eq('payer_id', userId)
     } else if (type === 'received') {
-      countQuery = countQuery.eq('recipient_id', user.id)
+      countQuery = countQuery.eq('recipient_id', userId)
     } else {
-      countQuery = countQuery.or(`payer_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      countQuery = countQuery.or(`payer_id.eq.${userId},recipient_id.eq.${userId}`)
     }
 
     if (status) {
       countQuery = countQuery.eq('status', status)
     }
 
-    const { count: totalCount } = await countQuery as { count: number }
+    const { count: totalCount } = await countQuery
 
     // Calculate summary stats
     const summary = {
@@ -103,22 +82,22 @@ export async function GET(request: NextRequest) {
 
     if (payments) {
       for (const payment of payments) {
-        if (payment.payer_id === user.id && payment.status === 'completed') {
+        if (payment.payer_id === userId && payment.status === 'completed') {
           summary.total_sent += payment.amount
         }
-        if (payment.recipient_id === user.id && payment.status === 'completed') {
+        if (payment.recipient_id === userId && payment.status === 'completed') {
           summary.total_received += payment.amount
         }
-        if (payment.payer_id === user.id && payment.status === 'pending') {
+        if (payment.payer_id === userId && payment.status === 'pending') {
           summary.pending_sent += payment.amount
         }
-        if (payment.recipient_id === user.id && payment.status === 'pending') {
+        if (payment.recipient_id === userId && payment.status === 'pending') {
           summary.pending_received += payment.amount
         }
       }
     }
 
-    return NextResponse.json({
+    return apiResponse({
       payments: payments || [],
       pagination: {
         total: totalCount || 0,
@@ -127,12 +106,6 @@ export async function GET(request: NextRequest) {
         has_more: (offset + limit) < (totalCount || 0),
       },
       summary,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/payments/history:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)

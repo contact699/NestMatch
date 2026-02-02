@@ -1,23 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
+const createConversationSchema = z.object({
+  participant_id: z.string().uuid('Invalid participant ID'),
+  listing_id: z.string().uuid().optional(),
+  initial_message: z.string().max(2000).optional(),
+})
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get all conversations where user is a participant
     const { data: conversations, error } = await (supabase as any)
       .from('conversations')
@@ -29,23 +22,17 @@ export async function GET(request: NextRequest) {
           photos
         )
       `)
-      .contains('participant_ids', [user.id])
-      .order('last_message_at', { ascending: false, nullsFirst: false }) as { data: any[] | null; error: any }
+      .contains('participant_ids', [userId])
+      .order('last_message_at', { ascending: false, nullsFirst: false })
 
-    if (error) {
-      console.error('Error fetching conversations:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch conversations' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Fetch participant profiles and last message for each conversation
     const conversationsWithDetails = await Promise.all(
-      (conversations || []).map(async (conv) => {
+      (conversations || []).map(async (conv: any) => {
         // Get other participant's profile
         const otherParticipantId = conv.participant_ids.find(
-          (id: string) => id !== user.id
+          (id: string) => id !== userId
         )
 
         let otherProfile = null
@@ -54,7 +41,7 @@ export async function GET(request: NextRequest) {
             .from('profiles')
             .select('id, user_id, name, profile_photo, verification_level')
             .eq('user_id', otherParticipantId)
-            .single() as { data: any; error: any }
+            .single()
           otherProfile = profile
         }
 
@@ -64,7 +51,7 @@ export async function GET(request: NextRequest) {
           .select('id, content, sender_id, created_at, read_at')
           .eq('conversation_id', conv.id)
           .order('created_at', { ascending: false })
-          .limit(1) as { data: any[] | null; error: any }
+          .limit(1)
 
         const lastMessage = messages?.[0] || null
 
@@ -73,8 +60,8 @@ export async function GET(request: NextRequest) {
           .from('messages')
           .select('*', { count: 'exact', head: true })
           .eq('conversation_id', conv.id)
-          .neq('sender_id', user.id)
-          .is('read_at', null) as { count: number | null; error: any }
+          .neq('sender_id', userId)
+          .is('read_at', null)
 
         return {
           ...conv,
@@ -85,48 +72,24 @@ export async function GET(request: NextRequest) {
       })
     )
 
-    return NextResponse.json({ conversations: conversationsWithDetails })
-  } catch (error) {
-    console.error('Error in GET /api/conversations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ conversations: conversationsWithDetails }, 200, requestId)
   }
-}
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof createConversationSchema>
+    try {
+      body = await parseBody(req, createConversationSchema)
+    } catch {
+      throw new ValidationError('participant_id is required')
     }
 
-    const body = await request.json()
     const { participant_id, listing_id, initial_message } = body
 
-    if (!participant_id) {
-      return NextResponse.json(
-        { error: 'participant_id is required' },
-        { status: 400 }
-      )
-    }
-
-    if (participant_id === user.id) {
-      return NextResponse.json(
-        { error: 'Cannot start conversation with yourself' },
-        { status: 400 }
-      )
+    if (participant_id === userId) {
+      return apiResponse({ error: 'Cannot start conversation with yourself' }, 400, requestId)
     }
 
     // Check if conversation already exists between these users
@@ -137,57 +100,48 @@ export async function POST(request: NextRequest) {
       const { data } = await (supabase as any)
         .from('conversations')
         .select('id')
-        .contains('participant_ids', [user.id, participant_id])
+        .contains('participant_ids', [userId, participant_id])
         .eq('listing_id', listing_id)
-        .single() as { data: any; error: any }
+        .single()
       existingConversation = data
     } else {
       // Check for any existing conversation between these users (without listing)
       const { data } = await (supabase as any)
         .from('conversations')
         .select('id')
-        .contains('participant_ids', [user.id, participant_id])
+        .contains('participant_ids', [userId, participant_id])
         .is('listing_id', null)
-        .single() as { data: any; error: any }
+        .single()
       existingConversation = data
     }
 
     if (existingConversation) {
-      return NextResponse.json({ conversation: existingConversation })
+      return apiResponse({ conversation: existingConversation }, 200, requestId)
     }
 
     // Check if blocked
     const { data: blocked } = await (supabase as any)
       .from('blocked_users')
       .select('id')
-      .or(`user_id.eq.${user.id},user_id.eq.${participant_id}`)
-      .or(`blocked_user_id.eq.${user.id},blocked_user_id.eq.${participant_id}`)
-      .limit(1) as { data: any[] | null; error: any }
+      .or(`user_id.eq.${userId},user_id.eq.${participant_id}`)
+      .or(`blocked_user_id.eq.${userId},blocked_user_id.eq.${participant_id}`)
+      .limit(1)
 
     if (blocked && blocked.length > 0) {
-      return NextResponse.json(
-        { error: 'Cannot message this user' },
-        { status: 403 }
-      )
+      return apiResponse({ error: 'Cannot message this user' }, 403, requestId)
     }
 
     // Create new conversation
     const { data: conversation, error } = await (supabase as any)
       .from('conversations')
       .insert({
-        participant_ids: [user.id, participant_id],
+        participant_ids: [userId, participant_id],
         listing_id: listing_id || null,
       })
       .select()
-      .single() as { data: any; error: any }
+      .single()
 
-    if (error) {
-      console.error('Error creating conversation:', error)
-      return NextResponse.json(
-        { error: 'Failed to create conversation' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Send initial message if provided
     if (initial_message && conversation) {
@@ -195,7 +149,7 @@ export async function POST(request: NextRequest) {
         .from('messages')
         .insert({
           conversation_id: conversation.id,
-          sender_id: user.id,
+          sender_id: userId,
           content: initial_message,
         })
 
@@ -205,12 +159,14 @@ export async function POST(request: NextRequest) {
         .eq('id', conversation.id)
     }
 
-    return NextResponse.json({ conversation }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/conversations:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ conversation }, 201, requestId)
+  },
+  {
+    rateLimit: 'conversationCreate',
+    audit: {
+      action: 'create',
+      resourceType: 'conversation',
+      getResourceId: (_req, res) => res?.conversation?.id,
+    },
   }
-}
+)

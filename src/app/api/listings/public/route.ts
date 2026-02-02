@@ -1,12 +1,13 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { withPublicHandler, apiResponse } from '@/lib/api/with-handler'
 
 // Create a public Supabase client that doesn't require auth
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export async function GET() {
-  try {
+export const GET = withPublicHandler(
+  async (req, { requestId }) => {
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
     // Fetch active listings with basic host info
@@ -37,20 +38,8 @@ export async function GET() {
       .order('created_at', { ascending: false })
       .limit(8)
 
-    if (error) {
-      console.error('Error fetching public listings:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch listings' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ listings: listings || [] })
-  } catch (error) {
-    console.error('Error in public listings API:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ listings: listings || [] }, 200, requestId)
   }
-}
+)

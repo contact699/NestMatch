@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { checkRateLimit, rateLimitResponse, detectAbuse } from '@/lib/rate-limit'
+import { logger } from '@/lib/logger'
+import { generateRequestId } from '@/lib/request-context'
+import { captureException } from '@/lib/error-reporter'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(request: NextRequest) {
+  const requestId = generateRequestId()
+  const startTime = Date.now()
+
   try {
     const supabase = await createClient()
 
@@ -16,9 +23,17 @@ export async function POST(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Unauthorized', requestId },
+        { status: 401, headers: { 'X-Request-ID': requestId } }
       )
+    }
+
+    // Rate limiting for uploads
+    const rateLimitResult = await checkRateLimit('photoUpload', user.id)
+    if (!rateLimitResult.allowed) {
+      await detectAbuse('photoUpload', user.id)
+      logger.warn('Upload rate limit exceeded', { requestId, userId: user.id })
+      return rateLimitResponse(rateLimitResult)
     }
 
     const formData = await request.formData()
@@ -27,8 +42,8 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       return NextResponse.json(
-        { error: 'No file provided' },
-        { status: 400 }
+        { error: 'No file provided', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -36,8 +51,8 @@ export async function POST(request: NextRequest) {
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
       return NextResponse.json(
-        { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' },
-        { status: 400 }
+        { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -45,8 +60,8 @@ export async function POST(request: NextRequest) {
     const maxSize = 5 * 1024 * 1024
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB.' },
-        { status: 400 }
+        { error: 'File too large. Maximum size is 5MB.', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -69,22 +84,22 @@ export async function POST(request: NextRequest) {
       })
 
     if (error) {
-      console.error('Upload error:', error)
+      logger.error('Upload error', error, { requestId, userId: user.id, bucket })
 
-      // If bucket doesn't exist, return helpful error
       if (error.message.includes('Bucket not found')) {
         return NextResponse.json(
           {
             error: 'Storage bucket not configured. Please create the bucket in Supabase dashboard.',
-            details: error.message
+            details: error.message,
+            requestId,
           },
-          { status: 500 }
+          { status: 500, headers: { 'X-Request-ID': requestId } }
         )
       }
 
       return NextResponse.json(
-        { error: 'Failed to upload file' },
-        { status: 500 }
+        { error: 'Failed to upload file', requestId },
+        { status: 500, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -93,20 +108,25 @@ export async function POST(request: NextRequest) {
       .from(bucket)
       .getPublicUrl(data.path)
 
-    return NextResponse.json({
-      url: urlData.publicUrl,
-      path: data.path,
-    })
-  } catch (error) {
-    console.error('Error in POST /api/upload:', error)
+    const duration = Date.now() - startTime
+    logger.info('File uploaded', { requestId, userId: user.id, duration, path: data.path })
+
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { url: urlData.publicUrl, path: data.path, requestId },
+      { headers: { 'X-Request-ID': requestId } }
+    )
+  } catch (error) {
+    captureException(error as Error, { requestId, action: 'upload' })
+    return NextResponse.json(
+      { error: 'Internal server error', requestId },
+      { status: 500, headers: { 'X-Request-ID': requestId } }
     )
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const requestId = generateRequestId()
+
   try {
     const supabase = await createClient()
 
@@ -118,8 +138,8 @@ export async function DELETE(request: NextRequest) {
 
     if (authError || !user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
+        { error: 'Unauthorized', requestId },
+        { status: 401, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -129,16 +149,17 @@ export async function DELETE(request: NextRequest) {
 
     if (!path) {
       return NextResponse.json(
-        { error: 'No path provided' },
-        { status: 400 }
+        { error: 'No path provided', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }
 
     // Ensure user can only delete their own files
     if (!path.startsWith(`${user.id}/`)) {
+      logger.warn('Forbidden delete attempt', { requestId, userId: user.id, path })
       return NextResponse.json(
-        { error: 'Forbidden' },
-        { status: 403 }
+        { error: 'Forbidden', requestId },
+        { status: 403, headers: { 'X-Request-ID': requestId } }
       )
     }
 
@@ -147,19 +168,24 @@ export async function DELETE(request: NextRequest) {
       .remove([path])
 
     if (error) {
-      console.error('Delete error:', error)
+      logger.error('Delete error', error, { requestId, userId: user.id, path })
       return NextResponse.json(
-        { error: 'Failed to delete file' },
-        { status: 500 }
+        { error: 'Failed to delete file', requestId },
+        { status: 500, headers: { 'X-Request-ID': requestId } }
       )
     }
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/upload:', error)
+    logger.info('File deleted', { requestId, userId: user.id, path })
+
     return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
+      { success: true, requestId },
+      { headers: { 'X-Request-ID': requestId } }
+    )
+  } catch (error) {
+    captureException(error as Error, { requestId, action: 'delete_upload' })
+    return NextResponse.json(
+      { error: 'Internal server error', requestId },
+      { status: 500, headers: { 'X-Request-ID': requestId } }
     )
   }
 }

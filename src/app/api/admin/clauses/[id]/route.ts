@@ -1,67 +1,67 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
 
-  const { data, error: fetchError } = await supabase
-    .from('agreement_clauses')
-    .select('*')
-    .eq('id', id)
-    .single()
+    const { data, error: fetchError } = await supabase
+      .from('agreement_clauses')
+      .select('*')
+      .eq('id', id)
+      .single()
 
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    if (fetchError || !data) {
+      throw new NotFoundError('Clause not found')
+    }
+
+    return apiResponse(data, 200, requestId)
   }
+)
 
-  return NextResponse.json(data)
-}
+export const PATCH = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
+    const body = await req.json()
 
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+    const { data, error: updateError } = await supabase
+      .from('agreement_clauses')
+      .update(body)
+      .eq('id', id)
+      .select()
+      .single()
 
-  const body = await request.json()
+    if (updateError) throw updateError
 
-  const { data, error: updateError } = await supabase
-    .from('agreement_clauses')
-    .update(body)
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
+    return apiResponse(data, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'agreement_clause',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
+)
 
-  return NextResponse.json(data)
-}
+export const DELETE = withAdminHandler(
+  async (req, { supabase, requestId, params }) => {
+    const { id } = params
 
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+    const { error: deleteError } = await supabase
+      .from('agreement_clauses')
+      .delete()
+      .eq('id', id)
 
-  const { error: deleteError } = await supabase
-    .from('agreement_clauses')
-    .delete()
-    .eq('id', id)
+    if (deleteError) throw deleteError
 
-  if (deleteError) {
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'agreement_clause',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-
-  return NextResponse.json({ success: true })
-}
+)

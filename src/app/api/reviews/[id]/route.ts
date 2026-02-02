@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withApiHandler, withPublicHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const updateReviewSchema = z.object({
   rent_payment_rating: z.number().int().min(1).max(5).optional(),
@@ -14,11 +11,12 @@ const updateReviewSchema = z.object({
   comment: z.string().max(2000).optional(),
 })
 
-// Get a specific review
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
+// Get a specific review (public)
+export const GET = withPublicHandler(
+  async (req, { requestId, params }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
+    const { id } = params
 
     const { data: review, error } = await (supabase as any)
       .from('reviews')
@@ -48,63 +46,35 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       `)
       .eq('id', id)
       .eq('is_visible', true)
-      .single() as { data: any; error: any }
+      .single()
 
     if (error || !review) {
-      return NextResponse.json(
-        { error: 'Review not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Review not found')
     }
 
-    return NextResponse.json({ review })
-  } catch (error) {
-    console.error('Error in GET /api/reviews/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ review }, 200, requestId)
   }
-}
+)
 
 // Update a review (only by the reviewer, within 7 days)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Get existing review
     const { data: existingReview } = await (supabase as any)
       .from('reviews')
       .select('*')
       .eq('id', id)
-      .single() as { data: any }
+      .single()
 
     if (!existingReview) {
-      return NextResponse.json(
-        { error: 'Review not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Review not found')
     }
 
     // Check ownership
-    if (existingReview.reviewer_id !== user.id) {
-      return NextResponse.json(
-        { error: 'You can only edit your own reviews' },
-        { status: 403 }
-      )
+    if (existingReview.reviewer_id !== userId) {
+      throw new AuthorizationError('You can only edit your own reviews')
     }
 
     // Check if within edit window (7 days)
@@ -113,20 +83,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const daysSinceCreation = (now.getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
 
     if (daysSinceCreation > 7) {
-      return NextResponse.json(
-        { error: 'Reviews can only be edited within 7 days of creation' },
-        { status: 400 }
-      )
+      throw new ValidationError('Reviews can only be edited within 7 days of creation')
     }
 
-    const body = await request.json()
-    const validationResult = updateReviewSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let body: z.infer<typeof updateReviewSchema>
+    try {
+      body = await parseBody(req, updateReviewSchema)
+    } catch {
+      throw new ValidationError('Invalid review data')
     }
 
     const updateData: Record<string, any> = {
@@ -135,8 +100,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     const fields = ['rent_payment_rating', 'cleanliness_rating', 'respect_rating', 'communication_rating', 'comment']
     for (const field of fields) {
-      if (validationResult.data[field as keyof typeof validationResult.data] !== undefined) {
-        updateData[field] = validationResult.data[field as keyof typeof validationResult.data]
+      if (body[field as keyof typeof body] !== undefined) {
+        updateData[field] = body[field as keyof typeof body]
       }
     }
 
@@ -157,62 +122,38 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       `)
       .single()
 
-    if (updateError) {
-      console.error('Error updating review:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update review' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ review })
-  } catch (error) {
-    console.error('Error in PUT /api/reviews/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ review }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'review',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)
 
 // Delete a review (soft delete - hide it)
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Get existing review
     const { data: existingReview } = await (supabase as any)
       .from('reviews')
       .select('*')
       .eq('id', id)
-      .single() as { data: any }
+      .single()
 
     if (!existingReview) {
-      return NextResponse.json(
-        { error: 'Review not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Review not found')
     }
 
     // Check ownership
-    if (existingReview.reviewer_id !== user.id) {
-      return NextResponse.json(
-        { error: 'You can only delete your own reviews' },
-        { status: 403 }
-      )
+    if (existingReview.reviewer_id !== userId) {
+      throw new AuthorizationError('You can only delete your own reviews')
     }
 
     // Soft delete by setting is_visible to false
@@ -224,20 +165,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       })
       .eq('id', id)
 
-    if (deleteError) {
-      console.error('Error deleting review:', deleteError)
-      return NextResponse.json(
-        { error: 'Failed to delete review' },
-        { status: 500 }
-      )
-    }
+    if (deleteError) throw deleteError
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/reviews/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'delete',
+      resourceType: 'review',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)

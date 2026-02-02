@@ -1518,6 +1518,109 @@ export interface Database {
           updated_at?: string
         }
       }
+      // Group Matching Tables
+      group_suggestions: {
+        Row: {
+          id: string
+          target_user_id: string
+          suggested_users: string[]
+          practical_score: number
+          compatibility_score: number
+          trust_score: number
+          combined_score: number
+          match_criteria: Json
+          status: 'active' | 'dismissed' | 'converted'
+          converted_group_id: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          target_user_id: string
+          suggested_users: string[]
+          practical_score: number
+          compatibility_score: number
+          trust_score: number
+          combined_score: number
+          match_criteria?: Json
+          status?: 'active' | 'dismissed' | 'converted'
+          converted_group_id?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          target_user_id?: string
+          suggested_users?: string[]
+          practical_score?: number
+          compatibility_score?: number
+          trust_score?: number
+          combined_score?: number
+          match_criteria?: Json
+          status?: 'active' | 'dismissed' | 'converted'
+          converted_group_id?: string | null
+          expires_at?: string
+          created_at?: string
+        }
+      }
+      user_matching_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          preferred_group_size: number
+          budget_flexibility_percent: number
+          date_flexibility_days: number
+          verification_preference: 'any' | 'verified_only' | 'trusted_only'
+          is_discoverable: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preferred_group_size?: number
+          budget_flexibility_percent?: number
+          date_flexibility_days?: number
+          verification_preference?: 'any' | 'verified_only' | 'trusted_only'
+          is_discoverable?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preferred_group_size?: number
+          budget_flexibility_percent?: number
+          date_flexibility_days?: number
+          verification_preference?: 'any' | 'verified_only' | 'trusted_only'
+          is_discoverable?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      suggestion_interactions: {
+        Row: {
+          id: string
+          suggestion_id: string
+          user_id: string
+          action: 'viewed' | 'interested' | 'dismissed'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          suggestion_id: string
+          user_id: string
+          action: 'viewed' | 'interested' | 'dismissed'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          suggestion_id?: string
+          user_id?: string
+          action?: 'viewed' | 'interested' | 'dismissed'
+          created_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -1526,6 +1629,18 @@ export interface Database {
       calculate_compatibility: {
         Args: { user_id_1: string; user_id_2: string }
         Returns: number
+      }
+      calculate_group_compatibility: {
+        Args: { user_ids: string[] }
+        Returns: number
+      }
+      calculate_trust_score: {
+        Args: { user_ids: string[] }
+        Returns: number
+      }
+      batch_calculate_compatibility: {
+        Args: { current_user_id: string; other_user_ids: string[] }
+        Returns: { user_id: string; score: number }[]
       }
     }
     Enums: {
@@ -1569,3 +1684,8 @@ export type ResourceVote = Database['public']['Tables']['resource_votes']['Row']
 export type SubmittedQuestion = Database['public']['Tables']['submitted_questions']['Row']
 export type AgreementClause = Database['public']['Tables']['agreement_clauses']['Row']
 export type GeneratedAgreement = Database['public']['Tables']['generated_agreements']['Row']
+
+// Group Matching type exports
+export type GroupSuggestion = Database['public']['Tables']['group_suggestions']['Row']
+export type UserMatchingPreferences = Database['public']['Tables']['user_matching_preferences']['Row']
+export type SuggestionInteraction = Database['public']['Tables']['suggestion_interactions']['Row']

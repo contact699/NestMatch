@@ -1,49 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 
-interface RouteParams {
-  params: Promise<{ listingId: string }>
-}
-
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { listingId } = await params
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { listingId } = params
 
     // Delete saved listing
     const { error } = await (supabase as any)
       .from('saved_listings')
       .delete()
-      .eq('user_id', user.id)
-      .eq('listing_id', listingId) as { error: any }
+      .eq('user_id', userId)
+      .eq('listing_id', listingId)
 
-    if (error) {
-      console.error('Error removing saved listing:', error)
-      return NextResponse.json(
-        { error: 'Failed to remove saved listing' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error in DELETE /api/saved-listings/[listingId]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ success: true }, 200, requestId)
   }
-}
+)

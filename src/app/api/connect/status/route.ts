@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
+import { logger } from '@/lib/logger'
 import {
   getConnectAccount,
   createConnectLoginLink,
@@ -7,34 +8,20 @@ import {
 } from '@/lib/services/stripe'
 
 // Get Connect account status
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get payout account from database
     const { data: payoutAccount } = await (supabase as any)
       .from('payout_accounts')
       .select('*')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!payoutAccount) {
-      return NextResponse.json({
+      return apiResponse({
         status: 'not_created',
         message: 'No payout account found. Start onboarding to receive payments.',
-      })
+      }, 200, requestId)
     }
 
     // Get latest status from Stripe
@@ -59,7 +46,7 @@ export async function GET(request: NextRequest) {
           details_submitted: stripeAccount.details_submitted,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
     }
 
     // Get balance if account is active
@@ -78,8 +65,7 @@ export async function GET(request: NextRequest) {
           })),
         }
       } catch (e) {
-        // Balance might not be available yet
-        console.error('Error fetching balance:', e)
+        logger.warn('Error fetching balance', { requestId, error: (e as Error).message })
       }
     }
 
@@ -90,7 +76,7 @@ export async function GET(request: NextRequest) {
         const loginLink = await createConnectLoginLink(payoutAccount.stripe_connect_account_id)
         dashboardLink = loginLink.url
       } catch (e) {
-        console.error('Error creating login link:', e)
+        logger.warn('Error creating login link', { requestId, error: (e as Error).message })
       }
     }
 
@@ -98,7 +84,7 @@ export async function GET(request: NextRequest) {
     const { data: paymentStats } = await (supabase as any)
       .from('payments')
       .select('amount, status')
-      .eq('recipient_id', user.id) as { data: any[] }
+      .eq('recipient_id', userId)
 
     const stats = {
       total_received: 0,
@@ -117,7 +103,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
+    return apiResponse({
       status: newStatus,
       account: {
         id: stripeAccount.id,
@@ -129,12 +115,6 @@ export async function GET(request: NextRequest) {
       balance,
       dashboard_link: dashboardLink,
       stats,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/connect/status:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)

@@ -1,10 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
-
-interface RouteParams {
-  params: Promise<{ id: string }>
-}
+import { withPublicHandler, withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const updateProviderSchema = z.object({
   business_name: z.string().min(1).max(255).optional(),
@@ -15,11 +12,12 @@ const updateProviderSchema = z.object({
   is_active: z.boolean().optional(),
 })
 
-// Get a specific service provider
-export async function GET(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
+// Get a specific service provider (public)
+export const GET = withPublicHandler(
+  async (req, { requestId, params }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
+    const { id } = params
 
     const { data: provider, error } = await (supabase as any)
       .from('service_providers')
@@ -44,13 +42,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
         )
       `)
       .eq('id', id)
-      .single() as { data: any; error: any }
+      .single()
 
     if (error || !provider) {
-      return NextResponse.json(
-        { error: 'Service provider not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Service provider not found')
     }
 
     // Calculate stats
@@ -59,69 +54,42 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       ? ratings.reduce((sum: number, r: number) => sum + r, 0) / ratings.length
       : null
 
-    return NextResponse.json({
+    return apiResponse({
       provider: {
         ...provider,
         average_rating: averageRating,
         review_count: ratings.length,
       },
-    })
-  } catch (error) {
-    console.error('Error in GET /api/services/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)
 
 // Update a service provider (owner only)
-export async function PUT(request: NextRequest, { params }: RouteParams) {
-  try {
-    const { id } = await params
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+export const PUT = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
 
     // Verify ownership
     const { data: existingProvider } = await (supabase as any)
       .from('service_providers')
       .select('user_id')
       .eq('id', id)
-      .single() as { data: any }
+      .single()
 
     if (!existingProvider) {
-      return NextResponse.json(
-        { error: 'Service provider not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Service provider not found')
     }
 
-    if (existingProvider.user_id !== user.id) {
-      return NextResponse.json(
-        { error: 'You can only update your own provider profile' },
-        { status: 403 }
-      )
+    if (existingProvider.user_id !== userId) {
+      throw new AuthorizationError('You can only update your own provider profile')
     }
 
-    const body = await request.json()
-    const validationResult = updateProviderSchema.safeParse(body)
-
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    // Validate input
+    let body: z.infer<typeof updateProviderSchema>
+    try {
+      body = await parseBody(req, updateProviderSchema)
+    } catch {
+      throw new ValidationError('Invalid provider data')
     }
 
     const updateData: Record<string, any> = {
@@ -134,8 +102,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     ]
 
     for (const field of allowedFields) {
-      if (validationResult.data[field as keyof typeof validationResult.data] !== undefined) {
-        updateData[field] = validationResult.data[field as keyof typeof validationResult.data]
+      if (body[field as keyof typeof body] !== undefined) {
+        updateData[field] = body[field as keyof typeof body]
       }
     }
 
@@ -146,20 +114,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       .select()
       .single()
 
-    if (updateError) {
-      console.error('Error updating provider:', updateError)
-      return NextResponse.json(
-        { error: 'Failed to update provider' },
-        { status: 500 }
-      )
-    }
+    if (updateError) throw updateError
 
-    return NextResponse.json({ provider })
-  } catch (error) {
-    console.error('Error in PUT /api/services/[id]:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ provider }, 200, requestId)
+  },
+  {
+    audit: {
+      action: 'update',
+      resourceType: 'service_provider',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
   }
-}
+)

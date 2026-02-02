@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const createProviderSchema = z.object({
   business_name: z.string().min(1).max(255),
@@ -11,12 +12,13 @@ const createProviderSchema = z.object({
   phone: z.string().max(20).optional(),
 })
 
-// Get service providers
-export async function GET(request: NextRequest) {
-  try {
+// Get service providers (public)
+export const GET = withPublicHandler(
+  async (req, { requestId }) => {
+    const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(req.url)
     const serviceType = searchParams.get('type')
     const city = searchParams.get('city')
     const verified = searchParams.get('verified')
@@ -52,15 +54,9 @@ export async function GET(request: NextRequest) {
     query = query.order('is_verified', { ascending: false })
       .order('created_at', { ascending: false })
 
-    const { data: providers, error } = await query as { data: any[]; error: any }
+    const { data: providers, error } = await query
 
-    if (error) {
-      console.error('Error fetching providers:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch service providers' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Calculate average ratings
     const enrichedProviders = (providers || []).map((provider: any) => {
@@ -77,41 +73,19 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json({ providers: enrichedProviders })
-  } catch (error) {
-    console.error('Error in GET /api/services:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ providers: enrichedProviders }, 200, requestId)
   }
-}
+)
 
 // Register as a service provider
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
-    const validationResult = createProviderSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof createProviderSchema>
+    try {
+      body = await parseBody(req, createProviderSchema)
+    } catch {
+      throw new ValidationError('Invalid provider data')
     }
 
     const {
@@ -121,19 +95,20 @@ export async function POST(request: NextRequest) {
       service_areas,
       website_url,
       phone,
-    } = validationResult.data
+    } = body
 
     // Check if user already has a provider profile
     const { data: existingProvider } = await (supabase as any)
       .from('service_providers')
       .select('id')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (existingProvider) {
-      return NextResponse.json(
+      return apiResponse(
         { error: 'You already have a service provider profile' },
-        { status: 400 }
+        400,
+        requestId
       )
     }
 
@@ -141,7 +116,7 @@ export async function POST(request: NextRequest) {
     const { data: provider, error: createError } = await (supabase as any)
       .from('service_providers')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         business_name,
         service_type,
         description,
@@ -160,20 +135,15 @@ export async function POST(request: NextRequest) {
       `)
       .single()
 
-    if (createError) {
-      console.error('Error creating provider:', createError)
-      return NextResponse.json(
-        { error: 'Failed to create service provider' },
-        { status: 500 }
-      )
-    }
+    if (createError) throw createError
 
-    return NextResponse.json({ provider }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/services:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ provider }, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'service_provider',
+      getResourceId: (_req, res) => res?.provider?.id,
+    },
   }
-}
+)

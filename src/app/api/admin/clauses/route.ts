@@ -1,38 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/admin'
+import { NextRequest } from 'next/server'
+import { withAdminHandler, apiResponse } from '@/lib/api/with-handler'
 
-export async function GET() {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+export const GET = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const { data, error: fetchError } = await supabase
+      .from('agreement_clauses')
+      .select('*')
+      .order('category')
+      .order('display_order')
 
-  const { data, error: fetchError } = await supabase
-    .from('agreement_clauses')
-    .select('*')
-    .order('category')
-    .order('display_order')
+    if (fetchError) throw fetchError
 
-  if (fetchError) {
-    return NextResponse.json({ error: fetchError.message }, { status: 500 })
+    return apiResponse(data, 200, requestId)
   }
+)
 
-  return NextResponse.json(data)
-}
+export const POST = withAdminHandler(
+  async (req, { supabase, requestId }) => {
+    const body = await req.json()
 
-export async function POST(request: NextRequest) {
-  const { error, supabase } = await requireAdmin()
-  if (error) return error
+    const { data, error: insertError } = await supabase
+      .from('agreement_clauses')
+      .insert(body)
+      .select()
+      .single()
 
-  const body = await request.json()
+    if (insertError) throw insertError
 
-  const { data, error: insertError } = await supabase
-    .from('agreement_clauses')
-    .insert(body)
-    .select()
-    .single()
-
-  if (insertError) {
-    return NextResponse.json({ error: insertError.message }, { status: 500 })
+    return apiResponse(data, 201, requestId)
+  },
+  {
+    audit: {
+      action: 'create',
+      resourceType: 'agreement_clause',
+      getResourceId: (_req, res) => res?.id,
+    },
   }
-
-  return NextResponse.json(data, { status: 201 })
-}
+)

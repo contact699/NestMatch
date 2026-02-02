@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
 const reportSchema = z.object({
   reported_user_id: z.string().uuid().optional(),
@@ -12,84 +13,34 @@ const reportSchema = z.object({
   { message: 'Either reported_user_id or reported_listing_id is required' }
 )
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get user's reports
     const { data: reports, error } = await (supabase as any)
       .from('reports')
       .select('*')
-      .eq('reporter_id', user.id)
-      .order('created_at', { ascending: false }) as { data: any[] | null; error: any }
+      .eq('reporter_id', userId)
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching reports:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch reports' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ reports })
-  } catch (error) {
-    console.error('Error in GET /api/reports:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ reports: reports || [] }, 200, requestId)
   }
-}
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Validate input
-    const validationResult = reportSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    let reportData: z.infer<typeof reportSchema>
+    try {
+      reportData = await parseBody(req, reportSchema)
+    } catch {
+      throw new ValidationError('Invalid report data')
     }
-
-    const reportData = validationResult.data
 
     // Can't report yourself
-    if (reportData.reported_user_id === user.id) {
-      return NextResponse.json(
-        { error: 'Cannot report yourself' },
-        { status: 400 }
-      )
+    if (reportData.reported_user_id === userId) {
+      return apiResponse({ error: 'Cannot report yourself' }, 400, requestId)
     }
 
     // Check if user has already reported this target recently (within 24 hours)
@@ -99,7 +50,7 @@ export async function POST(request: NextRequest) {
     let existingQuery = (supabase as any)
       .from('reports')
       .select('id')
-      .eq('reporter_id', user.id)
+      .eq('reporter_id', userId)
       .gte('created_at', oneDayAgo.toISOString())
 
     if (reportData.reported_user_id) {
@@ -109,42 +60,35 @@ export async function POST(request: NextRequest) {
       existingQuery = existingQuery.eq('reported_listing_id', reportData.reported_listing_id)
     }
 
-    const { data: existing } = await existingQuery.single() as { data: any; error: any }
+    const { data: existing } = await existingQuery.single()
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'You have already reported this recently' },
-        { status: 409 }
-      )
+      return apiResponse({ error: 'You have already reported this recently' }, 409, requestId)
     }
 
     // Create report
     const { data: report, error } = await (supabase as any)
       .from('reports')
       .insert({
-        reporter_id: user.id,
+        reporter_id: userId,
         reported_user_id: reportData.reported_user_id || null,
         reported_listing_id: reportData.reported_listing_id || null,
         type: reportData.type,
         description: reportData.description,
       })
       .select()
-      .single() as { data: any; error: any }
+      .single()
 
-    if (error) {
-      console.error('Error creating report:', error)
-      return NextResponse.json(
-        { error: 'Failed to submit report' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ report }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/reports:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ report }, 201, requestId)
+  },
+  {
+    rateLimit: 'reportCreate',
+    audit: {
+      action: 'create',
+      resourceType: 'report',
+      getResourceId: (_req, res) => res?.report?.id,
+    },
   }
-}
+)

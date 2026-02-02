@@ -1,12 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
 import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody, NotFoundError } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 import {
   createPaymentIntent,
   getOrCreateCustomer,
   getPaymentIntent,
-  confirmPaymentIntent,
-  cancelPaymentIntent,
   calculatePlatformFee,
 } from '@/lib/services/stripe'
 
@@ -19,53 +18,32 @@ const createIntentSchema = z.object({
   description: z.string().optional(),
 })
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const body = await request.json()
-
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Validate input
-    const validationResult = createIntentSchema.safeParse(body)
-    if (!validationResult.success) {
-      return NextResponse.json(
-        { error: 'Validation failed', details: validationResult.error.flatten() },
-        { status: 400 }
-      )
+    let intentData: z.infer<typeof createIntentSchema>
+    try {
+      intentData = await parseBody(req, createIntentSchema)
+    } catch {
+      throw new ValidationError('Invalid payment data')
     }
 
-    const { amount, recipient_id, listing_id, payment_method_id, type, description } = validationResult.data
+    const { amount, recipient_id, listing_id, payment_method_id, type, description } = intentData
 
     // Get payer profile
     const { data: payerProfile } = await (supabase as any)
       .from('profiles')
       .select('email, name')
-      .eq('user_id', user.id)
-      .single() as { data: any }
+      .eq('user_id', userId)
+      .single()
 
     if (!payerProfile) {
-      return NextResponse.json(
-        { error: 'Profile not found' },
-        { status: 404 }
-      )
+      throw new NotFoundError('Profile not found')
     }
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer(
-      user.id,
+      userId,
       payerProfile.email,
       payerProfile.name
     )
@@ -77,7 +55,7 @@ export async function POST(request: NextRequest) {
         .from('payout_accounts')
         .select('stripe_connect_account_id, charges_enabled')
         .eq('user_id', recipient_id)
-        .single() as { data: any }
+        .single()
 
       if (payoutAccount?.charges_enabled) {
         recipientConnectAccountId = payoutAccount.stripe_connect_account_id
@@ -92,7 +70,7 @@ export async function POST(request: NextRequest) {
       recipientConnectAccountId,
       description: description || `NestMatch ${type} payment`,
       metadata: {
-        payer_id: user.id,
+        payer_id: userId,
         recipient_id: recipient_id || '',
         listing_id: listing_id || '',
         payment_type: type,
@@ -105,7 +83,7 @@ export async function POST(request: NextRequest) {
     const { data: payment, error: paymentError } = await (supabase as any)
       .from('payments')
       .insert({
-        payer_id: user.id,
+        payer_id: userId,
         recipient_id: recipient_id || null,
         listing_id: listing_id || null,
         amount,
@@ -122,50 +100,33 @@ export async function POST(request: NextRequest) {
       .select()
       .single()
 
-    if (paymentError) {
-      console.error('Error creating payment record:', paymentError)
-    }
+    if (paymentError) throw paymentError
 
-    return NextResponse.json({
+    return apiResponse({
       payment_intent_id: paymentIntent.id,
       client_secret: paymentIntent.client_secret,
       status: paymentIntent.status,
       payment_id: payment?.id,
-    })
-  } catch (error) {
-    console.error('Error in POST /api/payments/intents:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
+  },
+  {
+    rateLimit: 'paymentCreate',
+    audit: {
+      action: 'create',
+      resourceType: 'payment_intent',
+      getResourceId: (_req, res) => res?.payment_id,
+    },
   }
-}
+)
 
 // Get payment intent status
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
-    const { searchParams } = new URL(request.url)
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    const { searchParams } = new URL(req.url)
     const paymentIntentId = searchParams.get('payment_intent_id')
 
     if (!paymentIntentId) {
-      return NextResponse.json(
-        { error: 'payment_intent_id is required' },
-        { status: 400 }
-      )
+      return apiResponse({ error: 'payment_intent_id is required' }, 400, requestId)
     }
 
     // Verify user owns this payment
@@ -173,28 +134,19 @@ export async function GET(request: NextRequest) {
       .from('payments')
       .select('*')
       .eq('stripe_payment_intent_id', paymentIntentId)
-      .single() as { data: any }
+      .single()
 
-    if (!payment || (payment.payer_id !== user.id && payment.recipient_id !== user.id)) {
-      return NextResponse.json(
-        { error: 'Payment not found' },
-        { status: 404 }
-      )
+    if (!payment || (payment.payer_id !== userId && payment.recipient_id !== userId)) {
+      throw new NotFoundError('Payment not found')
     }
 
     const paymentIntent = await getPaymentIntent(paymentIntentId)
 
-    return NextResponse.json({
+    return apiResponse({
       payment_intent_id: paymentIntent.id,
       status: paymentIntent.status,
       amount: paymentIntent.amount / 100,
       payment,
-    })
-  } catch (error) {
-    console.error('Error in GET /api/payments/intents:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    }, 200, requestId)
   }
-}
+)

@@ -59,7 +59,57 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes - redirect to login if not authenticated
-  const protectedRoutes = ['/dashboard', '/profile', '/listings/new', '/messages']
+  // All routes under (app) group require authentication
+  const protectedRoutes = [
+    // Core app pages
+    '/dashboard',
+    '/profile',
+    '/discover',
+    '/search',
+    '/roommates',
+    '/quiz',
+    '/verify',
+
+    // Listings
+    '/listings/new',
+    '/listings/', // covers /listings/[id] and /listings/[id]/edit
+    '/my-listings',
+    '/saved',
+
+    // Messaging
+    '/messages',
+
+    // Groups
+    '/groups',
+
+    // Financial
+    '/payments',
+    '/expenses',
+    '/reviews',
+
+    // Settings
+    '/settings',
+
+    // Resources (protected sections)
+    '/resources/bookmarks',
+    '/resources/agreement',
+    '/resources/submit-question',
+    '/resources/tools',
+    '/resources/guides',
+    '/resources/faq',
+
+    // Admin (all admin routes)
+    '/admin',
+
+    // Matching preferences
+    '/matching-preferences',
+
+    // Notifications
+    '/notifications',
+
+    // Onboarding
+    '/onboarding',
+  ]
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   )

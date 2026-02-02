@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef, type InputHTMLAttributes } from 'react'
+import { forwardRef, type InputHTMLAttributes, useId } from 'react'
 import { cn } from '@/lib/utils'
 
 export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -10,8 +10,17 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ className, label, error, helperText, type = 'text', id, ...props }, ref) => {
-    const inputId = id || label?.toLowerCase().replace(/\s+/g, '-')
+  ({ className, label, error, helperText, type = 'text', id, required, ...props }, ref) => {
+    const generatedId = useId()
+    const inputId = id || generatedId
+    const errorId = `${inputId}-error`
+    const helperId = `${inputId}-helper`
+
+    // Build aria-describedby based on which descriptions exist
+    const describedByIds: string[] = []
+    if (error) describedByIds.push(errorId)
+    else if (helperText) describedByIds.push(helperId)
+    const ariaDescribedBy = describedByIds.length > 0 ? describedByIds.join(' ') : undefined
 
     return (
       <div className="w-full">
@@ -21,12 +30,19 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             className="block text-sm font-medium text-gray-700 mb-1"
           >
             {label}
+            {required && (
+              <span className="text-red-500 ml-1" aria-hidden="true">*</span>
+            )}
           </label>
         )}
         <input
           ref={ref}
           id={inputId}
           type={type}
+          required={required}
+          aria-invalid={error ? 'true' : undefined}
+          aria-describedby={ariaDescribedBy}
+          aria-required={required}
           className={cn(
             'w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400',
             'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
@@ -39,10 +55,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           {...props}
         />
         {error && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+          <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+            {error}
+          </p>
         )}
         {helperText && !error && (
-          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+          <p id={helperId} className="mt-1 text-sm text-gray-500">
+            {helperText}
+          </p>
         )}
       </div>
     )

@@ -1,23 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { NextRequest } from 'next/server'
+import { z } from 'zod'
+import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
+import { ValidationError } from '@/lib/error-reporter'
 
-export async function GET(request: NextRequest) {
-  try {
-    const supabase = await createClient()
+const blockSchema = z.object({
+  user_id: z.string().uuid('Invalid user ID'),
+})
 
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
-
+export const GET = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
     // Get blocked users with profile info
     const { data: blockedUsers, error } = await (supabase as any)
       .from('blocked_users')
@@ -26,118 +17,81 @@ export async function GET(request: NextRequest) {
         blocked_user_id,
         created_at
       `)
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false }) as { data: any[]; error: any }
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching blocked users:', error)
-      return NextResponse.json(
-        { error: 'Failed to fetch blocked users' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
     // Fetch profiles for blocked users
-    const blockedUserIds = (blockedUsers || []).map((b) => b.blocked_user_id)
+    const blockedUserIds = (blockedUsers || []).map((b: any) => b.blocked_user_id)
 
     let profiles: any[] = []
     if (blockedUserIds.length > 0) {
       const { data: profileData } = await (supabase as any)
         .from('profiles')
         .select('user_id, name, profile_photo')
-        .in('user_id', blockedUserIds) as { data: any[] }
+        .in('user_id', blockedUserIds)
       profiles = profileData || []
     }
 
     // Combine data
-    const blockedWithProfiles = (blockedUsers || []).map((b) => ({
+    const blockedWithProfiles = (blockedUsers || []).map((b: any) => ({
       ...b,
       profile: profiles.find((p) => p.user_id === b.blocked_user_id) || null,
     }))
 
-    return NextResponse.json({ blocked_users: blockedWithProfiles })
-  } catch (error) {
-    console.error('Error in GET /api/blocked-users:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ blocked_users: blockedWithProfiles }, 200, requestId)
   }
-}
+)
 
-export async function POST(request: NextRequest) {
-  try {
-    const supabase = await createClient()
-
-    // Check authentication
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+export const POST = withApiHandler(
+  async (req, { userId, supabase, requestId }) => {
+    // Validate input
+    let body: z.infer<typeof blockSchema>
+    try {
+      body = await parseBody(req, blockSchema)
+    } catch {
+      throw new ValidationError('user_id is required')
     }
 
-    const body = await request.json()
-    const { user_id: blockedUserId } = body
+    const blockedUserId = body.user_id
 
-    if (!blockedUserId) {
-      return NextResponse.json(
-        { error: 'user_id is required' },
-        { status: 400 }
-      )
-    }
-
-    if (blockedUserId === user.id) {
-      return NextResponse.json(
-        { error: 'Cannot block yourself' },
-        { status: 400 }
-      )
+    if (blockedUserId === userId) {
+      return apiResponse({ error: 'Cannot block yourself' }, 400, requestId)
     }
 
     // Check if already blocked
     const { data: existing } = await (supabase as any)
       .from('blocked_users')
       .select('id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('blocked_user_id', blockedUserId)
       .single()
 
     if (existing) {
-      return NextResponse.json(
-        { error: 'User already blocked' },
-        { status: 409 }
-      )
+      return apiResponse({ error: 'User already blocked' }, 409, requestId)
     }
 
     // Block user
     const { data: blocked, error } = await (supabase as any)
       .from('blocked_users')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         blocked_user_id: blockedUserId,
       })
       .select()
       .single()
 
-    if (error) {
-      console.error('Error blocking user:', error)
-      return NextResponse.json(
-        { error: 'Failed to block user' },
-        { status: 500 }
-      )
-    }
+    if (error) throw error
 
-    return NextResponse.json({ blocked }, { status: 201 })
-  } catch (error) {
-    console.error('Error in POST /api/blocked-users:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return apiResponse({ blocked }, 201, requestId)
+  },
+  {
+    rateLimit: 'default',
+    audit: {
+      action: 'create',
+      resourceType: 'blocked_user',
+      getResourceId: (_req, res) => res?.blocked?.id,
+    },
   }
-}
+)
