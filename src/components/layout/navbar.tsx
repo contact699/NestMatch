@@ -21,6 +21,7 @@ import {
   Star,
   Receipt,
   BookOpen,
+  Sparkles,
   LucideIcon,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -166,12 +167,11 @@ export function Navbar({ user }: NavbarProps) {
     ? [
         { href: '/dashboard', label: 'Home', icon: Home },
         { href: '/search', label: 'Search', icon: Search },
+        { href: '/discover', label: 'Discover', icon: Sparkles },
         { href: '/roommates', label: 'Roommates', icon: Users },
         { href: '/listings/new', label: 'Post', icon: PlusCircle },
-        { href: '/my-listings', label: 'Listings', icon: Home },
         { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
         { href: '/saved', label: 'Saved', icon: Heart },
-        { href: '/resources', label: 'Resources', icon: BookOpen },
       ]
     : []
 
