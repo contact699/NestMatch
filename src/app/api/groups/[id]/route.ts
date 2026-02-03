@@ -11,7 +11,15 @@ const updateGroupSchema = z.object({
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   preferred_cities: z.array(z.string()).optional(),
   status: z.enum(['forming', 'searching', 'matched']).optional(),
-})
+}).refine(
+  (data) => {
+    if (data.combined_budget_min && data.combined_budget_max) {
+      return data.combined_budget_min <= data.combined_budget_max
+    }
+    return true
+  },
+  { message: 'Minimum budget must be less than or equal to maximum budget', path: ['combined_budget_max'] }
+)
 
 // Get a specific group
 export const GET = withApiHandler(

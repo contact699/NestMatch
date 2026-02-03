@@ -196,20 +196,84 @@ ${data.maintenanceReporting
 }
 `)
 
+  // Accommodations
+  sections.push(`
+4. ACCOMMODATIONS
+
+4.1 Parking
+${data.parkingIncluded
+  ? (() => {
+      let content = 'Parking is included with this property.'
+      if (data.parkingSpots && data.parkingSpots > 0) {
+        content += ` There are ${data.parkingSpots} parking spot${data.parkingSpots > 1 ? 's' : ''} available.`
+      }
+      if (data.parkingMonthlyCost && data.parkingMonthlyCost > 0) {
+        content += ` Parking costs $${data.parkingMonthlyCost.toLocaleString()} per month.`
+      }
+      if (data.parkingAssignments && data.parkingAssignments.length > 0) {
+        const assignedSpots = data.parkingAssignments.filter(a => a.roommate)
+        if (assignedSpots.length > 0) {
+          content += `\nSpot assignments:\n${assignedSpots.map(a => `- ${a.spotNumber}: ${a.roommate}`).join('\n')}`
+        }
+      }
+      if (data.parkingRotation) {
+        content += '\nParking spots will rotate among roommates periodically.'
+      }
+      const visitorPolicy = {
+        available: 'Visitor parking is available on-site.',
+        limited: 'Visitor parking is limited - please notify roommates in advance.',
+        none: 'No visitor parking is available on the premises.',
+        street_only: 'Visitors must park on the street.',
+      }[data.visitorParkingPolicy || 'available']
+      content += `\n${visitorPolicy}`
+      if (data.vehicleRestrictions) {
+        content += `\nVehicle restrictions: ${data.vehicleRestrictions}`
+      }
+      return content
+    })()
+  : 'Parking is not included with this property.'
+}
+
+4.2 Accessibility Needs
+${(() => {
+  const needs: string[] = []
+  if (data.accessibilityWheelchair) needs.push('- Wheelchair accessible entrance required')
+  if (data.accessibilityMobilityStorage) needs.push('- Mobility aid storage needed')
+  if (data.accessibilityServiceAnimal) needs.push('- Service animal accommodation')
+  return needs.length > 0
+    ? needs.join('\n')
+    : 'No specific accessibility requirements noted.'
+})()}
+
+4.3 Care/Support Needs
+${(() => {
+  const needs: string[] = []
+  if (data.careScheduledVisits) needs.push('- Scheduled support worker visits expected')
+  if (data.careQuietHoursMedical) needs.push('- Quiet hours required for medical needs')
+  if (data.careAccessibilityMods) needs.push('- Specific accessibility modifications needed')
+  if (needs.length > 0 && data.careAdditionalDetails) {
+    needs.push(`\nAdditional details: ${data.careAdditionalDetails}`)
+  }
+  return needs.length > 0
+    ? `${needs.join('\n')}\n\nAll roommates agree to respect and accommodate these care needs.`
+    : 'No specific care or support needs noted.'
+})()}
+`)
+
   // Agreement Terms
   sections.push(`
-4. AGREEMENT TERMS
+5. AGREEMENT TERMS
 
-4.1 Duration
+5.1 Duration
 ${data.agreementDuration === 'fixed_term' && data.fixedTermEndDate
   ? `This agreement is for a fixed term ending on ${formatDate(data.fixedTermEndDate)}.`
   : 'This agreement is month-to-month and will continue until terminated by any party.'
 }
 
-4.2 Notice to Leave
+5.2 Notice to Leave
 Any roommate wishing to leave must provide at least ${data.noticeToLeave} days written notice to all other roommates.
 
-4.3 Dispute Resolution
+5.3 Dispute Resolution
 ${(() => {
   switch (data.disputeResolution) {
     case 'direct':
@@ -223,13 +287,13 @@ ${(() => {
   }
 })()}
 
-4.4 Termination
+5.4 Termination
 This agreement may be terminated by mutual written consent of all parties, or by any party giving the required notice as specified above.
 `)
 
   // Signatures
   sections.push(`
-5. SIGNATURES
+6. SIGNATURES
 
 By signing below, all parties agree to abide by the terms of this Roommate Agreement.
 

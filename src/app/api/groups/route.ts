@@ -10,7 +10,16 @@ const createGroupSchema = z.object({
   combined_budget_max: z.number().positive().optional(),
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   preferred_cities: z.array(z.string()).optional(),
-})
+  budget_contribution: z.number().positive().optional(),
+}).refine(
+  (data) => {
+    if (data.combined_budget_min && data.combined_budget_max) {
+      return data.combined_budget_min <= data.combined_budget_max
+    }
+    return true
+  },
+  { message: 'Minimum budget must be less than or equal to maximum budget', path: ['combined_budget_max'] }
+)
 
 // Get user's co-renter groups
 export const GET = withApiHandler(
@@ -119,7 +128,7 @@ export const POST = withApiHandler(
         group_id: group.id,
         user_id: userId,
         role: 'admin',
-        budget_contribution: combined_budget_min ? combined_budget_min / 2 : null,
+        budget_contribution: groupData.budget_contribution || null,
       })
 
     if (memberError) {

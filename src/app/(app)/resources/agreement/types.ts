@@ -39,7 +39,29 @@ export const agreementSchema = z.object({
   sharedSuppliesApproach: z.enum(['split', 'rotate', 'individual']),
   maintenanceReporting: z.string().optional(),
 
-  // Step 5: Agreement Terms
+  // Step 5: Accommodations
+  // Parking
+  parkingIncluded: z.boolean(),
+  parkingSpots: z.number().min(0).max(10).optional(),
+  parkingMonthlyCost: z.number().min(0).optional(),
+  parkingAssignments: z.array(z.object({
+    roommate: z.string(),
+    spotNumber: z.string().optional(),
+  })).optional(),
+  visitorParkingPolicy: z.enum(['available', 'limited', 'none', 'street_only']).optional(),
+  parkingRotation: z.boolean().optional(),
+  vehicleRestrictions: z.string().optional(),
+
+  // Accessibility
+  accessibilityWheelchair: z.boolean(),
+  accessibilityMobilityStorage: z.boolean(),
+  accessibilityServiceAnimal: z.boolean(),
+  careScheduledVisits: z.boolean(),
+  careQuietHoursMedical: z.boolean(),
+  careAccessibilityMods: z.boolean(),
+  careAdditionalDetails: z.string().optional(),
+
+  // Step 6: Agreement Terms
   noticeToLeave: z.number().min(1),
   disputeResolution: z.enum(['direct', 'written', 'mediation']),
   agreementDuration: z.enum(['month_to_month', 'fixed_term']),
@@ -73,6 +95,21 @@ export const defaultValues: Partial<AgreementFormData> = {
   cleaningAreas: [],
   sharedSuppliesApproach: 'split',
   maintenanceReporting: '',
+  // Accommodations defaults
+  parkingIncluded: false,
+  parkingSpots: 0,
+  parkingMonthlyCost: 0,
+  parkingAssignments: [],
+  visitorParkingPolicy: 'available',
+  parkingRotation: false,
+  vehicleRestrictions: '',
+  accessibilityWheelchair: false,
+  accessibilityMobilityStorage: false,
+  accessibilityServiceAnimal: false,
+  careScheduledVisits: false,
+  careQuietHoursMedical: false,
+  careAccessibilityMods: false,
+  careAdditionalDetails: '',
   noticeToLeave: 30,
   disputeResolution: 'direct',
   agreementDuration: 'month_to_month',

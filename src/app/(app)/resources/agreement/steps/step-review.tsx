@@ -13,6 +13,8 @@ import {
   Sparkles,
   Package,
   AlertTriangle,
+  Car,
+  Accessibility,
 } from 'lucide-react'
 import { PROVINCES } from '@/components/resources'
 import { AgreementFormData } from '../types'
@@ -130,6 +132,39 @@ export function StepReview({ watch }: StepReviewProps) {
             individual: 'Buy individually',
           }[formData.sharedSuppliesApproach || 'split'],
         },
+      ],
+    },
+    {
+      title: 'Parking',
+      icon: Car,
+      items: [
+        { label: 'Parking Included', value: formData.parkingIncluded ? 'Yes' : 'No' },
+        ...(formData.parkingIncluded ? [
+          { label: 'Number of Spots', value: formData.parkingSpots?.toString() || '0' },
+          { label: 'Monthly Cost', value: formData.parkingMonthlyCost ? `$${formData.parkingMonthlyCost}` : 'Free' },
+          {
+            label: 'Visitor Parking',
+            value: {
+              available: 'Available',
+              limited: 'Limited',
+              none: 'None',
+              street_only: 'Street only',
+            }[formData.visitorParkingPolicy || 'available'],
+          },
+          { label: 'Spot Rotation', value: formData.parkingRotation ? 'Yes' : 'No' },
+        ] : []),
+      ],
+    },
+    {
+      title: 'Accessibility & Care',
+      icon: Accessibility,
+      items: [
+        { label: 'Wheelchair Access', value: formData.accessibilityWheelchair ? 'Required' : 'Not required' },
+        { label: 'Mobility Storage', value: formData.accessibilityMobilityStorage ? 'Needed' : 'Not needed' },
+        { label: 'Service Animal', value: formData.accessibilityServiceAnimal ? 'Yes' : 'No' },
+        { label: 'Support Worker Visits', value: formData.careScheduledVisits ? 'Expected' : 'No' },
+        { label: 'Medical Quiet Hours', value: formData.careQuietHoursMedical ? 'Required' : 'No' },
+        { label: 'Accessibility Mods', value: formData.careAccessibilityMods ? 'Needed' : 'No' },
       ],
     },
     {

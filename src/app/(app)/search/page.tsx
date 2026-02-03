@@ -1,13 +1,33 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { ListingCard, ListingCardSkeleton } from '@/components/listings/listing-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { SearchFilters } from '@/components/search/search-filters'
+import { ViewModeTabs, ViewMode } from '@/components/search/view-mode-tabs'
+import { SearchResultsList } from '@/components/search/search-results-list'
+import { SearchResultsProximity } from '@/components/search/search-results-proximity'
+import { useSavedListings } from '@/lib/hooks/use-saved-listings'
 import { Home, Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+
+// Lazy load the map component to reduce initial bundle size
+const SearchResultsMap = dynamic(
+  () => import('@/components/search/search-results-map').then((mod) => mod.SearchResultsMap),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg animate-pulse">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
+          <p className="text-sm text-gray-500">Loading map...</p>
+        </div>
+      </div>
+    ),
+    ssr: false,
+  }
+)
 
 interface Listing {
   id: string
@@ -25,6 +45,15 @@ interface Listing {
   bathroom_type: string
   created_at: string
   user_id: string
+  latitude?: number | null
+  longitude?: number | null
+  profiles?: {
+    id: string
+    user_id: string
+    name: string | null
+    profile_photo: string | null
+    verification_level: string
+  }
 }
 
 export default function SearchPage() {
@@ -35,6 +64,20 @@ export default function SearchPage() {
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
+  // Get view mode from URL or default to 'list'
+  const viewParam = searchParams.get('view')
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    (viewParam === 'map' || viewParam === 'proximity') ? viewParam : 'list'
+  )
+
+  // Saved listings hook
+  const {
+    savedIds,
+    save,
+    unsave,
+    isLoading: savedLoading,
+  } = useSavedListings()
+
   // Get current user
   useEffect(() => {
     async function getUser() {
@@ -44,6 +87,20 @@ export default function SearchPage() {
     }
     getUser()
   }, [])
+
+  // Handle view mode change
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode)
+    // Update URL param
+    const params = new URLSearchParams(searchParams.toString())
+    if (mode === 'list') {
+      params.delete('view')
+    } else {
+      params.set('view', mode)
+    }
+    const newUrl = params.toString() ? `?${params.toString()}` : '/search'
+    router.push(`/search${newUrl}`, { scroll: false })
+  }
 
   // Fetch listings when search params change
   useEffect(() => {
@@ -97,29 +154,10 @@ export default function SearchPage() {
     fetchListings()
   }, [searchParams])
 
-  // Stagger delay classes for animation
-  const getDelayClass = (index: number) => {
-    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-600']
-    return delays[index % delays.length]
-  }
-
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Search Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Find a room</h1>
-        <p className="text-gray-600">
-          Browse verified listings across Canada
-        </p>
-      </div>
-
-      {/* Search & Filters */}
-      <Card variant="glass" className="p-4 mb-8">
-        <SearchFilters />
-      </Card>
-
-      {/* Results */}
-      {isLoading ? (
+  // Render the appropriate view
+  const renderResults = () => {
+    if (isLoading) {
+      return (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
@@ -132,7 +170,11 @@ export default function SearchPage() {
             </div>
           ))}
         </div>
-      ) : error ? (
+      )
+    }
+
+    if (error) {
+      return (
         <div className="text-center py-12">
           <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading listings</h3>
@@ -141,7 +183,11 @@ export default function SearchPage() {
             Try again
           </Button>
         </div>
-      ) : listings.length === 0 ? (
+      )
+    }
+
+    if (listings.length === 0) {
+      return (
         <div className="text-center py-12">
           <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
@@ -152,18 +198,73 @@ export default function SearchPage() {
             Clear filters
           </Button>
         </div>
-      ) : (
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {listings.map((listing, index) => (
-            <div key={listing.id} className={getDelayClass(index)}>
-              <ListingCard
-                listing={listing as any}
-                currentUserId={currentUserId}
-              />
-            </div>
-          ))}
+      )
+    }
+
+    switch (viewMode) {
+      case 'map':
+        return (
+          <SearchResultsMap
+            listings={listings}
+            savedIds={savedIds}
+            onSave={save}
+            onUnsave={unsave}
+          />
+        )
+      case 'proximity':
+        return (
+          <SearchResultsProximity
+            listings={listings}
+            currentUserId={currentUserId}
+            savedIds={savedIds}
+            onSave={save}
+            onUnsave={unsave}
+          />
+        )
+      default:
+        return (
+          <SearchResultsList
+            listings={listings}
+            currentUserId={currentUserId}
+            savedIds={savedIds}
+            onSave={save}
+            onUnsave={unsave}
+          />
+        )
+    }
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Search Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-1">Find a room</h1>
+          <p className="text-gray-600">
+            Browse verified listings across Canada
+          </p>
         </div>
+        <ViewModeTabs
+          activeMode={viewMode}
+          onModeChange={handleViewModeChange}
+          disabled={isLoading}
+        />
+      </div>
+
+      {/* Search & Filters */}
+      <Card variant="glass" className="p-4 mb-8">
+        <SearchFilters />
+      </Card>
+
+      {/* Results count */}
+      {!isLoading && !error && listings.length > 0 && (
+        <p className="text-sm text-gray-500 mb-4">
+          {listings.length} listing{listings.length !== 1 ? 's' : ''} found
+        </p>
       )}
+
+      {/* Results */}
+      {renderResults()}
     </div>
   )
 }

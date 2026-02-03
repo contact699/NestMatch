@@ -15,6 +15,7 @@ import {
   Leaf,
   Clock,
   Bath,
+  HandHelping,
 } from 'lucide-react'
 import type { Listing, Profile } from '@/types/database'
 
@@ -69,6 +70,12 @@ export function ListingCard({
             )}
             {listing.no_credit_history_ok && (
               <Badge variant="info">No Credit History OK</Badge>
+            )}
+            {listing.help_needed && (
+              <Badge variant="warning" className="flex items-center gap-1">
+                <HandHelping className="h-3 w-3" />
+                Assistance Required
+              </Badge>
             )}
           </div>
 

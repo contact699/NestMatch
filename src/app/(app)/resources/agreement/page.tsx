@@ -14,6 +14,7 @@ import {
   Sparkles,
   Check,
   Download,
+  Accessibility,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -24,6 +25,7 @@ import {
   StepFinancial,
   StepLifestyle,
   StepResponsibilities,
+  StepAccommodations,
   StepReview,
   StepDownload,
 } from './steps'
@@ -34,8 +36,9 @@ const STEPS = [
   { id: 2, title: 'Financial', icon: DollarSign, description: 'Rent and utilities' },
   { id: 3, title: 'Lifestyle', icon: Moon, description: 'House rules' },
   { id: 4, title: 'Responsibilities', icon: Sparkles, description: 'Cleaning and supplies' },
-  { id: 5, title: 'Review', icon: Check, description: 'Check details' },
-  { id: 6, title: 'Download', icon: Download, description: 'Get your agreement' },
+  { id: 5, title: 'Accommodations', icon: Accessibility, description: 'Parking & accessibility' },
+  { id: 6, title: 'Review', icon: Check, description: 'Check details' },
+  { id: 7, title: 'Download', icon: Download, description: 'Get your agreement' },
 ]
 
 const formatTime = (time: string | undefined) => {
@@ -163,6 +166,71 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
     content: suppliesContent,
   })
 
+  // Parking
+  if (data.parkingIncluded) {
+    let parkingContent = `Parking is included with this property.`
+    if (data.parkingSpots && data.parkingSpots > 0) {
+      parkingContent += ` There are ${data.parkingSpots} parking spot${data.parkingSpots > 1 ? 's' : ''} available.`
+    }
+    if (data.parkingMonthlyCost && data.parkingMonthlyCost > 0) {
+      parkingContent += ` Parking costs $${data.parkingMonthlyCost.toLocaleString()} per month.`
+    }
+    if (data.parkingAssignments && data.parkingAssignments.length > 0) {
+      const assignedSpots = data.parkingAssignments.filter(a => a.roommate)
+      if (assignedSpots.length > 0) {
+        parkingContent += ` Spot assignments: ${assignedSpots.map(a => `${a.spotNumber} - ${a.roommate}`).join(', ')}.`
+      }
+    }
+    if (data.parkingRotation) {
+      parkingContent += ` Parking spots will rotate among roommates periodically.`
+    }
+    const visitorPolicyText = {
+      available: 'Visitor parking is available on-site.',
+      limited: 'Visitor parking is limited - please notify roommates in advance.',
+      none: 'No visitor parking is available on the premises.',
+      street_only: 'Visitors must park on the street.',
+    }[data.visitorParkingPolicy || 'available']
+    parkingContent += ` ${visitorPolicyText}`
+    if (data.vehicleRestrictions) {
+      parkingContent += ` Vehicle restrictions: ${data.vehicleRestrictions}`
+    }
+
+    clauses.push({
+      title: 'Parking',
+      content: parkingContent,
+    })
+  }
+
+  // Accessibility & Care Needs
+  const accessibilityNeeds: string[] = []
+  if (data.accessibilityWheelchair) accessibilityNeeds.push('wheelchair accessible entrance')
+  if (data.accessibilityMobilityStorage) accessibilityNeeds.push('mobility aid storage')
+  if (data.accessibilityServiceAnimal) accessibilityNeeds.push('service animal accommodation')
+
+  const careNeeds: string[] = []
+  if (data.careScheduledVisits) careNeeds.push('scheduled support worker visits')
+  if (data.careQuietHoursMedical) careNeeds.push('quiet hours for medical needs')
+  if (data.careAccessibilityMods) careNeeds.push('specific accessibility modifications')
+
+  if (accessibilityNeeds.length > 0 || careNeeds.length > 0) {
+    let accessContent = 'The following accessibility and care accommodations are agreed upon by all roommates:'
+    if (accessibilityNeeds.length > 0) {
+      accessContent += ` Accessibility needs include: ${accessibilityNeeds.join(', ')}.`
+    }
+    if (careNeeds.length > 0) {
+      accessContent += ` Care/support needs include: ${careNeeds.join(', ')}.`
+    }
+    if (data.careAdditionalDetails) {
+      accessContent += ` Additional details: ${data.careAdditionalDetails}`
+    }
+    accessContent += ' All roommates agree to respect and accommodate these needs.'
+
+    clauses.push({
+      title: 'Accessibility & Care Accommodations',
+      content: accessContent,
+    })
+  }
+
   // Notice to Leave
   clauses.push({
     title: 'Notice to Leave',
@@ -218,6 +286,9 @@ export default function AgreementGeneratorPage() {
         fieldsToValidate = ['cleaningSchedule', 'sharedSuppliesApproach']
         break
       case 5:
+        fieldsToValidate = ['parkingIncluded', 'accessibilityWheelchair', 'accessibilityMobilityStorage', 'accessibilityServiceAnimal', 'careScheduledVisits', 'careQuietHoursMedical', 'careAccessibilityMods']
+        break
+      case 6:
         fieldsToValidate = ['noticeToLeave', 'disputeResolution', 'agreementDuration']
         break
     }
@@ -229,7 +300,7 @@ export default function AgreementGeneratorPage() {
   const nextStep = async () => {
     const isValid = await validateStep()
     if (isValid && currentStep < STEPS.length) {
-      if (currentStep === 5) {
+      if (currentStep === 6) {
         // Generate content before moving to download
         const formData = watch()
         const content = generateAgreementContent(formData)
@@ -256,8 +327,10 @@ export default function AgreementGeneratorPage() {
       case 4:
         return <StepResponsibilities register={register} watch={watch} setValue={setValue} errors={errors} />
       case 5:
-        return <StepReview watch={watch} />
+        return <StepAccommodations register={register} watch={watch} setValue={setValue} errors={errors} />
       case 6:
+        return <StepReview watch={watch} />
+      case 7:
         const formData = watch()
         const provinceName = {
           ON: 'Ontario',
@@ -362,7 +435,7 @@ export default function AgreementGeneratorPage() {
           {renderStep()}
 
           {/* Navigation buttons */}
-          {currentStep < 6 && (
+          {currentStep < 7 && (
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
               <Button
                 type="button"
@@ -375,7 +448,7 @@ export default function AgreementGeneratorPage() {
               </Button>
 
               <Button type="button" onClick={nextStep}>
-                {currentStep === 5 ? (
+                {currentStep === 6 ? (
                   <>
                     Generate Agreement
                     <Download className="h-4 w-4 ml-2" />
@@ -390,9 +463,9 @@ export default function AgreementGeneratorPage() {
             </div>
           )}
 
-          {currentStep === 6 && (
+          {currentStep === 7 && (
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" onClick={() => setCurrentStep(5)}>
+              <Button type="button" variant="outline" onClick={() => setCurrentStep(6)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Edit Agreement
               </Button>

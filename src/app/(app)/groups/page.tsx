@@ -370,6 +370,7 @@ function CreateGroupModal({
   const [description, setDescription] = useState('')
   const [budgetMin, setBudgetMin] = useState('')
   const [budgetMax, setBudgetMax] = useState('')
+  const [myBudget, setMyBudget] = useState('')
   const [moveDate, setMoveDate] = useState('')
   const [cities, setCities] = useState('')
   const [loading, setLoading] = useState(false)
@@ -384,6 +385,14 @@ function CreateGroupModal({
       return
     }
 
+    // Client-side budget validation
+    const minBudget = budgetMin ? parseFloat(budgetMin) : null
+    const maxBudget = budgetMax ? parseFloat(budgetMax) : null
+    if (minBudget && maxBudget && minBudget > maxBudget) {
+      setError('Minimum budget cannot exceed maximum budget')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -393,19 +402,24 @@ function CreateGroupModal({
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
-          combined_budget_min: budgetMin ? parseFloat(budgetMin) : undefined,
-          combined_budget_max: budgetMax ? parseFloat(budgetMax) : undefined,
+          combined_budget_min: minBudget || undefined,
+          combined_budget_max: maxBudget || undefined,
           target_move_date: moveDate || undefined,
           preferred_cities: cities
             ? cities.split(',').map((c) => c.trim()).filter(Boolean)
             : undefined,
+          budget_contribution: myBudget ? parseFloat(myBudget) : undefined,
         }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to create group')
+        // Handle both string and object error formats
+        const errorMessage = typeof data.error === 'string'
+          ? data.error
+          : data.error?.message || 'Failed to create group'
+        throw new Error(errorMessage)
       }
 
       onSuccess()
@@ -480,6 +494,22 @@ function CreateGroupModal({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Your Budget Contribution (CAD)
+            </label>
+            <input
+              type="number"
+              value={myBudget}
+              onChange={(e) => setMyBudget(e.target.value)}
+              placeholder="Your monthly contribution"
+              min="0"
+              step="50"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">How much can you contribute monthly to the group's combined budget?</p>
           </div>
 
           <div>
