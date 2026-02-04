@@ -120,6 +120,7 @@ export default function SearchPage() {
         const bathroomType = searchParams.get('bathroomType')
         const newcomerFriendly = searchParams.get('newcomerFriendly')
         const noCreditOk = searchParams.get('noCreditOk')
+        const idealForStudents = searchParams.get('idealForStudents')
         const q = searchParams.get('q')
 
         if (city) params.set('city', city)
@@ -130,6 +131,7 @@ export default function SearchPage() {
         if (bathroomType) params.set('bathroomType', bathroomType)
         if (newcomerFriendly) params.set('newcomerFriendly', newcomerFriendly)
         if (noCreditOk) params.set('noCreditOk', noCreditOk)
+        if (idealForStudents) params.set('idealForStudents', idealForStudents)
         if (q) params.set('q', q)
 
         const queryString = params.toString()

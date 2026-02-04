@@ -83,6 +83,10 @@ export function StepReview({ watch }: StepReviewProps) {
             <dd className="text-gray-900">
               {formData.no_credit_history_ok ? 'Yes' : 'No'}
             </dd>
+            <dt className="text-gray-500">Ideal for Students:</dt>
+            <dd className="text-gray-900">
+              {formData.ideal_for_students ? 'Yes' : 'No'}
+            </dd>
           </dl>
         </div>
 

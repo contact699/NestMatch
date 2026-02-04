@@ -169,7 +169,7 @@ export function Navbar({ user }: NavbarProps) {
         { href: '/search', label: 'Search', icon: Search },
         { href: '/discover', label: 'Discover', icon: Sparkles },
         { href: '/roommates', label: 'Roommates', icon: Users },
-        { href: '/listings/new', label: 'Post', icon: PlusCircle },
+        { href: '/listings/new', label: 'Create', icon: PlusCircle },
         { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
         { href: '/saved', label: 'Saved', icon: Heart },
       ]

@@ -57,7 +57,11 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
   }, [savedIds])
 
   const save = useCallback(async (listingId: string) => {
-    if (!isAuthenticated) {
+    // Wait for auth check to complete; if still loading, don't redirect
+    if (isAuthenticated === null) {
+      return false
+    }
+    if (isAuthenticated === false) {
       if (options.onAuthRequired) {
         options.onAuthRequired()
       } else {

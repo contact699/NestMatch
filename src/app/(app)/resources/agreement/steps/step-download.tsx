@@ -21,6 +21,12 @@ interface StepDownloadProps {
 export function StepDownload({ data, onBack }: StepDownloadProps) {
   const [isGenerating, setIsGenerating] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
+
+  const isMobile = () => {
+    if (typeof window === 'undefined') return false
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  }
 
   const generatePDF = async () => {
     setIsGenerating(true)
@@ -44,16 +50,23 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       const blob = await pdf(doc).toBlob()
       const url = URL.createObjectURL(blob)
 
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-
-      URL.revokeObjectURL(url)
+      if (isMobile()) {
+        // On mobile, open PDF in a new tab so the user can view/save it
+        // Programmatic <a> click downloads don't work reliably on iOS Safari and some Android browsers
+        window.open(url, '_blank')
+      } else {
+        // On desktop, trigger a direct download
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      }
     } catch (error) {
       console.error('Failed to generate PDF:', error)
+      setDownloadError('Failed to generate PDF. Please try again or use a desktop browser.')
     } finally {
       setIsGenerating(false)
     }
@@ -156,6 +169,13 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
           </>
         )}
       </Button>
+
+      {/* Error message */}
+      {downloadError && (
+        <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+          {downloadError}
+        </div>
+      )}
 
       {/* Copy Link and Share Buttons */}
       <div className="flex gap-3">

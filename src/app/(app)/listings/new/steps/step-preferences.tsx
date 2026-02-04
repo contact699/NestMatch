@@ -100,6 +100,22 @@ export function StepPreferences({ register }: StepPreferencesProps) {
             </p>
           </div>
         </label>
+
+        <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <input
+            type="checkbox"
+            {...register('ideal_for_students')}
+            className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              Ideal for Students
+            </p>
+            <p className="text-sm text-gray-500">
+              Best suited for students - close to campus, flexible terms, or student-only preference
+            </p>
+          </div>
+        </label>
       </div>
     </div>
   )

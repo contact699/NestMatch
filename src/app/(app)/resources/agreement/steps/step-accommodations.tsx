@@ -27,6 +27,7 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
   const careQuietHoursMedical = watch('careQuietHoursMedical')
   const careAccessibilityMods = watch('careAccessibilityMods')
   const hasCareNeeds = careScheduledVisits || careQuietHoursMedical || careAccessibilityMods
+  const helpExchangeEnabled = watch('helpExchangeEnabled')
 
   const initializeParkingAssignments = (spots: number) => {
     if (spots > 0) {
@@ -297,6 +298,108 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               rows={3}
               className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
             />
+          </div>
+        )}
+      </div>
+
+      {/* Help/Assistance Exchange Section */}
+      <div className="space-y-4">
+        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Help/Assistance Exchange</h4>
+        <p className="text-sm text-gray-500">
+          If a roommate provides help or assistance (e.g., cleaning, errands, caregiving) in exchange for reduced rent or other compensation, document it here.
+        </p>
+
+        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+          <div>
+            <p className="font-medium text-sm text-gray-900">Help Exchange Arrangement</p>
+            <p className="text-xs text-gray-500">Does this living arrangement include an assistance exchange?</p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={helpExchangeEnabled}
+              onChange={(e) => setValue('helpExchangeEnabled', e.target.checked)}
+              className="sr-only peer"
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {helpExchangeEnabled && (
+          <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+            {/* Who provides help */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Who provides the assistance?
+              </label>
+              <select
+                {...register('helpExchangeProvider')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+              >
+                <option value="">Select a roommate</option>
+                {roommateNames.filter(Boolean).map((name, i) => (
+                  <option key={i} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Tasks */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tasks included in the arrangement
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'cleaning', label: 'Cleaning' },
+                  { value: 'cooking', label: 'Cooking/Meal Prep' },
+                  { value: 'groceries', label: 'Grocery Shopping' },
+                  { value: 'errands', label: 'Running Errands' },
+                  { value: 'caregiving', label: 'Caregiving/Companionship' },
+                  { value: 'gardening', label: 'Yard/Garden Work' },
+                  { value: 'driving', label: 'Driving/Transportation' },
+                  { value: 'pet_care', label: 'Pet Care' },
+                ].map((task) => (
+                  <label key={task.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer text-sm">
+                    <input
+                      type="checkbox"
+                      value={task.value}
+                      {...register('helpExchangeTasks')}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    {task.label}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Compensation */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Compensation type
+              </label>
+              <select
+                {...register('helpExchangeCompensation')}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+              >
+                <option value="reduced_rent">Reduced Rent</option>
+                <option value="free_rent">Free Rent</option>
+                <option value="utilities_covered">Utilities Covered</option>
+                <option value="other">Other Arrangement</option>
+              </select>
+            </div>
+
+            {/* Additional Details */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Details of the arrangement
+              </label>
+              <textarea
+                {...register('helpExchangeDetails')}
+                placeholder="Describe the specific arrangement, expected hours, schedule, and any other relevant details..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
+              />
+            </div>
           </div>
         )}
       </div>

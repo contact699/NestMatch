@@ -16,6 +16,7 @@ import {
   Clock,
   Bath,
   HandHelping,
+  GraduationCap,
 } from 'lucide-react'
 import type { Listing, Profile } from '@/types/database'
 
@@ -46,68 +47,77 @@ export function ListingCard({
 
   return (
     <Card variant="bordered" className="overflow-hidden card-hover group">
-      <Link href={`/listings/${listing.id}`}>
-        <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-          {listing.photos && listing.photos.length > 0 ? (
-            <img
-              src={listing.photos[0]}
-              alt={listing.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Home className="h-12 w-12 text-gray-300" />
-            </div>
-          )}
-
-          {/* Badges overlay */}
-          <div className="absolute top-3 left-3 flex flex-wrap gap-2">
-            {listing.newcomer_friendly && (
-              <Badge variant="success" className="flex items-center gap-1">
-                <Leaf className="h-3 w-3" />
-                Newcomer Friendly
-              </Badge>
-            )}
-            {listing.no_credit_history_ok && (
-              <Badge variant="info">No Credit History OK</Badge>
-            )}
-            {listing.help_needed && (
-              <Badge variant="warning" className="flex items-center gap-1">
-                <HandHelping className="h-3 w-3" />
-                Assistance Required
-              </Badge>
+      <div className="relative">
+        <Link href={`/listings/${listing.id}`}>
+          <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+            {listing.photos && listing.photos.length > 0 ? (
+              <img
+                src={listing.photos[0]}
+                alt={listing.title}
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Home className="h-12 w-12 text-gray-300" />
+              </div>
             )}
           </div>
+        </Link>
 
-          {/* Compatibility score */}
-          {currentUserId && listing.user_id !== currentUserId && (
-            <div className="absolute top-3 right-3">
-              <CompatibilityBadge
-                userId={listing.user_id}
-                currentUserId={currentUserId}
-                size="sm"
-                showLabel={false}
-              />
-            </div>
+        {/* Badges overlay */}
+        <div className="absolute top-3 left-3 flex flex-wrap gap-2 pointer-events-none">
+          {listing.newcomer_friendly && (
+            <Badge variant="success" className="flex items-center gap-1">
+              <Leaf className="h-3 w-3" />
+              Newcomer Friendly
+            </Badge>
           )}
-
-          {/* Save button */}
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              isSaved ? onUnsave?.() : onSave?.()
-            }}
-            className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white hover:scale-110 transition-all duration-300 shadow-sm"
-          >
-            <Heart
-              className={`h-5 w-5 transition-colors duration-300 ${
-                isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 group-hover:text-red-400'
-              }`}
-            />
-          </button>
+          {listing.no_credit_history_ok && (
+            <Badge variant="info">No Credit History OK</Badge>
+          )}
+          {listing.help_needed && (
+            <Badge variant="warning" className="flex items-center gap-1">
+              <HandHelping className="h-3 w-3" />
+              Assistance Required
+            </Badge>
+          )}
+          {listing.ideal_for_students && (
+            <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
+              <GraduationCap className="h-3 w-3" />
+              Ideal for Students
+            </Badge>
+          )}
         </div>
-      </Link>
+
+        {/* Compatibility score */}
+        {currentUserId && listing.user_id !== currentUserId && (
+          <div className="absolute top-3 right-3 pointer-events-none">
+            <CompatibilityBadge
+              userId={listing.user_id}
+              currentUserId={currentUserId}
+              size="sm"
+              showLabel={false}
+            />
+          </div>
+        )}
+
+        {/* Save button - outside of Link to prevent navigation interference */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            isSaved ? onUnsave?.() : onSave?.()
+          }}
+          className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white hover:scale-110 transition-all duration-300 shadow-sm z-10"
+        >
+          <Heart
+            className={`h-5 w-5 transition-colors duration-300 ${
+              isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 group-hover:text-red-400'
+            }`}
+          />
+        </button>
+      </div>
 
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">

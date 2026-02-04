@@ -65,6 +65,7 @@ export default function NewListingPage() {
       bathroom_type: 'shared',
       newcomer_friendly: false,
       no_credit_history_ok: false,
+      ideal_for_students: false,
       help_needed: false,
       help_tasks: [],
     },
@@ -189,7 +190,7 @@ export default function NewListingPage() {
 
       <Card variant="bordered">
         <CardHeader>
-          <CardTitle>Post a Room</CardTitle>
+          <CardTitle>Create a Listing</CardTitle>
           <CardDescription>
             Create a listing to find compatible roommates
           </CardDescription>

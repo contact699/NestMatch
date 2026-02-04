@@ -10,6 +10,7 @@ import {
   DollarSign,
   Leaf,
   Bath,
+  GraduationCap,
 } from 'lucide-react'
 
 export function SearchFilters() {
@@ -27,6 +28,7 @@ export function SearchFilters() {
     bathroomType: searchParams.get('bathroomType') || '',
     newcomerFriendly: searchParams.get('newcomerFriendly') === 'true',
     noCreditOk: searchParams.get('noCreditOk') === 'true',
+    idealForStudents: searchParams.get('idealForStudents') === 'true',
   })
 
   // Get cities for selected province
@@ -47,6 +49,7 @@ export function SearchFilters() {
     if (filters.bathroomType) params.set('bathroomType', filters.bathroomType)
     if (filters.newcomerFriendly) params.set('newcomerFriendly', 'true')
     if (filters.noCreditOk) params.set('noCreditOk', 'true')
+    if (filters.idealForStudents) params.set('idealForStudents', 'true')
 
     const queryString = params.toString()
     const url = queryString ? `/search?${queryString}` : '/search'
@@ -193,6 +196,16 @@ export function SearchFilters() {
             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
           />
           No Credit History OK
+        </label>
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+          <input
+            type="checkbox"
+            checked={filters.idealForStudents}
+            onChange={(e) => handleChange('idealForStudents', e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <GraduationCap className="h-4 w-4 text-purple-600" />
+          Ideal for Students
         </label>
       </div>
     </form>

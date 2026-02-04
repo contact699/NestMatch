@@ -21,6 +21,7 @@ export const listingSchema = z.object({
   roommate_age_max: z.number().max(120).optional(),
   newcomer_friendly: z.boolean(),
   no_credit_history_ok: z.boolean(),
+  ideal_for_students: z.boolean(),
   help_needed: z.boolean(),
   help_tasks: z.array(z.string()).optional(),
   help_details: z.string().max(500).optional(),

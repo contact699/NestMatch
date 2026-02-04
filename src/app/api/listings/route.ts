@@ -31,6 +31,7 @@ const listingSchema = z.object({
   roommate_age_max: z.number().max(120).optional(),
   newcomer_friendly: z.boolean().default(false),
   no_credit_history_ok: z.boolean().default(false),
+  ideal_for_students: z.boolean().default(false),
   help_needed: z.boolean().default(false),
   help_tasks: z.array(z.string()).optional(),
   help_details: z.string().max(500).optional(),
@@ -48,6 +49,7 @@ export const GET = withPublicHandler(
     const bathroomType = searchParams.get('bathroomType')
     const newcomerFriendly = searchParams.get('newcomerFriendly')
     const noCreditOk = searchParams.get('noCreditOk')
+    const idealForStudents = searchParams.get('idealForStudents')
     const userId = searchParams.get('userId')
     const q = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '24')
@@ -91,6 +93,9 @@ export const GET = withPublicHandler(
     }
     if (noCreditOk === 'true') {
       query = query.eq('no_credit_history_ok', true)
+    }
+    if (idealForStudents === 'true') {
+      query = query.eq('ideal_for_students', true)
     }
     if (q) {
       // Search in title, description, city, and province
@@ -147,6 +152,7 @@ export const POST = withApiHandler(
         roommate_age_max: listingData.roommate_age_max || null,
         newcomer_friendly: listingData.newcomer_friendly,
         no_credit_history_ok: listingData.no_credit_history_ok,
+        ideal_for_students: listingData.ideal_for_students || false,
         help_needed: listingData.help_needed || false,
         help_tasks: listingData.help_tasks || [],
         help_details: listingData.help_details || null,

@@ -104,7 +104,7 @@ export const POST = withApiHandler(
       preferred_cities,
     } = groupData
 
-    // Create group
+    // Create group (include created_by for RLS policy)
     const { data: group, error: groupError } = await (supabase as any)
       .from('co_renter_groups')
       .insert({
@@ -115,6 +115,7 @@ export const POST = withApiHandler(
         target_move_date,
         preferred_cities,
         status: 'forming',
+        created_by: userId,
       })
       .select()
       .single()

@@ -23,6 +23,8 @@ import {
   Eye,
   Edit,
   Bath,
+  GraduationCap,
+  HandHelping,
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
@@ -151,6 +153,18 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 )}
                 {listing.no_credit_history_ok && (
                   <Badge variant="info">No Credit History OK</Badge>
+                )}
+                {listing.help_needed && (
+                  <Badge variant="warning" className="flex items-center gap-1">
+                    <HandHelping className="h-3 w-3" />
+                    Assistance Required
+                  </Badge>
+                )}
+                {listing.ideal_for_students && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
+                    <GraduationCap className="h-3 w-3" />
+                    Ideal for Students
+                  </Badge>
                 )}
                 {!listing.is_active && (
                   <Badge variant="warning">Inactive</Badge>

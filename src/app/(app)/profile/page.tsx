@@ -260,7 +260,7 @@ export default async function ProfilePage() {
                   </div>
                 ) : (
                   <div className="text-center py-4">
-                    <p className="text-gray-500 mb-3">You haven't posted any listings yet.</p>
+                    <p className="text-gray-500 mb-3">You haven't created any listings yet.</p>
                     <Link href="/listings/new">
                       <Button variant="glow" size="sm">
                         Create Listing

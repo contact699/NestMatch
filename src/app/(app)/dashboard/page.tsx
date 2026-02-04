@@ -185,7 +185,7 @@ export default async function DashboardPage() {
                           <PlusCircle className="h-6 w-6 text-blue-600" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">Post a room</p>
+                          <p className="font-medium text-gray-900">Create a listing</p>
                           <p className="text-sm text-gray-500">List your space</p>
                         </div>
                       </div>

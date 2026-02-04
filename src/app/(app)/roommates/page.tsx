@@ -26,6 +26,9 @@ interface Profile {
   city: string | null
   province: string | null
   languages: string[] | null
+  gender: string | null
+  occupation: string | null
+  age: number | null
   created_at: string
 }
 
@@ -41,6 +44,9 @@ export default function RoommatesPage() {
     city: '',
     province: '',
     search: '',
+    verificationLevel: '',
+    minCompatibility: '',
+    gender: '',
   })
   const [showFilters, setShowFilters] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -153,6 +159,18 @@ export default function RoommatesPage() {
         return false
       }
     }
+    if (filters.verificationLevel && profile.verification_level !== filters.verificationLevel) {
+      return false
+    }
+    if (filters.minCompatibility) {
+      const minScore = parseInt(filters.minCompatibility)
+      if (profile.compatibilityScore < minScore) {
+        return false
+      }
+    }
+    if (filters.gender && profile.gender !== filters.gender) {
+      return false
+    }
     return true
   })
 
@@ -216,56 +234,102 @@ export default function RoommatesPage() {
         </div>
 
         {/* Expanded filters */}
-        <div className={`grid grid-cols-2 md:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200 overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0 mt-0 pt-0 border-t-0'}`}>
-          {/* Province - First for filtering cities */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
-            <select
-              value={filters.province}
-              onChange={(e) => {
-                const newProvince = e.target.value
-                // Reset city if current city is not in new province
-                const availableCities = newProvince ? CITIES_BY_PROVINCE[newProvince] || [] : []
-                const newCity = availableCities.includes(filters.city) ? filters.city : ''
-                setFilters({ ...filters, province: newProvince, city: newCity })
-              }}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
-            >
-              <option value="">All Provinces</option>
-              {CANADIAN_PROVINCES.map((province) => (
-                <option key={province.value} value={province.value}>
-                  {province.label}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className={`overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-96 opacity-100 mt-4 pt-4 border-t border-gray-200' : 'max-h-0 opacity-0 mt-0 pt-0'}`}>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Province */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Province</label>
+              <select
+                value={filters.province}
+                onChange={(e) => {
+                  const newProvince = e.target.value
+                  const availableCities = newProvince ? CITIES_BY_PROVINCE[newProvince] || [] : []
+                  const newCity = availableCities.includes(filters.city) ? filters.city : ''
+                  setFilters({ ...filters, province: newProvince, city: newCity })
+                }}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+              >
+                <option value="">All Provinces</option>
+                {CANADIAN_PROVINCES.map((province) => (
+                  <option key={province.value} value={province.value}>
+                    {province.label}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* City - Filtered by province */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
-            <select
-              value={filters.city}
-              onChange={(e) => setFilters({ ...filters, city: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
-            >
-              <option value="">{filters.province ? 'All Cities' : 'Select Province First'}</option>
-              {(filters.province ? CITIES_BY_PROVINCE[filters.province] || [] : []).map((city) => (
-                <option key={city} value={city}>
-                  {city}
-                </option>
-              ))}
-            </select>
-          </div>
+            {/* City */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">City</label>
+              <select
+                value={filters.city}
+                onChange={(e) => setFilters({ ...filters, city: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+              >
+                <option value="">{filters.province ? 'All Cities' : 'Select Province First'}</option>
+                {(filters.province ? CITIES_BY_PROVINCE[filters.province] || [] : []).map((city) => (
+                  <option key={city} value={city}>
+                    {city}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          {/* Clear filters */}
-          <div className="flex items-end">
-            <Button
-              variant="ghost"
-              onClick={() => setFilters({ city: '', province: '', search: '' })}
-              className="text-sm"
-            >
-              Clear filters
-            </Button>
+            {/* Gender */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+              <select
+                value={filters.gender}
+                onChange={(e) => setFilters({ ...filters, gender: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+              >
+                <option value="">Any Gender</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="non_binary">Non-binary</option>
+              </select>
+            </div>
+
+            {/* Verification Level */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Verification</label>
+              <select
+                value={filters.verificationLevel}
+                onChange={(e) => setFilters({ ...filters, verificationLevel: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+              >
+                <option value="">Any Level</option>
+                <option value="trusted">Trusted</option>
+                <option value="verified">ID Verified</option>
+                <option value="basic">Basic</option>
+              </select>
+            </div>
+
+            {/* Min Compatibility */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Min Compatibility</label>
+              <select
+                value={filters.minCompatibility}
+                onChange={(e) => setFilters({ ...filters, minCompatibility: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all hover:border-gray-300"
+              >
+                <option value="">Any Score</option>
+                <option value="80">80%+ (Great match)</option>
+                <option value="60">60%+ (Good match)</option>
+                <option value="40">40%+ (Fair match)</option>
+              </select>
+            </div>
+
+            {/* Clear filters */}
+            <div className="flex items-end">
+              <Button
+                variant="ghost"
+                onClick={() => setFilters({ city: '', province: '', search: '', verificationLevel: '', minCompatibility: '', gender: '' })}
+                className="text-sm"
+              >
+                Clear filters
+              </Button>
+            </div>
           </div>
         </div>
       </Card>
@@ -296,10 +360,10 @@ export default function RoommatesPage() {
           <p className="text-gray-500 mb-4">
             Try adjusting your filters or check back later.
           </p>
-          {(filters.city || filters.province || filters.search) && (
+          {(filters.city || filters.province || filters.search || filters.verificationLevel || filters.minCompatibility || filters.gender) && (
             <Button
               variant="outline"
-              onClick={() => setFilters({ city: '', province: '', search: '' })}
+              onClick={() => setFilters({ city: '', province: '', search: '', verificationLevel: '', minCompatibility: '', gender: '' })}
             >
               Clear filters
             </Button>

@@ -231,6 +231,37 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
     })
   }
 
+  // Help/Assistance Exchange
+  if (data.helpExchangeEnabled) {
+    const helpTasks = data.helpExchangeTasks || []
+    const compensationLabels: Record<string, string> = {
+      reduced_rent: 'reduced rent',
+      free_rent: 'free rent',
+      utilities_covered: 'utilities covered',
+      other: 'an alternative arrangement',
+    }
+    let helpContent = `A help/assistance exchange arrangement is in place.`
+    if (data.helpExchangeProvider) {
+      helpContent += ` ${data.helpExchangeProvider} will provide assistance`
+    }
+    if (helpTasks.length > 0) {
+      helpContent += ` including: ${helpTasks.join(', ')}`
+    }
+    helpContent += '.'
+    if (data.helpExchangeCompensation) {
+      helpContent += ` In exchange, the assisting roommate receives ${compensationLabels[data.helpExchangeCompensation] || data.helpExchangeCompensation}.`
+    }
+    if (data.helpExchangeDetails) {
+      helpContent += ` Details: ${data.helpExchangeDetails}`
+    }
+    helpContent += ' Both parties agree to discuss and renegotiate terms if circumstances change.'
+
+    clauses.push({
+      title: 'Help/Assistance Exchange',
+      content: helpContent,
+    })
+  }
+
   // Notice to Leave
   clauses.push({
     title: 'Notice to Leave',
@@ -286,7 +317,7 @@ export default function AgreementGeneratorPage() {
         fieldsToValidate = ['cleaningSchedule', 'sharedSuppliesApproach']
         break
       case 5:
-        fieldsToValidate = ['parkingIncluded', 'accessibilityWheelchair', 'accessibilityMobilityStorage', 'accessibilityServiceAnimal', 'careScheduledVisits', 'careQuietHoursMedical', 'careAccessibilityMods']
+        fieldsToValidate = ['parkingIncluded', 'accessibilityWheelchair', 'accessibilityMobilityStorage', 'accessibilityServiceAnimal', 'careScheduledVisits', 'careQuietHoursMedical', 'careAccessibilityMods', 'helpExchangeEnabled']
         break
       case 6:
         fieldsToValidate = ['noticeToLeave', 'disputeResolution', 'agreementDuration']

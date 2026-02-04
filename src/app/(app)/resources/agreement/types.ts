@@ -61,6 +61,13 @@ export const agreementSchema = z.object({
   careAccessibilityMods: z.boolean(),
   careAdditionalDetails: z.string().optional(),
 
+  // Help/Assistance Exchange
+  helpExchangeEnabled: z.boolean(),
+  helpExchangeTasks: z.array(z.string()).optional(),
+  helpExchangeProvider: z.string().optional(),
+  helpExchangeCompensation: z.string().optional(),
+  helpExchangeDetails: z.string().optional(),
+
   // Step 6: Agreement Terms
   noticeToLeave: z.number().min(1),
   disputeResolution: z.enum(['direct', 'written', 'mediation']),
@@ -110,6 +117,11 @@ export const defaultValues: Partial<AgreementFormData> = {
   careQuietHoursMedical: false,
   careAccessibilityMods: false,
   careAdditionalDetails: '',
+  helpExchangeEnabled: false,
+  helpExchangeTasks: [],
+  helpExchangeProvider: '',
+  helpExchangeCompensation: 'reduced_rent',
+  helpExchangeDetails: '',
   noticeToLeave: 30,
   disputeResolution: 'direct',
   agreementDuration: 'month_to_month',

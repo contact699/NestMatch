@@ -183,6 +183,7 @@ export interface Database {
           help_needed: boolean
           help_tasks: string[] | null
           help_details: string | null
+          ideal_for_students: boolean
           is_active: boolean
           is_verified: boolean
           views_count: number
@@ -217,6 +218,7 @@ export interface Database {
           help_needed?: boolean
           help_tasks?: string[] | null
           help_details?: string | null
+          ideal_for_students?: boolean
           is_active?: boolean
           is_verified?: boolean
           views_count?: number
@@ -251,6 +253,7 @@ export interface Database {
           help_needed?: boolean
           help_tasks?: string[] | null
           help_details?: string | null
+          ideal_for_students?: boolean
           is_active?: boolean
           is_verified?: boolean
           views_count?: number
