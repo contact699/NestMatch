@@ -47,7 +47,7 @@ export async function enqueueJob(
 ): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('background_jobs')
     .insert({
       job_type: jobType,
@@ -85,7 +85,7 @@ export async function enqueueJobs(
     max_attempts: job.options?.maxAttempts || 3,
   }))
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('background_jobs')
     .insert(records)
     .select()
@@ -128,7 +128,7 @@ export async function scheduleRecurringJob(
 export async function claimJob(queue: JobQueue = 'default'): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase.rpc('claim_background_job', {
+  const { data, error } = await (supabase as any).rpc('claim_background_job', {
     p_queue: queue,
   })
 
@@ -145,7 +145,7 @@ export async function claimJob(queue: JobQueue = 'default'): Promise<Job | null>
 export async function completeJob(jobId: string, result?: Record<string, any>): Promise<void> {
   const supabase = createServiceClient()
 
-  await supabase.rpc('complete_background_job', {
+  await (supabase as any).rpc('complete_background_job', {
     p_job_id: jobId,
     p_result: result || null,
   })
@@ -157,7 +157,7 @@ export async function completeJob(jobId: string, result?: Record<string, any>): 
 export async function failJob(jobId: string, errorMessage: string): Promise<void> {
   const supabase = createServiceClient()
 
-  await supabase.rpc('fail_background_job', {
+  await (supabase as any).rpc('fail_background_job', {
     p_job_id: jobId,
     p_error: errorMessage,
   })
@@ -169,7 +169,7 @@ export async function failJob(jobId: string, errorMessage: string): Promise<void
 export async function cancelJob(jobId: string): Promise<boolean> {
   const supabase = createServiceClient()
 
-  const { error } = await supabase
+  const { error } = await (supabase as any)
     .from('background_jobs')
     .update({ status: 'cancelled' })
     .eq('id', jobId)
@@ -184,7 +184,7 @@ export async function cancelJob(jobId: string): Promise<boolean> {
 export async function getJob(jobId: string): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('background_jobs')
     .select('*')
     .eq('id', jobId)
@@ -203,7 +203,7 @@ export async function getJob(jobId: string): Promise<Job | null> {
 export async function getPendingJobsCount(): Promise<Record<JobQueue, number>> {
   const supabase = createServiceClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await (supabase as any)
     .from('background_jobs')
     .select('queue')
     .eq('status', 'pending')

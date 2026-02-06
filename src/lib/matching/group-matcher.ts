@@ -386,7 +386,7 @@ export async function saveGroupSuggestions(
   }))
 
   if (records.length > 0) {
-    await supabase.from('group_suggestions').insert(records)
+    await (supabase as any).from('group_suggestions').insert(records)
   }
 }
 

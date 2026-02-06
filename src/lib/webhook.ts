@@ -36,7 +36,7 @@ export async function registerWebhookEvent(
 
   try {
     // Try to insert the event (will fail if duplicate due to unique constraint)
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('webhook_events')
       .insert({
         provider,
@@ -54,7 +54,7 @@ export async function registerWebhookEvent(
       // Check if it's a duplicate key error
       if (error.code === '23505') {
         // Event already exists - check its status
-        const { data: existing } = await supabase
+        const { data: existing } = await (supabase as any)
           .from('webhook_events')
           .select('*')
           .eq('provider', provider)
@@ -72,7 +72,7 @@ export async function registerWebhookEvent(
         // Event exists but not completed - might be a retry or stuck processing
         // Update attempt count and allow reprocessing if status is 'failed' or 'pending'
         if (existing?.status === 'failed' || existing?.status === 'pending') {
-          const { data: updated } = await supabase
+          const { data: updated } = await (supabase as any)
             .from('webhook_events')
             .update({
               status: 'processing',
@@ -126,7 +126,7 @@ export async function completeWebhookEvent(
 ): Promise<void> {
   const supabase = createServiceClient()
 
-  await supabase
+  await (supabase as any)
     .from('webhook_events')
     .update({
       status: 'completed',
@@ -155,7 +155,7 @@ export async function failWebhookEvent(
 ): Promise<void> {
   const supabase = createServiceClient()
 
-  await supabase
+  await (supabase as any)
     .from('webhook_events')
     .update({
       status: 'failed',

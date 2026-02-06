@@ -95,7 +95,7 @@ export async function checkRateLimit(
     const maxRequests = config?.maxRequests || defaultConfig.maxRequests
     const windowSeconds = config?.windowSeconds || defaultConfig.windowSeconds
 
-    const { data, error } = await supabase.rpc('check_rate_limit', {
+    const { data, error } = await (supabase as any).rpc('check_rate_limit', {
       p_identifier: identifier,
       p_endpoint: endpoint,
       p_max_requests: maxRequests,
@@ -159,7 +159,7 @@ export async function recordAbuseEvent(
                headersList.get('x-real-ip') ||
                'unknown'
 
-    await supabase.from('abuse_events').insert({
+    await (supabase as any).from('abuse_events').insert({
       user_id: userId,
       ip_address: ip,
       event_type: eventType,
