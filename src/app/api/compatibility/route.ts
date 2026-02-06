@@ -31,6 +31,10 @@ export const GET = withApiHandler(
 // Batch compatibility scores for multiple users
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Validate input
     let body: z.infer<typeof batchSchema>
     try {
