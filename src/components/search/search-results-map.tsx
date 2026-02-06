@@ -83,7 +83,7 @@ function SearchResultsMapInner({
   const onLoad = useCallback((map: google.maps.Map) => {
     setMap(map)
     if (bounds) {
-      map.fitBounds(bounds, { padding: 50 })
+      map.fitBounds(bounds, 50)
     }
   }, [bounds])
 
