@@ -23,6 +23,10 @@ const deleteMethodSchema = z.object({
 // Get payment methods and setup intent
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
@@ -82,6 +86,10 @@ export const GET = withApiHandler(
 // Add a payment method
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Validate input
     let body: z.infer<typeof addMethodSchema>
     try {
@@ -159,6 +167,10 @@ export const POST = withApiHandler(
 // Remove a payment method
 export const DELETE = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Validate input
     let body: z.infer<typeof deleteMethodSchema>
     try {

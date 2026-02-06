@@ -20,6 +20,10 @@ const createIntentSchema = z.object({
 
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Validate input
     let intentData: z.infer<typeof createIntentSchema>
     try {

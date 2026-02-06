@@ -5,6 +5,10 @@ import { generateGroupSuggestions, saveGroupSuggestions, getSuggestionsWithProfi
 // GET /api/suggestions - Get user's suggestions
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Get suggestions with profile data
     const suggestions = await getSuggestionsWithProfiles(userId)
 
@@ -41,6 +45,10 @@ export const GET = withApiHandler(
 // POST /api/suggestions/generate - Refresh suggestions (rate limited: 1/day)
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Check rate limit - only allow generating once per day
     const { data: recentSuggestion } = await (supabase as any)
       .from('group_suggestions')

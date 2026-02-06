@@ -17,6 +17,7 @@ export type AuditAction =
   | 'export_data'
   | 'admin_action'
   | 'api_access'
+  | 'dismiss'
 
 export type ActorType = 'user' | 'admin' | 'system' | 'webhook'
 

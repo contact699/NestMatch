@@ -10,6 +10,10 @@ import {
 // Pay for an expense share
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     const { id: expenseId } = params
 
     // Get expense and user's share
