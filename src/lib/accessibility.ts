@@ -247,11 +247,11 @@ export function useLoadingAnnouncement(isLoading: boolean, loadingMessage?: stri
  */
 let idCounter = 0
 export function useUniqueId(prefix: string = 'id'): string {
-  const id = useRef<string>()
+  const id = useRef<string | undefined>(undefined)
   if (!id.current) {
     id.current = `${prefix}-${++idCounter}`
   }
-  return id.current
+  return id.current as string
 }
 
 /**
