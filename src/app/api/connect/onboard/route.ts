@@ -9,6 +9,10 @@ import {
 // Start or continue Connect onboarding
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
+    if (!userId) {
+      return apiResponse({ error: 'Unauthorized' }, 401, requestId)
+    }
+
     // Get user profile
     const { data: profile } = await (supabase as any)
       .from('profiles')
