@@ -40,7 +40,7 @@ export interface HandlerContext {
 export interface AuditConfig {
   action: AuditAction
   resourceType: string
-  getResourceId?: (req: NextRequest, result: any) => string | undefined
+  getResourceId?: (req: NextRequest, result: any, params?: Record<string, string>) => string | undefined
 }
 
 export interface WebhookConfig {
@@ -265,7 +265,7 @@ export function withApiHandler(
         }
 
         const resourceId = config.audit.getResourceId
-          ? config.audit.getResourceId(req, responseData)
+          ? config.audit.getResourceId(req, responseData, params)
           : undefined
 
         await auditLog({
