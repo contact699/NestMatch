@@ -34,7 +34,7 @@ export interface HandlerContext {
   requestId: string
   userId?: string
   supabase: SupabaseClient
-  params?: Record<string, string>
+  params: Record<string, string>
 }
 
 export interface AuditConfig {
@@ -241,7 +241,7 @@ export function withApiHandler(
       }
 
       // 5. Resolve route params
-      const params = routeContext?.params ? await routeContext.params : undefined
+      const params = routeContext?.params ? await routeContext.params : {}
 
       // 6. Execute handler
       const context: HandlerContext = {

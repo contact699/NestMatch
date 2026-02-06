@@ -28,7 +28,13 @@
       "Skill(superpowers:writing-plans)",
       "Skill(superpowers:subagent-driven-development)",
       "Bash(npm ls:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" add supabase/migrations/007_phase3_scheduling.sql)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" commit -m \"chore\\(db\\): add Phase 3 scheduling migration\")",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" push origin master)",
+      "Bash(cd:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)"
     ]
   }
 }
