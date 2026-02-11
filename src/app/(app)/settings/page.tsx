@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -83,6 +84,9 @@ export default function SettingsPage() {
 
     if (response.ok) {
       setBlockedUsers((prev) => prev.filter((b) => b.blocked_user_id !== userId))
+      toast.success('User unblocked')
+    } else {
+      toast.error('Failed to unblock user')
     }
 
     setIsUnblocking(null)
@@ -103,7 +107,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
-      alert('Account deletion is not yet implemented. Please contact support.')
+      toast.info('Account deletion is not yet implemented. Please contact support.')
     }, 1000)
   }
 

@@ -13,7 +13,7 @@ export const GET = withApiHandler(
     if (!conversationId) throw new NotFoundError('Conversation')
 
     // Verify user is participant
-    const { data: conversation, error: convError } = await (supabase as any)
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('participant_ids')
       .eq('id', conversationId)
@@ -23,7 +23,7 @@ export const GET = withApiHandler(
       throw new NotFoundError('Conversation', conversationId)
     }
 
-    if (!conversation.participant_ids?.includes(userId)) {
+    if (!conversation.participant_ids?.includes(userId!)) {
       throw new AuthorizationError('Not a participant in this conversation')
     }
 
@@ -33,7 +33,7 @@ export const GET = withApiHandler(
     const before = searchParams.get('before')
 
     // Fetch messages
-    let query = (supabase as any)
+    let query = supabase
       .from('messages')
       .select('*')
       .eq('conversation_id', conversationId)
@@ -41,7 +41,7 @@ export const GET = withApiHandler(
       .limit(limit)
 
     if (before) {
-      const { data: beforeMessage } = await (supabase as any)
+      const { data: beforeMessage } = await supabase
         .from('messages')
         .select('created_at')
         .eq('id', before)
@@ -58,16 +58,15 @@ export const GET = withApiHandler(
 
     // Mark unread messages as read (fire and forget)
     const unreadIds = (messages || [])
-      .filter((m: any) => m.sender_id !== userId && !m.read_at)
+      .filter((m: any) => m.sender_id !== userId! && !m.read_at)
       .map((m: any) => m.id)
 
     if (unreadIds.length > 0) {
-      (supabase as any)
+      void supabase
         .from('messages')
         .update({ read_at: new Date().toISOString() })
         .in('id', unreadIds)
-        .then(() => {})
-        .catch(() => {})
+        .then(() => {}, () => {})
     }
 
     return apiResponse({ messages: (messages || []).reverse() }, 200, requestId)
@@ -81,7 +80,7 @@ export const POST = withApiHandler(
     if (!conversationId) throw new NotFoundError('Conversation')
 
     // Verify user is participant
-    const { data: conversation, error: convError } = await (supabase as any)
+    const { data: conversation, error: convError } = await supabase
       .from('conversations')
       .select('participant_ids')
       .eq('id', conversationId)
@@ -91,7 +90,7 @@ export const POST = withApiHandler(
       throw new NotFoundError('Conversation', conversationId)
     }
 
-    if (!conversation.participant_ids?.includes(userId)) {
+    if (!conversation.participant_ids?.includes(userId!)) {
       throw new AuthorizationError('Not a participant in this conversation')
     }
 
@@ -105,11 +104,11 @@ export const POST = withApiHandler(
     }
 
     // Insert message
-    const { data: message, error } = await (supabase as any)
+    const { data: message, error } = await supabase
       .from('messages')
       .insert({
         conversation_id: conversationId,
-        sender_id: userId,
+        sender_id: userId!,
         content,
       })
       .select()
@@ -118,12 +117,11 @@ export const POST = withApiHandler(
     if (error) throw error
 
     // Update conversation timestamp (fire and forget)
-    (supabase as any)
+    void supabase
       .from('conversations')
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId)
-      .then(() => {})
-      .catch(() => {})
+      .then(() => {}, () => {})
 
     return apiResponse({ message }, 201, requestId)
   },

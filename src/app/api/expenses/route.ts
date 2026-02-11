@@ -26,7 +26,7 @@ export const GET = withApiHandler(
     const status = searchParams.get('status')
 
     // Get expenses where user has a share
-    let query = (supabase as any)
+    let query = supabase
       .from('shared_expenses')
       .select(`
         *,
@@ -63,14 +63,14 @@ export const GET = withApiHandler(
 
     query = query.order('created_at', { ascending: false })
 
-    const { data: expenses, error } = await query
+    const { data: expenses, error } = await query as { data: any[]; error: any }
 
     if (error) throw error
 
     // Filter to only show expenses where user is involved
     const userExpenses = (expenses || []).filter((expense: any) =>
-      expense.created_by === userId ||
-      expense.shares?.some((share: any) => share.user_id === userId)
+      expense.created_by === userId! ||
+      expense.shares?.some((share: any) => share.user_id === userId!)
     )
 
     // Calculate user's pending amount
@@ -78,13 +78,13 @@ export const GET = withApiHandler(
     let totalOwing = 0
 
     for (const expense of userExpenses) {
-      const userShare = expense.shares?.find((s: any) => s.user_id === userId)
+      const userShare = expense.shares?.find((s: any) => s.user_id === userId!)
       if (userShare && userShare.status === 'pending') {
         totalOwed += userShare.amount
       }
-      if (expense.created_by === userId) {
+      if (expense.created_by === userId!) {
         const pendingShares = expense.shares?.filter(
-          (s: any) => s.user_id !== userId && s.status === 'pending'
+          (s: any) => s.user_id !== userId! && s.status === 'pending'
         )
         totalOwing += pendingShares?.reduce((sum: number, s: any) => sum + s.amount, 0) || 0
       }
@@ -97,7 +97,8 @@ export const GET = withApiHandler(
         total_owing: totalOwing,
       },
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'paymentCreate' }
 )
 
 // Create a new shared expense
@@ -114,7 +115,7 @@ export const POST = withApiHandler(
     const { listing_id, title, description, total_amount, category, split_type, due_date, shares } = body
 
     // Verify listing exists
-    const { data: listing } = await (supabase as any)
+    const { data: listing } = await supabase
       .from('listings')
       .select('user_id')
       .eq('id', listing_id)
@@ -140,69 +141,31 @@ export const POST = withApiHandler(
       }))
     }
 
-    // Create expense
-    const { data: expense, error: expenseError } = await (supabase as any)
-      .from('shared_expenses')
-      .insert({
-        listing_id,
-        created_by: userId,
-        title,
-        description,
-        total_amount,
-        split_type,
-        category,
-        due_date: due_date || null,
-        status: 'pending',
-      })
-      .select()
-      .single()
-
-    if (expenseError) throw expenseError
-
-    // Create shares
-    const shareInserts = calculatedShares.map((s) => ({
-      expense_id: expense.id,
+    // Atomically create expense and shares (auto-rollback on failure)
+    const sharesPayload = calculatedShares.map((s) => ({
       user_id: s.user_id,
-      amount: s.amount,
-      percentage: s.percentage || null,
-      status: s.user_id === userId ? 'paid' : 'pending',
-      paid_at: s.user_id === userId ? new Date().toISOString() : null,
+      amount: s.amount || 0,
+      percentage: s.percentage || 0,
     }))
 
-    const { error: sharesError } = await (supabase as any)
-      .from('expense_shares')
-      .insert(shareInserts)
+    const { data: result, error: rpcError } = await supabase.rpc('create_expense_with_shares', {
+      p_listing_id: listing_id,
+      p_created_by: userId!,
+      p_title: title,
+      p_description: description || '',
+      p_total_amount: total_amount,
+      p_split_type: split_type,
+      p_category: category || '',
+      p_due_date: due_date || new Date().toISOString(),
+      p_shares: JSON.stringify(sharesPayload) as any,
+    })
 
-    if (sharesError) {
-      // Rollback expense
-      await (supabase as any)
-        .from('shared_expenses')
-        .delete()
-        .eq('id', expense.id)
+    if (rpcError) throw rpcError
 
-      throw sharesError
-    }
-
-    // Fetch complete expense with shares
-    const { data: completeExpense } = await (supabase as any)
-      .from('shared_expenses')
-      .select(`
-        *,
-        shares:expense_shares(
-          id,
-          user_id,
-          amount,
-          percentage,
-          status,
-          user:profiles(name)
-        )
-      `)
-      .eq('id', expense.id)
-      .single()
-
-    return apiResponse({ expense: completeExpense }, 201, requestId)
+    return apiResponse({ expense: (result as any)?.expense, shares: (result as any)?.shares }, 201, requestId)
   },
   {
+    rateLimit: 'paymentCreate',
     audit: {
       action: 'create',
       resourceType: 'shared_expense',

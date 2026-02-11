@@ -139,10 +139,10 @@ export const POST = withApiHandler(
     }
 
     // Create listing
-    const { data: listing, error } = await (supabase as any)
+    const { data: listing, error } = await supabase
       .from('listings')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         type: listingData.type,
         title: listingData.title,
         description: listingData.description || null,

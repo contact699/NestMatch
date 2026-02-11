@@ -19,18 +19,18 @@ export const GET = withApiHandler(
     const groupId = params.id
 
     // Verify user is a member
-    const { data: membership } = await (supabase as any)
+    const { data: membership } = await supabase
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!membership) {
       throw new AuthorizationError('Access denied')
     }
 
-    const { data: invitations, error } = await (supabase as any)
+    const { data: invitations, error } = await supabase
       .from('co_renter_invitations')
       .select(`
         *,
@@ -61,11 +61,11 @@ export const POST = withApiHandler(
     const groupId = params.id
 
     // Verify user is admin
-    const { data: membership } = await (supabase as any)
+    const { data: membership } = await supabase
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!membership || membership.role !== 'admin') {
@@ -83,7 +83,7 @@ export const POST = withApiHandler(
     const { invitee_id } = body
 
     // Check if invitee exists
-    const { data: invitee } = await (supabase as any)
+    const { data: invitee } = await supabase
       .from('profiles')
       .select('user_id')
       .eq('user_id', invitee_id)
@@ -94,7 +94,7 @@ export const POST = withApiHandler(
     }
 
     // Check if invitee is already a member
-    const { data: existingMember } = await (supabase as any)
+    const { data: existingMember } = await supabase
       .from('co_renter_members')
       .select('id')
       .eq('group_id', groupId)
@@ -106,7 +106,7 @@ export const POST = withApiHandler(
     }
 
     // Check for existing pending invitation
-    const { data: existingInvitation } = await (supabase as any)
+    const { data: existingInvitation } = await supabase
       .from('co_renter_invitations')
       .select('id')
       .eq('group_id', groupId)
@@ -119,11 +119,11 @@ export const POST = withApiHandler(
     }
 
     // Create invitation
-    const { data: invitation, error: inviteError } = await (supabase as any)
+    const { data: invitation, error: inviteError } = await supabase
       .from('co_renter_invitations')
       .insert({
         group_id: groupId,
-        inviter_id: userId,
+        inviter_id: userId!,
         invitee_id,
         status: 'pending',
       })
@@ -167,7 +167,7 @@ export const PUT = withApiHandler(
     const { invitation_id, response, budget_contribution } = body
 
     // Get the invitation
-    const { data: invitation } = await (supabase as any)
+    const { data: invitation } = await supabase
       .from('co_renter_invitations')
       .select('*')
       .eq('id', invitation_id)
@@ -179,7 +179,7 @@ export const PUT = withApiHandler(
     }
 
     // Verify user is the invitee
-    if (invitation.invitee_id !== userId) {
+    if (invitation.invitee_id !== userId!) {
       throw new AuthorizationError('You can only respond to your own invitations')
     }
 
@@ -189,7 +189,7 @@ export const PUT = withApiHandler(
 
     // Update invitation status
     const newStatus = response === 'accept' ? 'accepted' : 'declined'
-    await (supabase as any)
+    await supabase
       .from('co_renter_invitations')
       .update({
         status: newStatus,
@@ -199,11 +199,11 @@ export const PUT = withApiHandler(
 
     // If accepted, add as member
     if (response === 'accept') {
-      const { error: memberError } = await (supabase as any)
+      const { error: memberError } = await supabase
         .from('co_renter_members')
         .insert({
           group_id: groupId,
-          user_id: userId,
+          user_id: userId!,
           role: 'member',
           budget_contribution: budget_contribution || null,
         })

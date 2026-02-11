@@ -4,17 +4,17 @@ import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get profile verification status
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email_verified, phone_verified, verification_level, verified_at')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     // Get all verification records
-    const { data: verifications, error } = await (supabase as any)
+    const { data: verifications, error } = await supabase
       .from('verifications')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -28,5 +28,6 @@ export const GET = withApiHandler(
       },
       verifications: verifications || [],
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

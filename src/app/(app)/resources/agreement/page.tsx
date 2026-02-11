@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { LegalDisclaimer } from '@/components/resources'
 import { agreementSchema, AgreementFormData, defaultValues } from './types'
+import { useFormDraft } from '@/lib/hooks/use-form-draft'
 import {
   StepBasics,
   StepFinancial,
@@ -29,7 +30,6 @@ import {
   StepReview,
   StepDownload,
 } from './steps'
-import { generateAgreementContent } from './generate-content'
 
 const STEPS = [
   { id: 1, title: 'Basics', icon: FileText, description: 'Names and address' },
@@ -252,7 +252,7 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
     })
   }
 
-  // Help/Assistance Exchange
+  // Assistance Required
   if (data.helpExchangeEnabled) {
     const helpTasks = data.helpExchangeTasks || []
     const compensationLabels: Record<string, string> = {
@@ -261,7 +261,7 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
       utilities_covered: 'utilities covered',
       other: 'an alternative arrangement',
     }
-    let helpContent = `A help/assistance exchange arrangement is in place.`
+    let helpContent = `An assistance required arrangement is in place.`
     if (data.helpExchangeProvider) {
       helpContent += ` ${data.helpExchangeProvider} will provide assistance`
     }
@@ -287,7 +287,7 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
     helpContent += ' Both parties agree to discuss and renegotiate terms if circumstances change.'
 
     clauses.push({
-      title: 'Help/Assistance Exchange',
+      title: 'Assistance Required',
       content: helpContent,
     })
   }
@@ -315,20 +315,30 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
 
 export default function AgreementGeneratorPage() {
   const [currentStep, setCurrentStep] = useState(1)
-  const [generatedContent, setGeneratedContent] = useState('')
+  const [draft, setDraft, clearDraft] = useFormDraft<Partial<AgreementFormData>>(
+    'agreement-generator',
+    defaultValues as AgreementFormData
+  )
 
   const {
     register,
     handleSubmit,
     watch,
     setValue,
+    reset,
     formState: { errors },
     trigger,
   } = useForm<AgreementFormData>({
     resolver: zodResolver(agreementSchema),
-    defaultValues: defaultValues as AgreementFormData,
+    defaultValues: draft as AgreementFormData,
     mode: 'onBlur',
   })
+
+  // Persist form values to draft on every change
+  const watchedValues = watch()
+  useEffect(() => {
+    setDraft(watchedValues)
+  }, [watchedValues, setDraft])
 
   const validateStep = async () => {
     let fieldsToValidate: (keyof AgreementFormData)[] = []
@@ -361,12 +371,6 @@ export default function AgreementGeneratorPage() {
   const nextStep = async () => {
     const isValid = await validateStep()
     if (isValid && currentStep < STEPS.length) {
-      if (currentStep === 6) {
-        // Generate content before moving to download
-        const formData = watch()
-        const content = generateAgreementContent(formData)
-        setGeneratedContent(content)
-      }
       setCurrentStep(currentStep + 1)
     }
   }
@@ -530,7 +534,7 @@ export default function AgreementGeneratorPage() {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Edit Agreement
               </Button>
-              <Link href="/resources">
+              <Link href="/resources" onClick={() => clearDraft()}>
                 <Button>
                   <Check className="h-4 w-4 mr-2" />
                   Done

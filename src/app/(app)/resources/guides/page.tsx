@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { Loader2, BookOpen, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -45,7 +46,7 @@ export default function GuidesPage() {
         setResources(data.resources || [])
       }
     } catch (error) {
-      console.error('Error fetching resources:', error)
+      clientLogger.error('Error fetching resources', error)
     } finally {
       setIsLoading(false)
     }
@@ -59,7 +60,7 @@ export default function GuidesPage() {
         setCategories(data.categories || [])
       }
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      clientLogger.error('Error fetching categories', error)
     }
   }, [])
 

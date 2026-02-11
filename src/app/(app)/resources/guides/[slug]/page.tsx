@@ -10,7 +10,7 @@ export async function generateMetadata({
   const { slug } = await params
   const supabase = await createClient()
 
-  const { data: resource } = await (supabase as any)
+  const { data: resource } = await supabase
     .from('resources')
     .select('title, excerpt, tags')
     .eq('slug', slug)
@@ -26,7 +26,7 @@ export async function generateMetadata({
     keywords: resource.tags?.join(', '),
     openGraph: {
       title: resource.title,
-      description: resource.excerpt,
+      description: resource.excerpt ?? undefined,
       type: 'article',
     },
   }

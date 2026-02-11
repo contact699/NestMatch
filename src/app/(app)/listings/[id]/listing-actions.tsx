@@ -51,7 +51,7 @@ export function ListingActions({
 
     if (isSaved) {
       // Unsave
-      await (supabase as any)
+      await supabase
         .from('saved_listings')
         .delete()
         .eq('user_id', user.id)
@@ -59,7 +59,7 @@ export function ListingActions({
       setIsSaved(false)
     } else {
       // Save
-      await (supabase as any)
+      await supabase
         .from('saved_listings')
         .insert({ user_id: user.id, listing_id: listingId })
       setIsSaved(true)
@@ -86,7 +86,7 @@ export function ListingActions({
     }
 
     // Check if conversation already exists
-    const { data: existingConversations } = await (supabase as any)
+    const { data: existingConversations } = await supabase
       .from('conversations')
       .select('id')
       .contains('participant_ids', [user.id, hostUserId])
@@ -97,7 +97,7 @@ export function ListingActions({
       router.push(`/messages/${existingConversations[0].id}`)
     } else {
       // Create new conversation
-      const { data: newConversation, error } = await (supabase as any)
+      const { data: newConversation, error } = await supabase
         .from('conversations')
         .insert({
           participant_ids: [user.id, hostUserId],

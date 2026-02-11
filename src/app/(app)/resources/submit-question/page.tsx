@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { ArrowLeft, HelpCircle, Send, Loader2, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -33,7 +34,7 @@ export default function SubmitQuestionPage() {
           setCategories(data.categories || [])
         }
       } catch (error) {
-        console.error('Error fetching categories:', error)
+        clientLogger.error('Error fetching categories', error)
       }
     }
     fetchCategories()

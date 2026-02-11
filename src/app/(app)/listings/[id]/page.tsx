@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { logger } from '@/lib/logger'
 import { formatPrice, formatDate, AMENITIES } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: ListingPageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: listing } = await (supabase as any)
+  const { data: listing } = await supabase
     .from('listings')
     .select('title, city, province, price')
     .eq('id', id)
@@ -64,19 +65,19 @@ export default async function ListingPage({ params }: ListingPageProps) {
   } = await supabase.auth.getUser()
 
   // Fetch listing first
-  const { data: listing, error } = await (supabase as any)
+  const { data: listing, error } = await supabase
     .from('listings')
     .select('*')
     .eq('id', id)
     .single() as { data: any; error: any }
 
   if (error || !listing) {
-    console.error('Listing fetch error:', error, 'ID:', id)
+    logger.error(`Listing fetch error for ID: ${id}`, error instanceof Error ? error : new Error(String(error)))
     notFound()
   }
 
   // Fetch host profile separately
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from('profiles')
     .select('id, user_id, name, bio, profile_photo, verification_level, languages, created_at')
     .eq('user_id', listing.user_id)
@@ -89,7 +90,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
   // Check if listing is saved by current user
   let isSaved = false
   if (user) {
-    const { data: savedListing } = await (supabase as any)
+    const { data: savedListing } = await supabase
       .from('saved_listings')
       .select('id')
       .eq('user_id', user.id)
@@ -100,7 +101,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   // Increment view count
   if (!isOwner) {
-    await (supabase as any)
+    await supabase
       .from('listings')
       .update({ views_count: (listing.views_count || 0) + 1 })
       .eq('id', id)

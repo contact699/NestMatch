@@ -11,10 +11,10 @@ import {
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get payout account from database
-    const { data: payoutAccount } = await (supabase as any)
+    const { data: payoutAccount } = await supabase
       .from('payout_accounts')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!payoutAccount) {
@@ -37,7 +37,7 @@ export const GET = withApiHandler(
       payoutAccount.payouts_enabled !== stripeAccount.payouts_enabled ||
       payoutAccount.details_submitted !== stripeAccount.details_submitted
     ) {
-      await (supabase as any)
+      await supabase
         .from('payout_accounts')
         .update({
           status: newStatus,
@@ -46,7 +46,7 @@ export const GET = withApiHandler(
           details_submitted: stripeAccount.details_submitted,
           updated_at: new Date().toISOString(),
         })
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
     }
 
     // Get balance if account is active
@@ -81,10 +81,10 @@ export const GET = withApiHandler(
     }
 
     // Get payment stats
-    const { data: paymentStats } = await (supabase as any)
+    const { data: paymentStats } = await supabase
       .from('payments')
       .select('amount, status')
-      .eq('recipient_id', userId)
+      .eq('recipient_id', userId!)
 
     const stats = {
       total_received: 0,
@@ -116,5 +116,6 @@ export const GET = withApiHandler(
       dashboard_link: dashboardLink,
       stats,
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'paymentCreate' }
 )

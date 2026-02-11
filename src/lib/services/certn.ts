@@ -1,6 +1,8 @@
 // Certn ID Verification service wrapper
 // Documentation: https://docs.certn.co/
 
+import { logger } from '@/lib/logger'
+
 const CERTN_API_KEY = process.env.CERTN_API_KEY
 const CERTN_API_URL = 'https://api.certn.co/hr/v1'
 
@@ -27,7 +29,7 @@ export async function initiateIDVerification(
   lastName?: string
 ): Promise<CertnResponse> {
   if (!CERTN_API_KEY) {
-    console.error('Certn API key not configured')
+    logger.error('Certn API key not configured')
     return { success: false, error: 'ID verification is not configured' }
   }
 
@@ -52,7 +54,7 @@ export async function initiateIDVerification(
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Certn error:', data)
+      logger.error('Certn error', new Error(JSON.stringify(data)))
       return {
         success: false,
         error: data.detail || data.message || 'Failed to initiate verification',
@@ -65,14 +67,14 @@ export async function initiateIDVerification(
       status: data.status,
     }
   } catch (error) {
-    console.error('Error initiating Certn verification:', error)
+    logger.error('Error initiating Certn verification', error instanceof Error ? error : new Error(String(error)))
     return { success: false, error: 'Failed to initiate ID verification' }
   }
 }
 
 export async function checkVerificationStatus(applicationId: string): Promise<CertnResponse> {
   if (!CERTN_API_KEY) {
-    console.error('Certn API key not configured')
+    logger.error('Certn API key not configured')
     return { success: false, error: 'ID verification is not configured' }
   }
 
@@ -87,7 +89,7 @@ export async function checkVerificationStatus(applicationId: string): Promise<Ce
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Certn status error:', data)
+      logger.error('Certn status error', new Error(JSON.stringify(data)))
       return {
         success: false,
         error: data.detail || 'Failed to check verification status',
@@ -100,7 +102,7 @@ export async function checkVerificationStatus(applicationId: string): Promise<Ce
       status: data.status,
     }
   } catch (error) {
-    console.error('Error checking Certn status:', error)
+    logger.error('Error checking Certn status', error instanceof Error ? error : new Error(String(error)))
     return { success: false, error: 'Failed to check verification status' }
   }
 }

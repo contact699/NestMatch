@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { Share2, Copy, MessageSquare, Check } from 'lucide-react'
+import { clientLogger } from '@/lib/client-logger'
 
 interface ShareButtonProps {
   title: string
@@ -36,7 +37,7 @@ export function ShareButton({ title, url, variant = 'icon' }: ShareButtonProps) 
         setIsOpen(false)
       }, 1500)
     } catch (err) {
-      console.error('Failed to copy:', err)
+      clientLogger.error('Failed to copy', err)
     }
   }
 

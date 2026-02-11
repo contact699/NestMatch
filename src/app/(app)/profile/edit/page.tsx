@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ArrowLeft, Loader2, User, Camera, MapPin } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
 
 const profileSchema = z.object({
@@ -171,7 +172,7 @@ export default function ProfileEditPage() {
       return
     }
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('profiles')
       .update({
         name: data.name,
@@ -191,10 +192,12 @@ export default function ProfileEditPage() {
 
     if (error) {
       setError(error.message)
+      toast.error('Failed to update profile')
       setIsSaving(false)
       return
     }
 
+    toast.success('Profile updated successfully')
     router.push('/profile')
     router.refresh()
   }

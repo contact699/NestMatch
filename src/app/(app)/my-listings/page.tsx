@@ -33,7 +33,7 @@ export default async function MyListingsPage() {
     redirect('/login?redirect=/my-listings')
   }
 
-  const { data: listings, error } = await (supabase as any)
+  const { data: listings, error } = await supabase
     .from('listings')
     .select('*')
     .eq('user_id', user.id)

@@ -16,7 +16,8 @@ export const GET = withAdminHandler(
     }
 
     return apiResponse({ resource }, 200, requestId)
-  }
+  },
+  { rateLimit: 'api' }
 )
 
 export const PUT = withAdminHandler(
@@ -49,6 +50,7 @@ export const PUT = withAdminHandler(
     return apiResponse({ resource }, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'update',
       resourceType: 'resource',
@@ -71,6 +73,7 @@ export const DELETE = withAdminHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'delete',
       resourceType: 'resource',

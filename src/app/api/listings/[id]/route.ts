@@ -79,7 +79,7 @@ export const PUT = withApiHandler(
     const { id } = params
 
     // Check if user owns this listing
-    const { data: existingListing, error: fetchError } = await (supabase as any)
+    const { data: existingListing, error: fetchError } = await supabase
       .from('listings')
       .select('user_id')
       .eq('id', id)
@@ -102,7 +102,7 @@ export const PUT = withApiHandler(
     }
 
     // Update listing
-    const { data: listing, error } = await (supabase as any)
+    const { data: listing, error } = await supabase
       .from('listings')
       .update(updateData)
       .eq('id', id)
@@ -128,7 +128,7 @@ export const DELETE = withApiHandler(
     const { id } = params
 
     // Check if user owns this listing
-    const { data: existingListing, error: fetchError } = await (supabase as any)
+    const { data: existingListing, error: fetchError } = await supabase
       .from('listings')
       .select('user_id')
       .eq('id', id)
@@ -143,7 +143,7 @@ export const DELETE = withApiHandler(
     }
 
     // Delete listing
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('listings')
       .delete()
       .eq('id', id)

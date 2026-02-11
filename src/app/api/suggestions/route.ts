@@ -13,14 +13,14 @@ export const GET = withApiHandler(
     const suggestions = await getSuggestionsWithProfiles(userId)
 
     // Get user preferences
-    const { data: preferences } = await (supabase as any)
+    const { data: preferences } = await supabase
       .from('user_matching_preferences')
       .select('*')
       .eq('user_id', userId)
       .single()
 
     // Get count of potential candidates
-    const { count: totalCandidates } = await (supabase as any)
+    const { count: totalCandidates } = await supabase
       .from('seeking_profiles')
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
@@ -50,7 +50,7 @@ export const POST = withApiHandler(
     }
 
     // Check rate limit - only allow generating once per day
-    const { data: recentSuggestion } = await (supabase as any)
+    const { data: recentSuggestion } = await supabase
       .from('group_suggestions')
       .select('created_at')
       .eq('target_user_id', userId)
@@ -77,7 +77,7 @@ export const POST = withApiHandler(
     }
 
     // Get user preferences
-    const { data: preferences } = await (supabase as any)
+    const { data: preferences } = await supabase
       .from('user_matching_preferences')
       .select('preferred_group_size')
       .eq('user_id', userId)

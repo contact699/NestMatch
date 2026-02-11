@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { Loader2, HelpCircle, Filter, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -45,7 +46,7 @@ export default function FAQPage() {
         setFaqs(data.faqs || [])
       }
     } catch (error) {
-      console.error('Error fetching FAQs:', error)
+      clientLogger.error('Error fetching FAQs', error)
     } finally {
       setIsLoading(false)
     }
@@ -59,7 +60,7 @@ export default function FAQPage() {
         setCategories(data.categories || [])
       }
     } catch (error) {
-      console.error('Error fetching categories:', error)
+      clientLogger.error('Error fetching categories', error)
     }
   }, [])
 

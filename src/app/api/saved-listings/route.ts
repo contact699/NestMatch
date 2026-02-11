@@ -10,7 +10,7 @@ const saveSchema = z.object({
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get saved listings with full listing data
-    const { data: savedListings, error } = await (supabase as any)
+    const { data: savedListings, error } = await supabase
       .from('saved_listings')
       .select(`
         id,
@@ -26,7 +26,7 @@ export const GET = withApiHandler(
           )
         )
       `)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -57,7 +57,7 @@ export const POST = withApiHandler(
     const { listing_id } = body
 
     // Check if listing exists
-    const { data: listing, error: listingError } = await (supabase as any)
+    const { data: listing, error: listingError } = await supabase
       .from('listings')
       .select('id')
       .eq('id', listing_id)
@@ -68,10 +68,10 @@ export const POST = withApiHandler(
     }
 
     // Check if already saved
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('saved_listings')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq('listing_id', listing_id)
       .single()
 
@@ -80,10 +80,10 @@ export const POST = withApiHandler(
     }
 
     // Save listing
-    const { data: saved, error } = await (supabase as any)
+    const { data: saved, error } = await supabase
       .from('saved_listings')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         listing_id,
       })
       .select()

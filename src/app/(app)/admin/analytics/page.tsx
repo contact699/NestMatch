@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { clientLogger } from '@/lib/client-logger'
 import {
   Eye,
   ThumbsUp,
@@ -54,7 +55,7 @@ export default function AnalyticsDashboardPage() {
 
     try {
       // Fetch resources
-      let resourcesQuery = (supabase as any)
+      let resourcesQuery = supabase
         .from('resources')
         .select('id, title, view_count, helpful_count, created_at')
         .eq('is_published', true)
@@ -82,7 +83,7 @@ export default function AnalyticsDashboardPage() {
       }
 
       // Fetch FAQs
-      let faqsQuery = (supabase as any)
+      let faqsQuery = supabase
         .from('faqs')
         .select('id, question, helpful_count, not_helpful_count, created_at')
         .eq('is_published', true)
@@ -119,7 +120,7 @@ export default function AnalyticsDashboardPage() {
         faqs: faqStats,
       })
     } catch (error) {
-      console.error('Error fetching analytics:', error)
+      clientLogger.error('Error fetching analytics', error)
     } finally {
       setIsLoading(false)
     }

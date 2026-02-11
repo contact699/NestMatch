@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from './button'
 import {
   Camera,
@@ -66,7 +67,7 @@ export function ImageUploader({
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
+      clientLogger.error('Upload error', uploadError)
       throw new Error(uploadError.message || 'Failed to upload file')
     }
 

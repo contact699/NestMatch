@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 import type { Profile, SeekingProfile } from '@/types/database'
 import type {
   MatchingCandidate,
@@ -126,7 +127,7 @@ async function fetchMatchingCandidates(
   const { data: seekingProfiles, error } = await query
 
   if (error || !seekingProfiles) {
-    console.error('Error fetching seeking profiles:', error)
+    logger.error('Error fetching seeking profiles', error instanceof Error ? error : new Error(String(error)))
     return []
   }
 
@@ -220,7 +221,7 @@ export async function generateGroupSuggestions(
   const supabase = await createClient()
 
   // Get user's matching preferences
-  const { data: userPreferences } = await (supabase as any)
+  const { data: userPreferences } = await supabase
     .from('user_matching_preferences')
     .select('*')
     .eq('user_id', targetUserId)
@@ -230,13 +231,13 @@ export async function generateGroupSuggestions(
   const preferredGroupSize = userPreferences?.preferred_group_size || groupSize
 
   // Get target user's info
-  const { data: targetProfile } = await (supabase as any)
+  const { data: targetProfile } = await supabase
     .from('profiles')
     .select('*')
     .eq('user_id', targetUserId)
     .single()
 
-  const { data: targetSeeking } = await (supabase as any)
+  const { data: targetSeeking } = await supabase
     .from('seeking_profiles')
     .select('*')
     .eq('user_id', targetUserId)
@@ -307,15 +308,15 @@ export async function generateGroupSuggestions(
     groupCandidates.map(c => c.userId)
   )
 
-  const { data: batchResults, error: batchError } = await (supabase as any).rpc(
-    'batch_calculate_group_compatibilities',
+  const { data: batchResults, error: batchError } = await supabase.rpc(
+    'batch_calculate_group_compatibilities' as any,
     { group_member_arrays: groupMemberArrays }
-  )
+  ) as { data: any; error: any }
 
   // Create lookup map for compatibility scores by index
   const compatibilityByIndex = new Map<number, number>()
   if (batchResults && !batchError) {
-    for (const row of batchResults) {
+    for (const row of batchResults as any[]) {
       compatibilityByIndex.set(row.group_index, row.compatibility_score)
     }
   }
@@ -386,7 +387,7 @@ export async function saveGroupSuggestions(
   }))
 
   if (records.length > 0) {
-    await (supabase as any).from('group_suggestions').insert(records)
+    await supabase.from('group_suggestions').insert(records as any)
   }
 }
 
@@ -399,7 +400,7 @@ export async function getSuggestionsWithProfiles(
 ): Promise<GroupSuggestionWithProfiles[]> {
   const supabase = await createClient()
 
-  const { data: suggestions, error } = await (supabase as any)
+  const { data: suggestions, error } = await supabase
     .from('group_suggestions')
     .select('*')
     .eq('target_user_id', targetUserId)
@@ -420,7 +421,7 @@ export async function getSuggestionsWithProfiles(
   }
 
   // Single query to fetch ALL profiles needed
-  const { data: allProfiles } = await (supabase as any)
+  const { data: allProfiles } = await supabase
     .from('profiles')
     .select('user_id, name, profile_photo, verification_level, city, province')
     .in('user_id', Array.from(allUserIds))

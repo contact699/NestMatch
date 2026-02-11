@@ -26,7 +26,7 @@ export async function generateMetadata({ params }: ProfilePageProps) {
   const { userId } = await params
   const supabase = await createClient()
 
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from('profiles')
     .select('name, city, province')
     .eq('user_id', userId)
@@ -62,7 +62,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   }
 
   // Fetch the profile
-  const { data: profile, error } = await (supabase as any)
+  const { data: profile, error } = await supabase
     .from('profiles')
     .select('*')
     .eq('user_id', userId)
@@ -73,14 +73,14 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
   }
 
   // Fetch lifestyle responses
-  const { data: lifestyleResponses } = await (supabase as any)
+  const { data: lifestyleResponses } = await supabase
     .from('lifestyle_responses')
     .select('*')
     .eq('user_id', userId)
     .single() as { data: any }
 
   // Fetch reviews received
-  const { data: reviews } = await (supabase as any)
+  const { data: reviews } = await supabase
     .from('reviews')
     .select('overall_rating')
     .eq('reviewee_id', userId)
@@ -92,7 +92,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     : null
 
   // Fetch user's active listings
-  const { data: listings } = await (supabase as any)
+  const { data: listings } = await supabase
     .from('listings')
     .select('id, title, city, province, price, photos, type')
     .eq('user_id', userId)

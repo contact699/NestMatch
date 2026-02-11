@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmModal } from '@/components/ui/modal'
 import { formatPrice } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   CreditCard,
@@ -56,6 +59,7 @@ export default function PaymentSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [onboarding, setOnboarding] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchData()
@@ -81,7 +85,7 @@ export default function PaymentSettingsPage() {
         setConnectStatus(connectData)
       }
     } catch (error) {
-      console.error('Error fetching payment data:', error)
+      clientLogger.error('Error fetching payment data', error)
     } finally {
       setLoading(false)
     }
@@ -99,31 +103,41 @@ export default function PaymentSettingsPage() {
         fetchData()
       }
     } catch (error) {
-      console.error('Error starting onboarding:', error)
+      clientLogger.error('Error starting onboarding', error)
     } finally {
       setOnboarding(false)
     }
   }
 
-  const handleDeleteMethod = async (methodId: string) => {
-    if (!confirm('Are you sure you want to remove this payment method?')) return
+  const handleDeleteMethod = (methodId: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Remove Payment Method',
+      message: 'Are you sure you want to remove this payment method?',
+      onConfirm: async () => {
+        try {
+          setDeletingId(methodId)
+          const res = await fetch('/api/payments/methods', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_method_id: methodId }),
+          })
 
-    try {
-      setDeletingId(methodId)
-      const res = await fetch('/api/payments/methods', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_method_id: methodId }),
-      })
-
-      if (res.ok) {
-        setPaymentMethods((prev) => prev.filter((m) => m.id !== methodId))
-      }
-    } catch (error) {
-      console.error('Error deleting payment method:', error)
-    } finally {
-      setDeletingId(null)
-    }
+          if (res.ok) {
+            setPaymentMethods((prev) => prev.filter((m) => m.id !== methodId))
+            toast.success('Payment method removed')
+          } else {
+            toast.error('Failed to remove payment method')
+          }
+        } catch (error) {
+          clientLogger.error('Error deleting payment method', error)
+          toast.error('Failed to remove payment method')
+        } finally {
+          setDeletingId(null)
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const getCardBrandIcon = (brand: string) => {
@@ -370,6 +384,16 @@ export default function PaymentSettingsPage() {
           full card details. A 5% platform fee applies to all transactions.
         </p>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Remove"
+        variant="danger"
+      />
     </div>
   )
 }

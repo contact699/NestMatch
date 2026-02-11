@@ -11,7 +11,8 @@ export const GET = withAdminHandler(
     if (error) throw error
 
     return apiResponse({ resources }, 200, requestId)
-  }
+  },
+  { rateLimit: 'api' }
 )
 
 export const POST = withAdminHandler(
@@ -41,6 +42,7 @@ export const POST = withAdminHandler(
     return apiResponse({ resource }, 201, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'create',
       resourceType: 'resource',

@@ -41,5 +41,6 @@ export const GET = withPublicHandler(
     if (error) throw error
 
     return apiResponse({ listings: listings || [] }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )

@@ -10,7 +10,7 @@ export const GET = withApiHandler(
     const offset = parseInt(searchParams.get('offset') || '0')
 
     // Build query based on type
-    let query = (supabase as any)
+    let query = supabase
       .from('payments')
       .select(`
         *,
@@ -31,12 +31,12 @@ export const GET = withApiHandler(
 
     // Filter by type
     if (type === 'sent') {
-      query = query.eq('payer_id', userId)
+      query = query.eq('payer_id', userId!)
     } else if (type === 'received') {
-      query = query.eq('recipient_id', userId)
+      query = query.eq('recipient_id', userId!)
     } else {
       // All payments involving the user
-      query = query.or(`payer_id.eq.${userId},recipient_id.eq.${userId}`)
+      query = query.or(`payer_id.eq.${userId!},recipient_id.eq.${userId!}`)
     }
 
     // Filter by status
@@ -54,16 +54,16 @@ export const GET = withApiHandler(
     if (error) throw error
 
     // Get total count for pagination
-    let countQuery = (supabase as any)
+    let countQuery = supabase
       .from('payments')
       .select('*', { count: 'exact', head: true })
 
     if (type === 'sent') {
-      countQuery = countQuery.eq('payer_id', userId)
+      countQuery = countQuery.eq('payer_id', userId!)
     } else if (type === 'received') {
-      countQuery = countQuery.eq('recipient_id', userId)
+      countQuery = countQuery.eq('recipient_id', userId!)
     } else {
-      countQuery = countQuery.or(`payer_id.eq.${userId},recipient_id.eq.${userId}`)
+      countQuery = countQuery.or(`payer_id.eq.${userId!},recipient_id.eq.${userId!}`)
     }
 
     if (status) {
@@ -82,16 +82,16 @@ export const GET = withApiHandler(
 
     if (payments) {
       for (const payment of payments) {
-        if (payment.payer_id === userId && payment.status === 'completed') {
+        if (payment.payer_id === userId! && payment.status === 'completed') {
           summary.total_sent += payment.amount
         }
-        if (payment.recipient_id === userId && payment.status === 'completed') {
+        if (payment.recipient_id === userId! && payment.status === 'completed') {
           summary.total_received += payment.amount
         }
-        if (payment.payer_id === userId && payment.status === 'pending') {
+        if (payment.payer_id === userId! && payment.status === 'pending') {
           summary.pending_sent += payment.amount
         }
-        if (payment.recipient_id === userId && payment.status === 'pending') {
+        if (payment.recipient_id === userId! && payment.status === 'pending') {
           summary.pending_received += payment.amount
         }
       }
@@ -107,5 +107,6 @@ export const GET = withApiHandler(
       },
       summary,
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'paymentCreate' }
 )

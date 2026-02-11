@@ -10,20 +10,21 @@ const bookmarkSchema = z.object({
 
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    const { data: bookmarks, error } = await (supabase as any)
+    const { data: bookmarks, error } = await supabase
       .from('resource_bookmarks')
       .select(`
         *,
         resource:resources(*),
         faq:faqs(*)
       `)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .order('created_at', { ascending: false })
 
     if (error) throw error
 
     return apiResponse({ bookmarks }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 export const POST = withApiHandler(
@@ -39,7 +40,7 @@ export const POST = withApiHandler(
     const { type, itemId } = body
 
     const insertData: any = {
-      user_id: userId,
+      user_id: userId!,
     }
 
     if (type === 'resource') {
@@ -48,7 +49,7 @@ export const POST = withApiHandler(
       insertData.faq_id = itemId
     }
 
-    const { data: bookmark, error } = await (supabase as any)
+    const { data: bookmark, error } = await supabase
       .from('resource_bookmarks')
       .insert(insertData)
       .select()
@@ -63,5 +64,6 @@ export const POST = withApiHandler(
     }
 
     return apiResponse({ bookmark }, 201, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

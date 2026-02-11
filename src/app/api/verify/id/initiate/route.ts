@@ -5,10 +5,10 @@ import { initiateIDVerification } from '@/lib/services/certn'
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get user profile
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!profile) {
@@ -16,10 +16,10 @@ export const POST = withApiHandler(
     }
 
     // Check if already has pending or completed ID verification
-    const { data: existingVerification } = await (supabase as any)
+    const { data: existingVerification } = await supabase
       .from('verifications')
       .select('id, status')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq('type', 'id')
       .in('status', ['pending', 'completed'])
       .single()
@@ -48,10 +48,10 @@ export const POST = withApiHandler(
     }
 
     // Create verification record
-    const { data: verification, error } = await (supabase as any)
+    const { data: verification, error } = await supabase
       .from('verifications')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         type: 'id',
         provider: 'certn',
         external_id: result.applicationId,

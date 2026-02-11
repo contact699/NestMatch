@@ -1,10 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
+import { useDebounce } from '@/lib/hooks/use-debounce'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { VerificationBadge } from '@/components/ui/badge'
 import { CompatibilityBadgeStatic } from '@/components/ui/compatibility-badge'
 import { SuggestedGroupCard } from '@/components/discover/SuggestedGroupCard'
@@ -55,8 +58,12 @@ interface Profile {
   bio: string | null
   profile_photo: string | null
   verification_level: string
+  age: number | null
+  gender: 'male' | 'female' | 'non_binary' | 'other' | 'prefer_not_to_say' | null
   city: string | null
   province: string | null
+  budget_min?: number | null
+  budget_max?: number | null
 }
 
 interface ProfileWithScore extends Profile {
@@ -126,14 +133,14 @@ export default function DiscoverPage() {
         setCounts(prev => ({ ...prev, suggestions: data.suggestions?.length || 0 }))
       }
     } catch (error) {
-      console.error('Error fetching suggestions:', error)
+      clientLogger.error('Error fetching suggestions', error)
     }
   }, [])
 
   const fetchProfiles = useCallback(async (userId: string) => {
     const supabase = createClient()
 
-    const { data: profilesData } = await (supabase as any)
+    const { data: profilesData } = await supabase
       .from('profiles')
       .select('*')
       .neq('user_id', userId)
@@ -141,6 +148,19 @@ export default function DiscoverPage() {
       .limit(30)
 
     if (!profilesData) return
+
+    // Fetch budget ranges from seeking profiles for filtering
+    const { data: seekingProfilesData } = await supabase
+      .from('seeking_profiles')
+      .select('user_id, budget_min, budget_max')
+      .in('user_id', profilesData.map((p: Profile) => p.user_id))
+
+    const budgetsByUserId = new Map<string, { budget_min: number | null; budget_max: number | null }>(
+      (seekingProfilesData || []).map((s: any) => [
+        s.user_id,
+        { budget_min: s.budget_min ?? null, budget_max: s.budget_max ?? null },
+      ])
+    )
 
     // Get compatibility scores
     const userIds = profilesData.map((p: Profile) => p.user_id)
@@ -158,6 +178,8 @@ export default function DiscoverPage() {
 
     const profilesWithScores: ProfileWithScore[] = profilesData.map((p: Profile) => ({
       ...p,
+      budget_min: budgetsByUserId.get(p.user_id)?.budget_min ?? null,
+      budget_max: budgetsByUserId.get(p.user_id)?.budget_max ?? null,
       compatibilityScore: scores[p.user_id] || 0,
     }))
 
@@ -169,7 +191,7 @@ export default function DiscoverPage() {
   const fetchPublicGroups = useCallback(async () => {
     const supabase = createClient()
 
-    const { data: groups } = await (supabase as any)
+    const { data: groups } = await supabase
       .from('co_renter_groups')
       .select(`
         *,
@@ -225,11 +247,14 @@ export default function DiscoverPage() {
 
       if (response.status === 429) {
         setNextRefreshAt(data.nextRefreshAt)
+        toast.error('Please wait before refreshing again')
       } else if (response.ok) {
         await fetchSuggestions()
+        toast.success('Suggestions refreshed')
       }
     } catch (error) {
-      console.error('Error refreshing suggestions:', error)
+      clientLogger.error('Error refreshing suggestions', error)
+      toast.error('Failed to refresh suggestions')
     } finally {
       setRefreshing(false)
     }
@@ -247,10 +272,14 @@ export default function DiscoverPage() {
         const data = await response.json()
         // Remove from suggestions and redirect to group
         setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
+        toast.success('Group created from suggestion!')
         window.location.href = `/groups/${data.groupId}`
+      } else {
+        toast.error('Failed to create group from suggestion')
       }
     } catch (error) {
-      console.error('Error converting suggestion:', error)
+      clientLogger.error('Error converting suggestion', error)
+      toast.error('Failed to create group from suggestion')
     }
   }
 
@@ -264,10 +293,51 @@ export default function DiscoverPage() {
 
       setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
       setCounts(prev => ({ ...prev, suggestions: prev.suggestions - 1 }))
+      toast.success('Suggestion dismissed')
     } catch (error) {
-      console.error('Error dismissing suggestion:', error)
+      clientLogger.error('Error dismissing suggestion', error)
+      toast.error('Failed to dismiss suggestion')
     }
   }
+
+  const debouncedFilters = useDebounce(peopleFilters, 300)
+
+  const filteredProfiles = useMemo(() => {
+    const minBudgetFilter = debouncedFilters.budgetMin ? parseInt(debouncedFilters.budgetMin, 10) : null
+    const maxBudgetFilter = debouncedFilters.budgetMax ? parseInt(debouncedFilters.budgetMax, 10) : null
+
+    return profiles.filter((profile) => {
+      if (debouncedFilters.province && profile.province !== debouncedFilters.province) return false
+      if (debouncedFilters.city && profile.city !== debouncedFilters.city) return false
+      if (debouncedFilters.gender && profile.gender !== debouncedFilters.gender) return false
+      if (debouncedFilters.ageMin && profile.age && profile.age < parseInt(debouncedFilters.ageMin, 10)) return false
+      if (debouncedFilters.ageMax && profile.age && profile.age > parseInt(debouncedFilters.ageMax, 10)) return false
+
+      if (minBudgetFilter !== null || maxBudgetFilter !== null) {
+        const profileMin = profile.budget_min
+        const profileMax = profile.budget_max
+
+        if (profileMin === null || profileMin === undefined || profileMax === null || profileMax === undefined) {
+          return false
+        }
+
+        const overlaps =
+          profileMax >= (minBudgetFilter ?? Number.NEGATIVE_INFINITY) &&
+          profileMin <= (maxBudgetFilter ?? Number.POSITIVE_INFINITY)
+
+        if (!overlaps) return false
+      }
+
+      if (debouncedFilters.searchQuery) {
+        const q = debouncedFilters.searchQuery.toLowerCase()
+        const name = (profile.name || '').toLowerCase()
+        const bio = (profile.bio || '').toLowerCase()
+        if (!name.includes(q) && !bio.includes(q)) return false
+      }
+
+      return true
+    })
+  }, [profiles, debouncedFilters])
 
   if (!currentUserId && !loading) {
     return (
@@ -400,23 +470,7 @@ export default function DiscoverPage() {
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm text-gray-500">
-                      {(() => {
-                        const filtered = profiles.filter(profile => {
-                          if (peopleFilters.province && profile.province !== peopleFilters.province) return false
-                          if (peopleFilters.city && profile.city !== peopleFilters.city) return false
-                          if (peopleFilters.gender && (profile as any).gender !== peopleFilters.gender) return false
-                          if (peopleFilters.ageMin && (profile as any).age && (profile as any).age < parseInt(peopleFilters.ageMin)) return false
-                          if (peopleFilters.ageMax && (profile as any).age && (profile as any).age > parseInt(peopleFilters.ageMax)) return false
-                          if (peopleFilters.searchQuery) {
-                            const q = peopleFilters.searchQuery.toLowerCase()
-                            const name = (profile.name || '').toLowerCase()
-                            const bio = (profile.bio || '').toLowerCase()
-                            if (!name.includes(q) && !bio.includes(q)) return false
-                          }
-                          return true
-                        })
-                        return `${filtered.length} compatible people found`
-                      })()}
+                      {`${filteredProfiles.length} compatible people found`}
                     </p>
                     <Button
                       variant="outline"
@@ -554,105 +608,88 @@ export default function DiscoverPage() {
                   )}
                 </div>
 
-                {(() => {
-                  const filteredProfiles = profiles.filter(profile => {
-                    if (peopleFilters.province && profile.province !== peopleFilters.province) return false
-                    if (peopleFilters.city && profile.city !== peopleFilters.city) return false
-                    if (peopleFilters.gender && (profile as any).gender !== peopleFilters.gender) return false
-                    if (peopleFilters.ageMin && (profile as any).age && (profile as any).age < parseInt(peopleFilters.ageMin)) return false
-                    if (peopleFilters.ageMax && (profile as any).age && (profile as any).age > parseInt(peopleFilters.ageMax)) return false
-                    if (peopleFilters.searchQuery) {
-                      const q = peopleFilters.searchQuery.toLowerCase()
-                      const name = (profile.name || '').toLowerCase()
-                      const bio = (profile.bio || '').toLowerCase()
-                      if (!name.includes(q) && !bio.includes(q)) return false
-                    }
-                    return true
-                  })
-
-                  return filteredProfiles.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
-                        No profiles found
-                      </h3>
-                      <p className="text-gray-500">
-                        {Object.values(peopleFilters).some(v => v !== '')
-                          ? 'Try adjusting your filters to see more results.'
-                          : 'Complete your lifestyle quiz to see compatible matches.'}
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {filteredProfiles.map(profile => (
-                        <Card key={profile.user_id} variant="bordered" animate>
-                          <CardContent className="p-6">
-                            <div className="flex items-start gap-4 mb-4">
-                              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                                {profile.profile_photo ? (
-                                  <img
-                                    src={profile.profile_photo}
-                                    alt={profile.name || 'User'}
-                                    className="w-full h-full object-cover"
-                                  />
-                                ) : (
-                                  <Users className="h-8 w-8 text-blue-600" />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-gray-900 truncate">
-                                  {profile.name || 'Anonymous'}
-                                </h3>
-                                <VerificationBadge
-                                  level={(profile.verification_level || 'basic') as 'basic' | 'verified' | 'trusted'}
-                                  size="sm"
+                {filteredProfiles.length === 0 ? (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                      No profiles found
+                    </h3>
+                    <p className="text-gray-500">
+                      {Object.values(peopleFilters).some(v => v !== '')
+                        ? 'Try adjusting your filters to see more results.'
+                        : 'Complete your lifestyle quiz to see compatible matches.'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredProfiles.map(profile => (
+                      <Card key={profile.user_id} variant="bordered" animate>
+                        <CardContent className="p-6">
+                          <div className="flex items-start gap-4 mb-4">
+                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                              {profile.profile_photo ? (
+                                <img
+                                  src={profile.profile_photo}
+                                  alt={profile.name || 'User'}
+                                  className="w-full h-full object-cover"
                                 />
-                                {(profile.city || profile.province) && (
-                                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="truncate">
-                                      {[profile.city, profile.province].filter(Boolean).join(', ')}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
+                              ) : (
+                                <Users className="h-8 w-8 text-blue-600" />
+                              )}
                             </div>
-
-                            {profile.compatibilityScore > 0 && (
-                              <div className="mb-4">
-                                <CompatibilityBadgeStatic
-                                  score={profile.compatibilityScore}
-                                  size="md"
-                                  showLabel
-                                />
-                              </div>
-                            )}
-
-                            {profile.bio && (
-                              <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                                {profile.bio}
-                              </p>
-                            )}
-
-                            <div className="flex gap-2 pt-4 border-t border-gray-100">
-                              <Link href={`/profile/${profile.user_id}`} className="flex-1">
-                                <Button variant="outline" className="w-full" size="sm">
-                                  View Profile
-                                </Button>
-                              </Link>
-                              <Link href={`/messages?to=${profile.user_id}`} className="flex-1">
-                                <Button variant="glow" className="w-full" size="sm">
-                                  <MessageCircle className="h-4 w-4 mr-1" />
-                                  Message
-                                </Button>
-                              </Link>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-900 truncate">
+                                {profile.name || 'Anonymous'}
+                              </h3>
+                              <VerificationBadge
+                                level={(profile.verification_level || 'basic') as 'basic' | 'verified' | 'trusted'}
+                                size="sm"
+                              />
+                              {(profile.city || profile.province) && (
+                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                                  <MapPin className="h-3 w-3" />
+                                  <span className="truncate">
+                                    {[profile.city, profile.province].filter(Boolean).join(', ')}
+                                  </span>
+                                </div>
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )
-                })()}
+                          </div>
+
+                          {profile.compatibilityScore > 0 && (
+                            <div className="mb-4">
+                              <CompatibilityBadgeStatic
+                                score={profile.compatibilityScore}
+                                size="md"
+                                showLabel
+                              />
+                            </div>
+                          )}
+
+                          {profile.bio && (
+                            <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                              {profile.bio}
+                            </p>
+                          )}
+
+                          <div className="flex gap-2 pt-4 border-t border-gray-100">
+                            <Link href={`/profile/${profile.user_id}`} className="flex-1">
+                              <Button variant="outline" className="w-full" size="sm">
+                                View Profile
+                              </Button>
+                            </Link>
+                            <Link href={`/messages?to=${profile.user_id}`} className="flex-1">
+                              <Button variant="glow" className="w-full" size="sm">
+                                <MessageCircle className="h-4 w-4 mr-1" />
+                                Message
+                              </Button>
+                            </Link>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 

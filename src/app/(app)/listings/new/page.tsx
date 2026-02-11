@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   ArrowRight,
@@ -21,6 +23,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { listingSchema, ListingFormData } from './types'
+import { useFormDraft } from '@/lib/hooks/use-form-draft'
 import {
   StepType,
   StepLocation,
@@ -41,11 +44,29 @@ const STEPS = [
   { id: 7, title: 'Review', icon: Check },
 ]
 
+const LISTING_DEFAULTS: Partial<ListingFormData> = {
+  type: 'room',
+  utilities_included: false,
+  minimum_stay: 1,
+  photos: [],
+  amenities: [],
+  bathroom_type: 'shared',
+  newcomer_friendly: false,
+  no_credit_history_ok: false,
+  ideal_for_students: false,
+  help_needed: false,
+  help_tasks: [],
+}
+
 export default function NewListingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [draft, setDraft, clearDraft] = useFormDraft<Partial<ListingFormData>>(
+    'new-listing',
+    LISTING_DEFAULTS
+  )
 
   const {
     register,
@@ -56,20 +77,14 @@ export default function NewListingPage() {
     trigger,
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
-    defaultValues: {
-      type: 'room',
-      utilities_included: false,
-      minimum_stay: 1,
-      photos: [],
-      amenities: [],
-      bathroom_type: 'shared',
-      newcomer_friendly: false,
-      no_credit_history_ok: false,
-      ideal_for_students: false,
-      help_needed: false,
-      help_tasks: [],
-    },
+    defaultValues: draft as ListingFormData,
   })
+
+  // Persist form values to draft on every change
+  const watchedValues = watch()
+  useEffect(() => {
+    setDraft(watchedValues)
+  }, [watchedValues, setDraft])
 
   const validateStep = async () => {
     let fieldsToValidate: (keyof ListingFormData)[] = []
@@ -113,7 +128,7 @@ export default function NewListingPage() {
   }
 
   const onSubmit = async (data: ListingFormData) => {
-    console.log('Form submitted with data:', data)
+    clientLogger.info('Form submitted with data')
     setIsSubmitting(true)
     setError(null)
 
@@ -125,7 +140,7 @@ export default function NewListingPage() {
       })
 
       const text = await response.text()
-      console.log('API response:', text)
+      clientLogger.info('API response received')
 
       let result
       try {
@@ -138,17 +153,21 @@ export default function NewListingPage() {
         throw new Error(result.error || 'Failed to create listing')
       }
 
+      clearDraft()
+      toast.success('Listing published successfully!')
       router.push(`/listings/${result.listing.id}`)
     } catch (err) {
-      console.error('Submit error:', err)
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      clientLogger.error('Submit error', err)
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      setError(message)
+      toast.error(message)
       setIsSubmitting(false)
     }
   }
 
   // Handle validation errors on submit
   const onError = (validationErrors: any) => {
-    console.log('Validation errors:', validationErrors)
+    clientLogger.info('Validation errors encountered')
     const errorMessages = Object.entries(validationErrors)
       .map(([field, error]: [string, any]) => `${field}: ${error.message}`)
       .join(', ')

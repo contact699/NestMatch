@@ -28,10 +28,10 @@ export const GET = withApiHandler(
     }
 
     // Get user profile
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!profile) {
@@ -39,16 +39,16 @@ export const GET = withApiHandler(
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(userId, profile.email, profile.name)
+    const customer = await getOrCreateCustomer(userId!, profile.email, profile.name ?? undefined)
 
     // Get payment methods from Stripe
     const stripePaymentMethods = await listPaymentMethods(customer.id)
 
     // Get local payment method records
-    const { data: localMethods } = await (supabase as any)
+    const { data: localMethods } = await supabase
       .from('payment_methods')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .order('created_at', { ascending: false })
 
     // Create a setup intent for adding new payment methods
@@ -80,7 +80,8 @@ export const GET = withApiHandler(
       },
       customer_id: customer.id,
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'paymentCreate' }
 )
 
 // Add a payment method
@@ -101,10 +102,10 @@ export const POST = withApiHandler(
     const { payment_method_id, set_as_default } = body
 
     // Get user profile
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!profile) {
@@ -112,35 +113,40 @@ export const POST = withApiHandler(
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(userId, profile.email, profile.name)
+    const customer = await getOrCreateCustomer(userId!, profile.email, profile.name ?? undefined)
 
     // Attach payment method to customer
     const paymentMethod = await attachPaymentMethod(payment_method_id, customer.id)
 
-    // If setting as default, update Stripe and local records
+    // If setting as default, update Stripe and local records atomically
     if (set_as_default) {
       await setDefaultPaymentMethod(customer.id, payment_method_id)
 
-      // Update all existing methods to not default
-      await (supabase as any)
-        .from('payment_methods')
-        .update({ is_default: false })
-        .eq('user_id', userId)
-    }
-
-    // Save to local database
-    await (supabase as any)
-      .from('payment_methods')
-      .insert({
-        user_id: userId,
-        stripe_payment_method_id: payment_method_id,
-        type: paymentMethod.type,
-        last_four: paymentMethod.card?.last4 || null,
-        brand: paymentMethod.card?.brand || null,
-        exp_month: paymentMethod.card?.exp_month || null,
-        exp_year: paymentMethod.card?.exp_year || null,
-        is_default: set_as_default || false,
+      // Atomically clear all defaults and upsert the new method as default
+      await supabase.rpc('set_default_payment_method', {
+        p_user_id: userId!,
+        p_stripe_payment_method_id: payment_method_id,
+        p_type: paymentMethod.type,
+        p_last_four: paymentMethod.card?.last4 || '',
+        p_brand: paymentMethod.card?.brand || '',
+        p_exp_month: paymentMethod.card?.exp_month || 0,
+        p_exp_year: paymentMethod.card?.exp_year || 0,
       })
+    } else {
+      // Save to local database (non-default)
+      await supabase
+        .from('payment_methods')
+        .insert({
+          user_id: userId!,
+          stripe_payment_method_id: payment_method_id,
+          type: paymentMethod.type,
+          last_four: paymentMethod.card?.last4 || null,
+          brand: paymentMethod.card?.brand || null,
+          exp_month: paymentMethod.card?.exp_month || null,
+          exp_year: paymentMethod.card?.exp_year || null,
+          is_default: false,
+        })
+    }
 
     return apiResponse({
       payment_method: {
@@ -157,6 +163,7 @@ export const POST = withApiHandler(
     }, 201, requestId)
   },
   {
+    rateLimit: 'paymentCreate',
     audit: {
       action: 'create',
       resourceType: 'payment_method',
@@ -182,10 +189,10 @@ export const DELETE = withApiHandler(
     const { payment_method_id } = body
 
     // Verify user owns this payment method
-    const { data: localMethod } = await (supabase as any)
+    const { data: localMethod } = await supabase
       .from('payment_methods')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq('stripe_payment_method_id', payment_method_id)
       .single()
 
@@ -197,7 +204,7 @@ export const DELETE = withApiHandler(
     await detachPaymentMethod(payment_method_id)
 
     // Delete from local database
-    await (supabase as any)
+    await supabase
       .from('payment_methods')
       .delete()
       .eq('stripe_payment_method_id', payment_method_id)
@@ -205,6 +212,7 @@ export const DELETE = withApiHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'paymentCreate',
     audit: {
       action: 'delete',
       resourceType: 'payment_method',

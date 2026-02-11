@@ -8,7 +8,7 @@ export const GET = withPublicHandler(
     const { id } = params
 
     // Try to find by slug first, then by ID
-    let query = (supabase as any)
+    let query = supabase
       .from('resources')
       .select(`
         *,
@@ -32,12 +32,13 @@ export const GET = withPublicHandler(
     }
 
     // Increment view count (fire and forget)
-    ;(supabase as any)
+    ;supabase
       .from('resources')
       .update({ view_count: resource.view_count + 1 })
       .eq('id', resource.id)
       .then(() => {})
 
     return apiResponse({ resource }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )

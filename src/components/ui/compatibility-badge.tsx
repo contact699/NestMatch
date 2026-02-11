@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Heart } from 'lucide-react'
+import { clientLogger } from '@/lib/client-logger'
 
 interface CompatibilityBadgeProps {
   userId: string
@@ -33,7 +34,7 @@ export function CompatibilityBadge({
           setScore(data.score)
         }
       } catch (error) {
-        console.error('Error fetching compatibility:', error)
+        clientLogger.error('Error fetching compatibility', error)
       } finally {
         setLoading(false)
       }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { Save, Loader2, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -55,13 +56,13 @@ export default function NewCategoryPage() {
         is_active: formData.is_active,
       }
 
-      const { error } = await (supabase as any).from('resource_categories').insert(insertData)
+      const { error } = await supabase.from('resource_categories').insert(insertData)
 
       if (error) throw error
 
       router.push('/admin/categories')
     } catch (error) {
-      console.error('Error creating category:', error)
+      clientLogger.error('Error creating category', error)
       alert('Failed to create category')
     } finally {
       setIsLoading(false)

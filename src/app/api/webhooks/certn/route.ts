@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { mapCertnStatus } from '@/lib/services/certn'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient()
 
     // Find verification by external_id
-    const { data: verification, error: findError } = await (supabase as any)
+    const { data: verification, error: findError } = await supabase
       .from('verifications')
       .select('id, user_id, status')
       .eq('external_id', applicationId)
@@ -27,7 +28,7 @@ export async function POST(request: NextRequest) {
       .single() as { data: any; error: any }
 
     if (findError || !verification) {
-      console.error('Verification not found for application:', applicationId)
+      logger.error(`Verification not found for application: ${applicationId}`)
       return NextResponse.json(
         { error: 'Verification not found' },
         { status: 404 }
@@ -54,13 +55,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from('verifications')
       .update(updateData)
       .eq('id', verification.id) as { error: any }
 
     if (updateError) {
-      console.error('Error updating verification:', updateError)
+      logger.error('Error updating verification', updateError instanceof Error ? updateError : new Error(String(updateError)))
       return NextResponse.json(
         { error: 'Failed to update verification' },
         { status: 500 }
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
 
     // If completed successfully, update user's verification level
     if (newStatus === 'completed') {
-      const { data: profile } = await (supabase as any)
+      const { data: profile } = await supabase
         .from('profiles')
         .select('phone_verified, verification_level')
         .eq('user_id', verification.user_id)
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
 
       // Upgrade to 'trusted' if ID verification passes
       if (profile) {
-        await (supabase as any)
+        await supabase
           .from('profiles')
           .update({
             verification_level: 'trusted',
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error in POST /api/webhooks/certn:', error)
+    logger.error('Error in POST /api/webhooks/certn', error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

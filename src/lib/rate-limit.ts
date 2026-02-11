@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { headers } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 export interface RateLimitConfig {
   maxRequests: number
@@ -95,7 +96,7 @@ export async function checkRateLimit(
     const maxRequests = config?.maxRequests || defaultConfig.maxRequests
     const windowSeconds = config?.windowSeconds || defaultConfig.windowSeconds
 
-    const { data, error } = await (supabase as any).rpc('check_rate_limit', {
+    const { data, error } = await supabase.rpc('check_rate_limit', {
       p_identifier: identifier,
       p_endpoint: endpoint,
       p_max_requests: maxRequests,
@@ -103,7 +104,7 @@ export async function checkRateLimit(
     })
 
     if (error) {
-      console.error('Rate limit check error:', error)
+      logger.error('Rate limit check error', error instanceof Error ? error : new Error(String(error)))
       // Fail open - allow request if rate limit check fails
       return { allowed: true, remaining: maxRequests, resetAt: new Date() }
     }
@@ -116,7 +117,7 @@ export async function checkRateLimit(
       blocked: !result?.allowed,
     }
   } catch (error) {
-    console.error('Rate limit error:', error)
+    logger.error('Rate limit error', error instanceof Error ? error : new Error(String(error)))
     // Fail open
     return { allowed: true, remaining: 100, resetAt: new Date() }
   }
@@ -159,7 +160,7 @@ export async function recordAbuseEvent(
                headersList.get('x-real-ip') ||
                'unknown'
 
-    await (supabase as any).from('abuse_events').insert({
+    await supabase.from('abuse_events').insert({
       user_id: userId,
       ip_address: ip,
       event_type: eventType,
@@ -167,7 +168,7 @@ export async function recordAbuseEvent(
       details,
     })
   } catch (error) {
-    console.error('Failed to record abuse event:', error)
+    logger.error('Failed to record abuse event', error instanceof Error ? error : new Error(String(error)))
   }
 }
 

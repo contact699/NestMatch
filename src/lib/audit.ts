@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { headers } from 'next/headers'
+import { logger } from '@/lib/logger'
 
 export type AuditAction =
   | 'create'
@@ -75,7 +76,7 @@ export async function auditLog(entry: AuditLogEntry): Promise<void> {
     const supabase = createServiceClient()
     const context = await getRequestContext()
 
-    await (supabase as any).from('audit_logs').insert({
+    await supabase.from('audit_logs').insert({
       actor_id: entry.actorId,
       actor_type: entry.actorType,
       action: entry.action,
@@ -90,7 +91,7 @@ export async function auditLog(entry: AuditLogEntry): Promise<void> {
     })
   } catch (error) {
     // Log to console but don't fail the request
-    console.error('Audit log error:', error)
+    logger.error('Audit log error', error instanceof Error ? error : new Error(String(error)))
   }
 }
 
@@ -102,7 +103,7 @@ export async function securityLog(entry: SecurityEventEntry): Promise<void> {
     const supabase = createServiceClient()
     const context = await getRequestContext()
 
-    await (supabase as any).from('security_events').insert({
+    await supabase.from('security_events').insert({
       user_id: entry.userId,
       event_type: entry.eventType,
       ip_address: context.ipAddress,
@@ -111,7 +112,7 @@ export async function securityLog(entry: SecurityEventEntry): Promise<void> {
       details: entry.details,
     })
   } catch (error) {
-    console.error('Security log error:', error)
+    logger.error('Security log error', error instanceof Error ? error : new Error(String(error)))
   }
 }
 

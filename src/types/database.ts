@@ -79,6 +79,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       lifestyle_responses: {
         Row: {
@@ -153,6 +154,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       listings: {
         Row: {
@@ -260,6 +262,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       seeking_profiles: {
         Row: {
@@ -301,6 +304,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       conversations: {
         Row: {
@@ -327,6 +331,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -353,6 +358,7 @@ export interface Database {
           read_at?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       verifications: {
         Row: {
@@ -391,6 +397,7 @@ export interface Database {
           expires_at?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       reports: {
         Row: {
@@ -429,6 +436,7 @@ export interface Database {
           created_at?: string
           resolved_at?: string | null
         }
+        Relationships: []
       }
       saved_listings: {
         Row: {
@@ -449,6 +457,7 @@ export interface Database {
           listing_id?: string
           created_at?: string
         }
+        Relationships: []
       }
       blocked_users: {
         Row: {
@@ -469,6 +478,7 @@ export interface Database {
           blocked_user_id?: string
           created_at?: string
         }
+        Relationships: []
       }
       // Phase 2 Tables
       payment_methods: {
@@ -511,6 +521,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       payout_accounts: {
         Row: {
@@ -552,6 +563,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       payments: {
         Row: {
@@ -617,6 +629,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       shared_expenses: {
         Row: {
@@ -667,6 +680,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       expense_shares: {
         Row: {
@@ -705,6 +719,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       cohabitation_periods: {
         Row: {
@@ -749,6 +764,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       reviews: {
         Row: {
@@ -826,6 +842,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       co_renter_groups: {
         Row: {
@@ -879,6 +896,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       co_renter_members: {
         Row: {
@@ -911,6 +929,7 @@ export interface Database {
           joined_at?: string
           left_at?: string | null
         }
+        Relationships: []
       }
       co_renter_invitations: {
         Row: {
@@ -949,6 +968,7 @@ export interface Database {
           responded_at?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       service_providers: {
         Row: {
@@ -1017,6 +1037,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       service_bookings: {
         Row: {
@@ -1097,6 +1118,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       service_reviews: {
         Row: {
@@ -1129,6 +1151,7 @@ export interface Database {
           is_visible?: boolean
           created_at?: string
         }
+        Relationships: []
       }
       insurance_references: {
         Row: {
@@ -1179,6 +1202,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       // Resources Feature Tables
       resource_categories: {
@@ -1215,6 +1239,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       resources: {
         Row: {
@@ -1280,6 +1305,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       faqs: {
         Row: {
@@ -1333,6 +1359,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       resource_bookmarks: {
         Row: {
@@ -1356,6 +1383,7 @@ export interface Database {
           faq_id?: string | null
           created_at?: string
         }
+        Relationships: []
       }
       resource_votes: {
         Row: {
@@ -1382,6 +1410,7 @@ export interface Database {
           vote_type?: 'helpful' | 'not_helpful'
           created_at?: string
         }
+        Relationships: []
       }
       submitted_questions: {
         Row: {
@@ -1423,6 +1452,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       agreement_clauses: {
         Row: {
@@ -1470,6 +1500,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       generated_agreements: {
         Row: {
@@ -1520,6 +1551,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       // Group Matching Tables
       group_suggestions: {
@@ -1565,6 +1597,7 @@ export interface Database {
           expires_at?: string
           created_at?: string
         }
+        Relationships: []
       }
       user_matching_preferences: {
         Row: {
@@ -1600,6 +1633,226 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          id: string
+          actor_id: string | null
+          actor_type: string
+          action: string
+          resource_type: string
+          resource_id: string | null
+          old_values: Json | null
+          new_values: Json | null
+          ip_address: string | null
+          user_agent: string | null
+          request_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          actor_id?: string | null
+          actor_type?: string
+          action: string
+          resource_type: string
+          resource_id?: string | null
+          old_values?: Json | null
+          new_values?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          request_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          actor_id?: string | null
+          actor_type?: string
+          action?: string
+          resource_type?: string
+          resource_id?: string | null
+          old_values?: Json | null
+          new_values?: Json | null
+          ip_address?: string | null
+          user_agent?: string | null
+          request_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      security_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          event_type: string
+          ip_address: string | null
+          user_agent: string | null
+          location: Json | null
+          risk_score: number
+          details: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          event_type: string
+          ip_address?: string | null
+          user_agent?: string | null
+          location?: Json | null
+          risk_score?: number
+          details?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          event_type?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          location?: Json | null
+          risk_score?: number
+          details?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
+      abuse_events: {
+        Row: {
+          id: string
+          user_id: string | null
+          ip_address: string | null
+          event_type: string
+          severity: string
+          details: Json
+          resolved: boolean
+          resolved_by: string | null
+          resolved_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id?: string | null
+          ip_address?: string | null
+          event_type: string
+          severity?: string
+          details?: Json
+          resolved?: boolean
+          resolved_by?: string | null
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string | null
+          ip_address?: string | null
+          event_type?: string
+          severity?: string
+          details?: Json
+          resolved?: boolean
+          resolved_by?: string | null
+          resolved_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      background_jobs: {
+        Row: {
+          id: string
+          queue: string
+          job_type: string
+          payload: Json
+          priority: number
+          status: string
+          attempts: number
+          max_attempts: number
+          scheduled_for: string
+          started_at: string | null
+          completed_at: string | null
+          error_message: string | null
+          result: Json | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          queue?: string
+          job_type: string
+          payload?: Json
+          priority?: number
+          status?: string
+          attempts?: number
+          max_attempts?: number
+          scheduled_for?: string
+          started_at?: string | null
+          completed_at?: string | null
+          error_message?: string | null
+          result?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          queue?: string
+          job_type?: string
+          payload?: Json
+          priority?: number
+          status?: string
+          attempts?: number
+          max_attempts?: number
+          scheduled_for?: string
+          started_at?: string | null
+          completed_at?: string | null
+          error_message?: string | null
+          result?: Json | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      webhook_events: {
+        Row: {
+          id: string
+          provider: string
+          event_id: string
+          event_type: string
+          payload: Json
+          status: string
+          attempts: number
+          last_attempt_at: string | null
+          completed_at: string | null
+          error_message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          provider: string
+          event_id: string
+          event_type: string
+          payload: Json
+          status?: string
+          attempts?: number
+          last_attempt_at?: string | null
+          completed_at?: string | null
+          error_message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          provider?: string
+          event_id?: string
+          event_type?: string
+          payload?: Json
+          status?: string
+          attempts?: number
+          last_attempt_at?: string | null
+          completed_at?: string | null
+          error_message?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
       suggestion_interactions: {
         Row: {
@@ -1623,6 +1876,7 @@ export interface Database {
           action?: 'viewed' | 'interested' | 'dismissed'
           created_at?: string
         }
+        Relationships: []
       }
     }
     Views: {
@@ -1644,6 +1898,126 @@ export interface Database {
       batch_calculate_compatibility: {
         Args: { current_user_id: string; other_user_ids: string[] }
         Returns: { user_id: string; score: number }[]
+      }
+      check_rate_limit: {
+        Args: {
+          p_identifier: string
+          p_endpoint: string
+          p_max_requests: number
+          p_window_seconds: number
+        }
+        Returns: { allowed: boolean; remaining: number; reset_at: string }[]
+      }
+      claim_background_job: {
+        Args: { p_queue: string }
+        Returns: Json
+      }
+      complete_background_job: {
+        Args: { p_job_id: string; p_result: Json | null }
+        Returns: void
+      }
+      fail_background_job: {
+        Args: { p_job_id: string; p_error: string }
+        Returns: void
+      }
+      soft_delete_user: {
+        Args: { p_user_id: string; p_reason: string | null }
+        Returns: void
+      }
+      pay_expense_share: {
+        Args: { p_expense_id: string; p_user_id: string }
+        Returns: {
+          share: {
+            id: string
+            expense_id: string
+            user_id: string
+            amount: number
+            percentage: number | null
+            status: string
+            payment_id: string | null
+            paid_at: string | null
+            created_at: string
+            updated_at: string
+          }
+          expense: {
+            id: string
+            title: string
+            created_by: string | null
+            listing_id: string
+            total_amount: number
+          }
+        }
+      }
+      set_default_payment_method: {
+        Args: {
+          p_user_id: string
+          p_stripe_payment_method_id: string
+          p_type: string
+          p_last_four: string
+          p_brand: string
+          p_exp_month: number
+          p_exp_year: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          stripe_payment_method_id: string
+          type: string
+          last_four: string | null
+          brand: string | null
+          exp_month: number | null
+          exp_year: number | null
+          is_default: boolean
+          created_at: string
+          updated_at: string
+        }
+      }
+      create_expense_with_shares: {
+        Args: {
+          p_listing_id: string
+          p_created_by: string
+          p_title: string
+          p_description: string
+          p_total_amount: number
+          p_split_type: string
+          p_category: string
+          p_due_date: string
+          p_shares: {
+            user_id: string
+            amount: number
+            percentage: number
+          }[]
+        }
+        Returns: {
+          expense: {
+            id: string
+            listing_id: string
+            created_by: string | null
+            title: string
+            description: string | null
+            total_amount: number
+            currency: string
+            split_type: string
+            category: string | null
+            receipt_url: string | null
+            due_date: string | null
+            status: string
+            created_at: string
+            updated_at: string
+          }
+          shares: {
+            id: string
+            expense_id: string
+            user_id: string
+            amount: number
+            percentage: number | null
+            status: string
+            payment_id: string | null
+            paid_at: string | null
+            created_at: string
+            updated_at: string
+          }[]
+        }
       }
     }
     Enums: {

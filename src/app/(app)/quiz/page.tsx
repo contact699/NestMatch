@@ -214,7 +214,7 @@ export default function QuizPage() {
       return
     }
 
-    const { error } = await (supabase as any).from('lifestyle_responses').upsert(
+    const { error } = await supabase.from('lifestyle_responses').upsert(
       {
         user_id: user.id,
         ...answers,

@@ -10,14 +10,14 @@ const blockSchema = z.object({
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get blocked users with profile info
-    const { data: blockedUsers, error } = await (supabase as any)
+    const { data: blockedUsers, error } = await supabase
       .from('blocked_users')
       .select(`
         id,
         blocked_user_id,
         created_at
       `)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -27,7 +27,7 @@ export const GET = withApiHandler(
 
     let profiles: any[] = []
     if (blockedUserIds.length > 0) {
-      const { data: profileData } = await (supabase as any)
+      const { data: profileData } = await supabase
         .from('profiles')
         .select('user_id, name, profile_photo')
         .in('user_id', blockedUserIds)
@@ -61,10 +61,10 @@ export const POST = withApiHandler(
     }
 
     // Check if already blocked
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('blocked_users')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq('blocked_user_id', blockedUserId)
       .single()
 
@@ -73,10 +73,10 @@ export const POST = withApiHandler(
     }
 
     // Block user
-    const { data: blocked, error } = await (supabase as any)
+    const { data: blocked, error } = await supabase
       .from('blocked_users')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         blocked_user_id: blockedUserId,
       })
       .select()

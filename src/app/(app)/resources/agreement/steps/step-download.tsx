@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { pdf } from '@react-pdf/renderer'
+import { clientLogger } from '@/lib/client-logger'
 import { Download, FileText, Loader2, Check, Share2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AgreementPDF } from '@/components/resources/agreement/agreement-pdf'
@@ -112,7 +113,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
         URL.revokeObjectURL(url)
       }
     } catch (error) {
-      console.error('Failed to generate PDF:', error)
+      clientLogger.error('Failed to generate PDF', error)
       setDownloadError('Failed to generate PDF. Please try again.')
     } finally {
       setIsGenerating(false)
@@ -125,7 +126,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      console.error('Failed to copy link:', err)
+      clientLogger.error('Failed to copy link', err)
     }
   }
 
@@ -139,7 +140,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
         })
       } catch (err) {
         // User cancelled or share failed
-        console.error('Share failed:', err)
+        clientLogger.error('Share failed', err)
       }
     } else {
       // Fallback to copy link

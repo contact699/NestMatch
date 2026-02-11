@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { createClient } from '@/lib/supabase/client'
 
 interface UseSavedListingsOptions {
@@ -42,7 +43,7 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
         const ids = new Set<string>(data.listings?.map((l: { id: string }) => l.id) || [])
         setSavedIds(ids)
       } catch (err) {
-        console.error('Error fetching saved listings:', err)
+        clientLogger.error('Error fetching saved listings', err)
         setError(err instanceof Error ? err.message : 'Failed to load saved listings')
       } finally {
         setIsLoading(false)
@@ -109,7 +110,7 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
 
       return true
     } catch (err) {
-      console.error('Error saving listing:', err)
+      clientLogger.error('Error saving listing', err)
       // Rollback on error
       setSavedIds((prev) => {
         const updated = new Set(prev)
@@ -152,7 +153,7 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
 
       return true
     } catch (err) {
-      console.error('Error unsaving listing:', err)
+      clientLogger.error('Error unsaving listing', err)
       // Rollback on error
       setSavedIds(previousIds)
       return false

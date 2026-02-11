@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import {
   BookOpen,
   HelpCircle,
@@ -64,7 +65,7 @@ export default function AdminDashboard() {
 
       try {
         // Fetch resources stats
-        const { data: resources } = await (supabase as any)
+        const { data: resources } = await supabase
           .from('resources')
           .select('id, is_published, featured, view_count, helpful_count')
 
@@ -77,7 +78,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch FAQs stats
-        const { data: faqs } = await (supabase as any)
+        const { data: faqs } = await supabase
           .from('faqs')
           .select('id, is_published, helpful_count, not_helpful_count')
 
@@ -89,7 +90,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch categories stats
-        const { data: categories } = await (supabase as any)
+        const { data: categories } = await supabase
           .from('resource_categories')
           .select('id, is_active')
 
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
         }
 
         // Fetch questions stats
-        const { data: questions } = await (supabase as any)
+        const { data: questions } = await supabase
           .from('submitted_questions')
           .select('id, status')
 
@@ -118,14 +119,14 @@ export default function AdminDashboard() {
         })
 
         // Fetch recent resources
-        const { data: recentResources } = await (supabase as any)
+        const { data: recentResources } = await supabase
           .from('resources')
           .select('id, title, resource_type, created_at')
           .order('created_at', { ascending: false })
           .limit(3)
 
         // Fetch recent FAQs
-        const { data: recentFaqs } = await (supabase as any)
+        const { data: recentFaqs } = await supabase
           .from('faqs')
           .select('id, question, created_at')
           .order('created_at', { ascending: false })
@@ -149,7 +150,7 @@ export default function AdminDashboard() {
         setRecentItems(recent)
 
         // Fetch pending questions
-        const { data: pending } = await (supabase as any)
+        const { data: pending } = await supabase
           .from('submitted_questions')
           .select('id, question, created_at, status')
           .eq('status', 'pending')
@@ -166,7 +167,7 @@ export default function AdminDashboard() {
           }))
         )
       } catch (error) {
-        console.error('Error fetching stats:', error)
+        clientLogger.error('Error fetching stats', error)
       } finally {
         setIsLoading(false)
       }

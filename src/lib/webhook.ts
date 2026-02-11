@@ -1,5 +1,6 @@
 import { createServiceClient } from '@/lib/supabase/service'
 import { auditLog } from '@/lib/audit'
+import { logger } from '@/lib/logger'
 
 export type WebhookProvider = 'stripe' | 'certn' | 'twilio' | 'other'
 export type WebhookStatus = 'pending' | 'processing' | 'completed' | 'failed'
@@ -36,7 +37,7 @@ export async function registerWebhookEvent(
 
   try {
     // Try to insert the event (will fail if duplicate due to unique constraint)
-    const { data, error } = await (supabase as any)
+    const { data, error } = await supabase
       .from('webhook_events')
       .insert({
         provider,
@@ -54,7 +55,7 @@ export async function registerWebhookEvent(
       // Check if it's a duplicate key error
       if (error.code === '23505') {
         // Event already exists - check its status
-        const { data: existing } = await (supabase as any)
+        const { data: existing } = await supabase
           .from('webhook_events')
           .select('*')
           .eq('provider', provider)
@@ -72,7 +73,7 @@ export async function registerWebhookEvent(
         // Event exists but not completed - might be a retry or stuck processing
         // Update attempt count and allow reprocessing if status is 'failed' or 'pending'
         if (existing?.status === 'failed' || existing?.status === 'pending') {
-          const { data: updated } = await (supabase as any)
+          const { data: updated } = await supabase
             .from('webhook_events')
             .update({
               status: 'processing',
@@ -107,7 +108,7 @@ export async function registerWebhookEvent(
       event: mapWebhookEvent(data),
     }
   } catch (error) {
-    console.error('Webhook registration error:', error)
+    logger.error('Webhook registration error', error instanceof Error ? error : new Error(String(error)))
     return {
       success: false,
       alreadyProcessed: false,
@@ -126,7 +127,7 @@ export async function completeWebhookEvent(
 ): Promise<void> {
   const supabase = createServiceClient()
 
-  await (supabase as any)
+  await supabase
     .from('webhook_events')
     .update({
       status: 'completed',
@@ -155,7 +156,7 @@ export async function failWebhookEvent(
 ): Promise<void> {
   const supabase = createServiceClient()
 
-  await (supabase as any)
+  await supabase
     .from('webhook_events')
     .update({
       status: 'failed',
@@ -230,7 +231,7 @@ export async function verifyWebhookSignature(
         return signature === expectedSig
     }
   } catch (error) {
-    console.error('Webhook signature verification error:', error)
+    logger.error('Webhook signature verification error', error instanceof Error ? error : new Error(String(error)))
     return false
   }
 }

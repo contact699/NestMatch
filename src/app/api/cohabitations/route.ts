@@ -17,7 +17,7 @@ export const GET = withApiHandler(
     const status = searchParams.get('status')
     const listingId = searchParams.get('listing_id')
 
-    let query = (supabase as any)
+    let query = supabase
       .from('cohabitation_periods')
       .select(`
         *,
@@ -80,7 +80,8 @@ export const GET = withApiHandler(
     })
 
     return apiResponse({ cohabitations: enrichedCohabitations }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // Create a new cohabitation period (provider only)
@@ -97,7 +98,7 @@ export const POST = withApiHandler(
     const { listing_id, seeker_id, start_date, end_date } = body
 
     // Verify user owns the listing
-    const { data: listing } = await (supabase as any)
+    const { data: listing } = await supabase
       .from('listings')
       .select('user_id')
       .eq('id', listing_id)
@@ -112,7 +113,7 @@ export const POST = withApiHandler(
     }
 
     // Verify seeker exists
-    const { data: seeker } = await (supabase as any)
+    const { data: seeker } = await supabase
       .from('profiles')
       .select('user_id')
       .eq('user_id', seeker_id)
@@ -123,7 +124,7 @@ export const POST = withApiHandler(
     }
 
     // Check for existing active cohabitation with same seeker
-    const { data: existingActive } = await (supabase as any)
+    const { data: existingActive } = await supabase
       .from('cohabitation_periods')
       .select('id')
       .eq('listing_id', listing_id)
@@ -132,15 +133,11 @@ export const POST = withApiHandler(
       .single()
 
     if (existingActive) {
-      return apiResponse(
-        { error: 'An active cohabitation already exists for this listing and seeker' },
-        400,
-        requestId
-      )
+      throw new ValidationError('An active cohabitation already exists for this listing and seeker')
     }
 
     // Create cohabitation
-    const { data: cohabitation, error: insertError } = await (supabase as any)
+    const { data: cohabitation, error: insertError } = await supabase
       .from('cohabitation_periods')
       .insert({
         listing_id,
@@ -172,6 +169,7 @@ export const POST = withApiHandler(
     return apiResponse({ cohabitation }, 201, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'create',
       resourceType: 'cohabitation',

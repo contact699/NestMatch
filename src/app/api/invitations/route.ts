@@ -4,7 +4,7 @@ import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 // Get user's pending invitations (across all groups)
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    const { data: invitations, error } = await (supabase as any)
+    const { data: invitations, error } = await supabase
       .from('co_renter_invitations')
       .select(`
         *,
@@ -32,12 +32,13 @@ export const GET = withApiHandler(
           )
         )
       `)
-      .eq('invitee_id', userId)
+      .eq('invitee_id', userId!)
       .eq('status', 'pending')
       .order('created_at', { ascending: false })
 
     if (error) throw error
 
     return apiResponse({ invitations: invitations || [] }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

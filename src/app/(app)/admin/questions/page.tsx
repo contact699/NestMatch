@@ -62,11 +62,11 @@ export default function AdminQuestionsPage() {
     const supabase = createClient()
 
     const [questionsRes, categoriesRes] = await Promise.all([
-      (supabase as any)
+      supabase
         .from('submitted_questions')
         .select('*')
         .order('created_at', { ascending: false }),
-      (supabase as any).from('resource_categories').select('*').order('display_order'),
+      supabase.from('resource_categories').select('*').order('display_order'),
     ])
 
     // Fetch profiles for user_ids
@@ -104,7 +104,7 @@ export default function AdminQuestionsPage() {
     setIsUpdating(true)
     const supabase = createClient()
 
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('submitted_questions')
       .update({
         status,

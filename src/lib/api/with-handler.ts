@@ -7,6 +7,7 @@ import { logger, logApiRequest, logApiResponse } from '@/lib/logger'
 import { generateRequestId } from '@/lib/request-context'
 import { captureException, createErrorResponse, AppError } from '@/lib/error-reporter'
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
 // ============================================
 // ERROR CLASSES
@@ -33,7 +34,7 @@ export class AuthorizationError extends AppError {
 export interface HandlerContext {
   requestId: string
   userId?: string
-  supabase: SupabaseClient
+  supabase: SupabaseClient<Database>
   params: Record<string, string>
 }
 
@@ -158,7 +159,7 @@ export function withApiHandler(
     const method = req.method
 
     let userId: string | undefined
-    let supabase: SupabaseClient
+    let supabase: SupabaseClient<Database>
     let webhookEventId: string | undefined
     let webhookProvider: WebhookProvider | undefined
 
@@ -167,7 +168,7 @@ export function withApiHandler(
 
     try {
       // 1. Create Supabase client
-      supabase = await createClient() as SupabaseClient
+      supabase = await createClient()
 
       // 2. Authentication check (unless public or webhook)
       if (!config.public && !config.webhook) {
@@ -372,7 +373,7 @@ export function withAdminHandler(
       }
 
       // Check admin status
-      const { data: profile } = await (supabase as any)
+      const { data: profile } = await supabase
         .from('profiles')
         .select('is_admin')
         .eq('user_id', userId)

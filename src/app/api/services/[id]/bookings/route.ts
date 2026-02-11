@@ -28,15 +28,15 @@ export const GET = withApiHandler(
     const role = searchParams.get('role') // 'provider' or 'customer'
 
     // Check if user is the provider
-    const { data: provider } = await (supabase as any)
+    const { data: provider } = await supabase
       .from('service_providers')
       .select('user_id')
       .eq('id', providerId)
       .single()
 
-    const isProvider = provider?.user_id === userId
+    const isProvider = provider?.user_id === userId!
 
-    let query = (supabase as any)
+    let query = supabase
       .from('service_bookings')
       .select(`
         *,
@@ -61,12 +61,12 @@ export const GET = withApiHandler(
 
     // Filter by role if specified
     if (role === 'customer') {
-      query = query.eq('customer_id', userId)
+      query = query.eq('customer_id', userId!)
     } else if (role === 'provider' && isProvider) {
       // Provider sees all their bookings
     } else {
       // Default: only show user's own bookings
-      query = query.eq('customer_id', userId)
+      query = query.eq('customer_id', userId!)
     }
 
     if (status) {
@@ -80,7 +80,8 @@ export const GET = withApiHandler(
     if (error) throw error
 
     return apiResponse({ bookings: bookings || [] }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // Create a booking
@@ -89,7 +90,7 @@ export const POST = withApiHandler(
     const { id: providerId } = params
 
     // Verify provider exists and is active
-    const { data: provider } = await (supabase as any)
+    const { data: provider } = await supabase
       .from('service_providers')
       .select('id, is_active, user_id')
       .eq('id', providerId)
@@ -104,7 +105,7 @@ export const POST = withApiHandler(
     }
 
     // Cannot book your own service
-    if (provider.user_id === userId) {
+    if (provider.user_id === userId!) {
       throw new ValidationError('You cannot book your own service')
     }
 
@@ -119,15 +120,16 @@ export const POST = withApiHandler(
     const { service_date, details } = body
 
     // Create booking
-    const { data: booking, error: createError } = await (supabase as any)
+    const { data: booking, error: createError } = await supabase
       .from('service_bookings')
       .insert({
         provider_id: providerId,
-        customer_id: userId,
+        customer_id: userId!,
+        service_type: 'general',
         service_date,
         details,
         status: 'requested',
-      })
+      } as any)
       .select(`
         *,
         provider:service_providers(
@@ -142,6 +144,7 @@ export const POST = withApiHandler(
     return apiResponse({ booking }, 201, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'create',
       resourceType: 'service_booking',
@@ -166,7 +169,7 @@ export const PUT = withApiHandler(
     const { booking_id, status, total_amount } = body
 
     // Get booking
-    const { data: booking } = await (supabase as any)
+    const { data: booking } = await supabase
       .from('service_bookings')
       .select(`
         *,
@@ -180,8 +183,8 @@ export const PUT = withApiHandler(
       throw new NotFoundError('Booking not found')
     }
 
-    const isProvider = booking.provider?.user_id === userId
-    const isCustomer = booking.customer_id === userId
+    const isProvider = (booking.provider as any)?.user_id === userId!
+    const isCustomer = booking.customer_id === userId!
 
     // Check permissions
     if (status === 'cancelled') {
@@ -205,7 +208,7 @@ export const PUT = withApiHandler(
       updateData.total_amount = total_amount
     }
 
-    const { data: updatedBooking, error: updateError } = await (supabase as any)
+    const { data: updatedBooking, error: updateError } = await supabase
       .from('service_bookings')
       .update(updateData)
       .eq('id', booking_id)
@@ -217,6 +220,7 @@ export const PUT = withApiHandler(
     return apiResponse({ booking: updatedBooking }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'service_booking',

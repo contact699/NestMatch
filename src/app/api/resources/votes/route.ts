@@ -25,33 +25,33 @@ export const POST = withApiHandler(
     const tableName = type === 'resource' ? 'resources' : 'faqs'
 
     // Check for existing vote
-    const { data: existingVote } = await (supabase as any)
+    const { data: existingVote } = await supabase
       .from('resource_votes')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .eq(columnName, itemId)
       .single()
 
     if (voteType === null) {
       // Remove vote
       if (existingVote) {
-        await (supabase as any)
+        await supabase
           .from('resource_votes')
           .delete()
           .eq('id', existingVote.id)
 
         // Update count
         const decrementField = existingVote.vote_type === 'helpful' ? 'helpful_count' : 'not_helpful_count'
-        const { data: item } = await (supabase as any)
+        const { data: item } = await supabase
           .from(tableName)
           .select(decrementField)
           .eq('id', itemId)
-          .single()
+          .single() as { data: any }
 
         if (item) {
-          await (supabase as any)
+          await supabase
             .from(tableName)
-            .update({ [decrementField]: Math.max(0, item[decrementField] - 1) })
+            .update({ [decrementField]: Math.max(0, item[decrementField] - 1) } as any)
             .eq('id', itemId)
         }
       }
@@ -66,7 +66,7 @@ export const POST = withApiHandler(
       }
 
       // Change vote
-      const { data: vote, error } = await (supabase as any)
+      const { data: vote, error } = await supabase
         .from('resource_votes')
         .update({ vote_type: voteType })
         .eq('id', existingVote.id)
@@ -76,11 +76,11 @@ export const POST = withApiHandler(
       if (error) throw error
 
       // Update counts
-      const { data: item } = await (supabase as any)
+      const { data: item } = await supabase
         .from(tableName)
         .select('helpful_count, not_helpful_count')
         .eq('id', itemId)
-        .single()
+        .single() as { data: any }
 
       if (item) {
         const updates: any = {}
@@ -91,9 +91,9 @@ export const POST = withApiHandler(
           updates.helpful_count = Math.max(0, item.helpful_count - 1)
           updates.not_helpful_count = item.not_helpful_count + 1
         }
-        await (supabase as any)
+        await supabase
           .from(tableName)
-          .update(updates)
+          .update(updates as any)
           .eq('id', itemId)
       }
 
@@ -102,12 +102,12 @@ export const POST = withApiHandler(
 
     // Create new vote
     const insertData: any = {
-      user_id: userId,
+      user_id: userId!,
       vote_type: voteType,
       [columnName]: itemId,
     }
 
-    const { data: vote, error } = await (supabase as any)
+    const { data: vote, error } = await supabase
       .from('resource_votes')
       .insert(insertData)
       .select()
@@ -117,19 +117,20 @@ export const POST = withApiHandler(
 
     // Update count
     const incrementField = voteType === 'helpful' ? 'helpful_count' : 'not_helpful_count'
-    const { data: item } = await (supabase as any)
+    const { data: item } = await supabase
       .from(tableName)
       .select(incrementField)
       .eq('id', itemId)
-      .single()
+      .single() as { data: any }
 
     if (item) {
-      await (supabase as any)
+      await supabase
         .from(tableName)
-        .update({ [incrementField]: item[incrementField] + 1 })
+        .update({ [incrementField]: item[incrementField] + 1 } as any)
         .eq('id', itemId)
     }
 
     return apiResponse({ vote }, 201, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

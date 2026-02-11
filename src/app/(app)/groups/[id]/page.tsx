@@ -2,11 +2,14 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ConfirmModal } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
 import { formatPrice, formatDate } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   Users,
   MapPin,
@@ -73,6 +76,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchGroup()
@@ -90,13 +94,13 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         router.push('/groups')
       }
     } catch (error) {
-      console.error('Error fetching group:', error)
+      clientLogger.error('Error fetching group', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleLeaveGroup = async () => {
+  const handleLeaveGroup = () => {
     if (!group) return
 
     const userMember = group.members.find(
@@ -105,55 +109,85 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
     if (!userMember) return
 
-    if (!confirm('Are you sure you want to leave this group?')) return
+    setConfirmModal({
+      open: true,
+      title: 'Leave Group',
+      message: 'Are you sure you want to leave this group?',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/groups/${id}/members`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ member_id: userMember.id }),
+          })
 
-    try {
-      const res = await fetch(`/api/groups/${id}/members`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ member_id: userMember.id }),
-      })
-
-      if (res.ok) {
-        router.push('/groups')
-      }
-    } catch (error) {
-      console.error('Error leaving group:', error)
-    }
+          if (res.ok) {
+            toast.success('You have left the group')
+            router.push('/groups')
+          } else {
+            toast.error('Failed to leave group')
+          }
+        } catch (error) {
+          clientLogger.error('Error leaving group', error)
+          toast.error('Failed to leave group')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
-  const handleDeleteGroup = async () => {
-    if (!confirm('Are you sure you want to delete this group? This cannot be undone.')) return
+  const handleDeleteGroup = () => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Group',
+      message: 'Are you sure you want to delete this group? This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/groups/${id}`, {
+            method: 'DELETE',
+          })
 
-    try {
-      const res = await fetch(`/api/groups/${id}`, {
-        method: 'DELETE',
-      })
-
-      if (res.ok) {
-        router.push('/groups')
-      }
-    } catch (error) {
-      console.error('Error deleting group:', error)
-    }
+          if (res.ok) {
+            toast.success('Group deleted successfully')
+            router.push('/groups')
+          } else {
+            toast.error('Failed to delete group')
+          }
+        } catch (error) {
+          clientLogger.error('Error deleting group', error)
+          toast.error('Failed to delete group')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
-  const handleRemoveMember = async (memberId: string, memberName: string) => {
-    if (!confirm(`Remove ${memberName} from the group?`)) return
+  const handleRemoveMember = (memberId: string, memberName: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Remove Member',
+      message: `Remove ${memberName} from the group?`,
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/groups/${id}/members`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ member_id: memberId }),
+          })
 
-    try {
-      const res = await fetch(`/api/groups/${id}/members`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ member_id: memberId }),
-      })
-
-      if (res.ok) {
-        fetchGroup()
-      }
-    } catch (error) {
-      console.error('Error removing member:', error)
-    }
+          if (res.ok) {
+            toast.success(`${memberName} has been removed`)
+            fetchGroup()
+          } else {
+            toast.error('Failed to remove member')
+          }
+        } catch (error) {
+          clientLogger.error('Error removing member', error)
+          toast.error('Failed to remove member')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const handlePromoteMember = async (memberId: string) => {
@@ -165,10 +199,14 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       })
 
       if (res.ok) {
+        toast.success('Member promoted to admin')
         fetchGroup()
+      } else {
+        toast.error('Failed to promote member')
       }
     } catch (error) {
-      console.error('Error promoting member:', error)
+      clientLogger.error('Error promoting member', error)
+      toast.error('Failed to promote member')
     }
   }
 
@@ -504,6 +542,16 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           }}
         />
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Confirm"
+        variant="danger"
+      />
     </div>
   )
 }

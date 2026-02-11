@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { withAdminHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
 import { sendEmail } from '@/lib/email'
 import { questionAnsweredEmail } from '@/lib/email-templates'
+import { logger } from '@/lib/logger'
 
 export const GET = withAdminHandler(
   async (req, { supabase, requestId, params }) => {
@@ -18,7 +19,8 @@ export const GET = withAdminHandler(
     }
 
     return apiResponse({ question }, 200, requestId)
-  }
+  },
+  { rateLimit: 'api' }
 )
 
 export const PUT = withAdminHandler(
@@ -55,6 +57,7 @@ export const PUT = withAdminHandler(
     return apiResponse({ question }, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'update',
       resourceType: 'submitted_question',
@@ -77,6 +80,7 @@ export const DELETE = withAdminHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'delete',
       resourceType: 'submitted_question',
@@ -123,12 +127,13 @@ export const PATCH = withAdminHandler(
       sendEmail({
         to: (question as any).profiles.email,
         ...emailContent,
-      }).catch(err => console.error('Error sending answered email:', err))
+      }).catch(err => logger.error('Error sending answered email', err instanceof Error ? err : new Error(String(err))))
     }
 
     return apiResponse(data, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'update',
       resourceType: 'submitted_question',

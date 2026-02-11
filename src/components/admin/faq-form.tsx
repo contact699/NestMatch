@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { Save, X, Loader2, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -47,7 +48,7 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
   useEffect(() => {
     const fetchCategories = async () => {
       const supabase = createClient()
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('resource_categories')
         .select('*')
         .eq('is_active', true)
@@ -100,21 +101,21 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
 
     try {
       if (isEditing && faq) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('faqs')
           .update(faqData)
           .eq('id', faq.id)
 
         if (error) throw error
       } else {
-        const { error } = await (supabase as any).from('faqs').insert(faqData)
+        const { error } = await supabase.from('faqs').insert(faqData)
 
         if (error) throw error
       }
 
       router.push('/admin/faqs')
     } catch (error) {
-      console.error('Error saving FAQ:', error)
+      clientLogger.error('Error saving FAQ', error)
       alert('Failed to save FAQ')
     } finally {
       setIsLoading(false)

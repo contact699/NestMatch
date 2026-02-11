@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { clientLogger } from '@/lib/client-logger'
 
 interface UseFetchOptions<T> {
   /** Initial data value */
@@ -94,7 +95,7 @@ export function useFetch<T>(
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
       setError(errorMessage)
       onError?.(err instanceof Error ? err : new Error(errorMessage))
-      console.error(`Fetch error for ${url}:`, err)
+      clientLogger.error(`Fetch error for ${url}`, err)
     } finally {
       setIsLoading(false)
     }
@@ -167,7 +168,7 @@ export function useMutation<T>(url: string) {
         const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred'
         setError(errorMessage)
         onError?.(err instanceof Error ? err : new Error(errorMessage))
-        console.error(`Mutation error for ${url}:`, err)
+        clientLogger.error(`Mutation error for ${url}`, err)
         return null
       } finally {
         setIsLoading(false)

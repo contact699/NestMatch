@@ -2,9 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { ArrowLeft, CheckSquare, Circle, CheckCircle2, RotateCcw, Printer } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { ConfirmModal } from '@/components/ui/modal'
+import { toast } from 'sonner'
 
 interface ChecklistItem {
   id: string
@@ -88,6 +91,7 @@ const STORAGE_KEY = 'nestmatch-move-in-checklist'
 export default function MoveInChecklistPage() {
   const [checklist, setChecklist] = useState<ChecklistSection[]>(DEFAULT_CHECKLIST)
   const [isLoaded, setIsLoaded] = useState(false)
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -96,7 +100,7 @@ export default function MoveInChecklistPage() {
       try {
         setChecklist(JSON.parse(saved))
       } catch (e) {
-        console.error('Error loading checklist:', e)
+        clientLogger.error('Error loading checklist', e)
       }
     }
     setIsLoaded(true)
@@ -125,9 +129,16 @@ export default function MoveInChecklistPage() {
   }
 
   const resetChecklist = () => {
-    if (confirm('Reset all items? This cannot be undone.')) {
-      setChecklist(DEFAULT_CHECKLIST)
-    }
+    setConfirmModal({
+      open: true,
+      title: 'Reset Checklist',
+      message: 'Reset all items? This cannot be undone.',
+      onConfirm: () => {
+        setChecklist(DEFAULT_CHECKLIST)
+        toast.success('Checklist has been reset')
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const printChecklist = () => {
@@ -262,6 +273,16 @@ export default function MoveInChecklistPage() {
           </ul>
         </CardContent>
       </Card>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Reset"
+        variant="danger"
+      />
 
       {/* Print styles */}
       <style jsx global>{`

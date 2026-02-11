@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logger } from '@/lib/logger'
 
 /**
  * Standard API error response format.
@@ -90,7 +91,7 @@ export function withErrorHandler<T extends (...args: any[]) => Promise<NextRespo
     try {
       return await handler(...args)
     } catch (error) {
-      console.error('API Error:', error)
+      logger.error('API Error', error instanceof Error ? error : new Error(String(error)))
 
       if (error instanceof Error) {
         return apiError(error.message, 500)

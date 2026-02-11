@@ -14,7 +14,7 @@ export const POST = withApiHandler(
     }
 
     // Get user profile
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email, name')
       .eq('user_id', userId)
@@ -25,7 +25,7 @@ export const POST = withApiHandler(
     }
 
     // Check if user already has a Connect account
-    let { data: payoutAccount } = await (supabase as any)
+    let { data: payoutAccount } = await supabase
       .from('payout_accounts')
       .select('*')
       .eq('user_id', userId)
@@ -42,7 +42,7 @@ export const POST = withApiHandler(
 
       if (account.details_submitted) {
         // Update local record
-        await (supabase as any)
+        await supabase
           .from('payout_accounts')
           .update({
             status: account.charges_enabled ? 'active' : 'restricted',
@@ -69,7 +69,7 @@ export const POST = withApiHandler(
       stripeAccountId = account.id
 
       // Save to database
-      await (supabase as any)
+      await supabase
         .from('payout_accounts')
         .insert({
           user_id: userId,
@@ -88,7 +88,7 @@ export const POST = withApiHandler(
     )
 
     // Update onboarding URL in database
-    await (supabase as any)
+    await supabase
       .from('payout_accounts')
       .update({
         onboarding_url: accountLink.url,
@@ -103,6 +103,7 @@ export const POST = withApiHandler(
     }, 200, requestId)
   },
   {
+    rateLimit: 'paymentCreate',
     audit: {
       action: 'create',
       resourceType: 'connect_account',

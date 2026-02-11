@@ -6,7 +6,7 @@ export const GET = withPublicHandler(
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
 
-    const { data: categories, error } = await (supabase as any)
+    const { data: categories, error } = await supabase
       .from('resource_categories')
       .select('*')
       .eq('is_active', true)
@@ -15,5 +15,6 @@ export const GET = withPublicHandler(
     if (error) throw error
 
     return apiResponse({ categories }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )

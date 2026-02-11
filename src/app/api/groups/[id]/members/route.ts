@@ -29,11 +29,11 @@ export const PUT = withApiHandler(
     const { member_id, budget_contribution, role } = body
 
     // Get current user's membership
-    const { data: currentMember } = await (supabase as any)
+    const { data: currentMember } = await supabase
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!currentMember) {
@@ -41,7 +41,7 @@ export const PUT = withApiHandler(
     }
 
     // Get target member
-    const { data: targetMember } = await (supabase as any)
+    const { data: targetMember } = await supabase
       .from('co_renter_members')
       .select('*')
       .eq('id', member_id)
@@ -53,7 +53,7 @@ export const PUT = withApiHandler(
     }
 
     const isAdmin = currentMember.role === 'admin'
-    const isSelf = targetMember.user_id === userId
+    const isSelf = targetMember.user_id === userId!
 
     // Check permissions
     if (role && !isAdmin) {
@@ -76,7 +76,7 @@ export const PUT = withApiHandler(
     if (role !== undefined && isAdmin) {
       // Prevent removing the last admin
       if (role === 'member' && targetMember.role === 'admin') {
-        const { data: admins } = await (supabase as any)
+        const { data: admins } = await supabase
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
@@ -93,7 +93,7 @@ export const PUT = withApiHandler(
       updateData.role = role
     }
 
-    const { data: member, error: updateError } = await (supabase as any)
+    const { data: member, error: updateError } = await supabase
       .from('co_renter_members')
       .update(updateData)
       .eq('id', member_id)
@@ -112,6 +112,7 @@ export const PUT = withApiHandler(
     return apiResponse({ member }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'co_renter_member',
@@ -135,11 +136,11 @@ export const DELETE = withApiHandler(
     const { member_id } = body
 
     // Get current user's membership
-    const { data: currentMember } = await (supabase as any)
+    const { data: currentMember } = await supabase
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!currentMember) {
@@ -147,7 +148,7 @@ export const DELETE = withApiHandler(
     }
 
     // Get target member
-    const { data: targetMember } = await (supabase as any)
+    const { data: targetMember } = await supabase
       .from('co_renter_members')
       .select('*')
       .eq('id', member_id)
@@ -159,7 +160,7 @@ export const DELETE = withApiHandler(
     }
 
     const isAdmin = currentMember.role === 'admin'
-    const isSelf = targetMember.user_id === userId
+    const isSelf = targetMember.user_id === userId!
 
     // Check permissions
     if (!isAdmin && !isSelf) {
@@ -168,7 +169,7 @@ export const DELETE = withApiHandler(
 
     // Prevent removing the last admin (unless leaving)
     if (targetMember.role === 'admin') {
-      const { data: admins } = await (supabase as any)
+      const { data: admins } = await supabase
         .from('co_renter_members')
         .select('id')
         .eq('group_id', groupId)
@@ -176,7 +177,7 @@ export const DELETE = withApiHandler(
 
       if (admins?.length === 1) {
         // Check if there are other members to promote
-        const { data: otherMembers } = await (supabase as any)
+        const { data: otherMembers } = await supabase
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
@@ -192,7 +193,7 @@ export const DELETE = withApiHandler(
       }
     }
 
-    const { error: deleteError } = await (supabase as any)
+    const { error: deleteError } = await supabase
       .from('co_renter_members')
       .delete()
       .eq('id', member_id)
@@ -205,6 +206,7 @@ export const DELETE = withApiHandler(
     }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'delete',
       resourceType: 'co_renter_member',

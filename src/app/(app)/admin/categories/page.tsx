@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -14,13 +14,16 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ConfirmModal } from '@/components/ui/modal'
 import { ResourceCategory } from '@/types/database'
+import { toast } from 'sonner'
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<ResourceCategory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', description: '', icon: '' })
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchCategories()
@@ -37,20 +40,29 @@ export default function AdminCategoriesPage() {
     setIsLoading(false)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category?')) return
+  const handleDelete = (id: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Category',
+      message: 'Are you sure you want to delete this category?',
+      onConfirm: async () => {
+        const supabase = createClient()
+        const { error } = await supabase.from('resource_categories').delete().eq('id', id)
 
-    const supabase = createClient()
-    const { error } = await (supabase as any).from('resource_categories').delete().eq('id', id)
-
-    if (!error) {
-      setCategories(categories.filter((c) => c.id !== id))
-    }
+        if (!error) {
+          setCategories(categories.filter((c) => c.id !== id))
+          toast.success('Category deleted successfully')
+        } else {
+          toast.error('Failed to delete category')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const toggleActive = async (category: ResourceCategory) => {
     const supabase = createClient()
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('resource_categories')
       .update({ is_active: !category.is_active })
       .eq('id', category.id)
@@ -61,6 +73,9 @@ export default function AdminCategoriesPage() {
           c.id === category.id ? { ...c, is_active: !c.is_active } : c
         )
       )
+      toast.success(`Category ${!category.is_active ? 'activated' : 'deactivated'}`)
+    } else {
+      toast.error('Failed to update category status')
     }
   }
 
@@ -80,7 +95,7 @@ export default function AdminCategoriesPage() {
 
   const saveEdit = async (id: string) => {
     const supabase = createClient()
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('resource_categories')
       .update({
         name: editForm.name,
@@ -98,6 +113,9 @@ export default function AdminCategoriesPage() {
         )
       )
       setEditingId(null)
+      toast.success('Category updated successfully')
+    } else {
+      toast.error('Failed to update category')
     }
   }
 
@@ -265,6 +283,16 @@ export default function AdminCategoriesPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   )
 }

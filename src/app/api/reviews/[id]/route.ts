@@ -18,7 +18,7 @@ export const GET = withPublicHandler(
     const supabase = await createClient()
     const { id } = params
 
-    const { data: review, error } = await (supabase as any)
+    const { data: review, error } = await supabase
       .from('reviews')
       .select(`
         *,
@@ -53,7 +53,8 @@ export const GET = withPublicHandler(
     }
 
     return apiResponse({ review }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )
 
 // Update a review (only by the reviewer, within 7 days)
@@ -62,7 +63,7 @@ export const PUT = withApiHandler(
     const { id } = params
 
     // Get existing review
-    const { data: existingReview } = await (supabase as any)
+    const { data: existingReview } = await supabase
       .from('reviews')
       .select('*')
       .eq('id', id)
@@ -105,7 +106,7 @@ export const PUT = withApiHandler(
       }
     }
 
-    const { data: review, error: updateError } = await (supabase as any)
+    const { data: review, error: updateError } = await supabase
       .from('reviews')
       .update(updateData)
       .eq('id', id)
@@ -127,6 +128,7 @@ export const PUT = withApiHandler(
     return apiResponse({ review }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'review',
@@ -141,7 +143,7 @@ export const DELETE = withApiHandler(
     const { id } = params
 
     // Get existing review
-    const { data: existingReview } = await (supabase as any)
+    const { data: existingReview } = await supabase
       .from('reviews')
       .select('*')
       .eq('id', id)
@@ -157,7 +159,7 @@ export const DELETE = withApiHandler(
     }
 
     // Soft delete by setting is_visible to false
-    const { error: deleteError } = await (supabase as any)
+    const { error: deleteError } = await supabase
       .from('reviews')
       .update({
         is_visible: false,
@@ -170,6 +172,7 @@ export const DELETE = withApiHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'delete',
       resourceType: 'review',

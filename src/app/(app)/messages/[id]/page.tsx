@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { formatDate, getRelativeTime, formatPrice } from '@/lib/utils'
@@ -238,7 +239,7 @@ export default function ChatPage() {
       // Redirect to messages list after blocking
       router.push('/messages')
     } catch (err) {
-      console.error('Block error:', err)
+      clientLogger.error('Block error', err)
       setIsBlocking(false)
       setShowBlockConfirm(false)
     }

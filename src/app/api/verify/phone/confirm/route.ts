@@ -29,28 +29,28 @@ export const POST = withApiHandler(
     }
 
     // Update profile with verified phone
-    const { error: updateError } = await (supabase as any)
+    const { error: updateError } = await supabase
       .from('profiles')
       .update({
         phone,
         phone_verified: true,
       })
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
 
     if (updateError) throw updateError
 
     // Update verification level if email is also verified
-    const { data: profile } = await (supabase as any)
+    const { data: profile } = await supabase
       .from('profiles')
       .select('email_verified')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (profile?.email_verified) {
-      await (supabase as any)
+      await supabase
         .from('profiles')
         .update({ verification_level: 'verified' })
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
     }
 
     return apiResponse({

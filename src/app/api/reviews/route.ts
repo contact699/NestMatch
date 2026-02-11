@@ -27,7 +27,7 @@ export const GET = withApiHandler(
     const cohabitationId = searchParams.get('cohabitation_id')
     const type = searchParams.get('type') // 'received' or 'given'
 
-    let query = (supabase as any)
+    let query = supabase
       .from('reviews')
       .select(`
         *,
@@ -118,11 +118,11 @@ export const POST = withApiHandler(
 
     // At least one rating is required
     if (!rent_payment_rating && !cleanliness_rating && !respect_rating && !communication_rating) {
-      return apiResponse({ error: 'At least one rating is required' }, 400, requestId)
+      throw new ValidationError('At least one rating is required')
     }
 
     // Verify cohabitation exists and user is a participant
-    const { data: cohabitation } = await (supabase as any)
+    const { data: cohabitation } = await supabase
       .from('cohabitation_periods')
       .select('*')
       .eq('id', cohabitation_id)
@@ -139,16 +139,16 @@ export const POST = withApiHandler(
 
     // Cannot review yourself
     if (reviewee_id === userId) {
-      return apiResponse({ error: 'Cannot review yourself' }, 400, requestId)
+      throw new ValidationError('Cannot review yourself')
     }
 
     // Reviewee must be the other participant
     if (reviewee_id !== cohabitation.provider_id && reviewee_id !== cohabitation.seeker_id) {
-      return apiResponse({ error: 'Reviewee must be a participant in the cohabitation' }, 400, requestId)
+      throw new ValidationError('Reviewee must be a participant in the cohabitation')
     }
 
     // Check if review already exists
-    const { data: existingReview } = await (supabase as any)
+    const { data: existingReview } = await supabase
       .from('reviews')
       .select('id')
       .eq('cohabitation_id', cohabitation_id)
@@ -156,11 +156,11 @@ export const POST = withApiHandler(
       .single()
 
     if (existingReview) {
-      return apiResponse({ error: 'You have already submitted a review for this cohabitation' }, 400, requestId)
+      throw new ValidationError('You have already submitted a review for this cohabitation')
     }
 
     // Create review
-    const { data: review, error: reviewError } = await (supabase as any)
+    const { data: review, error: reviewError } = await supabase
       .from('reviews')
       .insert({
         cohabitation_id,

@@ -23,11 +23,11 @@ export const POST = withApiHandler(
     const { action } = body
 
     // Verify the suggestion exists and belongs to user
-    const { data: suggestion, error: fetchError } = await (supabase as any)
+    const { data: suggestion, error: fetchError } = await supabase
       .from('group_suggestions')
       .select('id, status')
       .eq('id', id)
-      .eq('target_user_id', userId)
+      .eq('target_user_id', userId!)
       .single()
 
     if (fetchError || !suggestion) {
@@ -35,12 +35,12 @@ export const POST = withApiHandler(
     }
 
     // Record the interaction
-    const { error: insertError } = await (supabase as any)
+    const { error: insertError } = await supabase
       .from('suggestion_interactions')
       .upsert(
         {
           suggestion_id: id,
-          user_id: userId,
+          user_id: userId!,
           action,
         },
         {
@@ -52,7 +52,7 @@ export const POST = withApiHandler(
 
     // If action is dismissed, update suggestion status
     if (action === 'dismissed') {
-      await (supabase as any)
+      await supabase
         .from('group_suggestions')
         .update({ status: 'dismissed' })
         .eq('id', id)
@@ -64,6 +64,7 @@ export const POST = withApiHandler(
     }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'suggestion_interaction',

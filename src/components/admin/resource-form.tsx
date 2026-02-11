@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import {
   Save,
   X,
@@ -74,7 +75,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
   useEffect(() => {
     const fetchCategories = async () => {
       const supabase = createClient()
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('resource_categories')
         .select('*')
         .eq('is_active', true)
@@ -202,21 +203,21 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
 
     try {
       if (isEditing && resource) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('resources')
-          .update(resourceData)
+          .update(resourceData as any)
           .eq('id', resource.id)
 
         if (error) throw error
       } else {
-        const { error } = await (supabase as any).from('resources').insert(resourceData)
+        const { error } = await supabase.from('resources').insert(resourceData as any)
 
         if (error) throw error
       }
 
       router.push('/admin/resources')
     } catch (error) {
-      console.error('Error saving resource:', error)
+      clientLogger.error('Error saving resource', error)
       alert('Failed to save resource')
     } finally {
       setIsLoading(false)

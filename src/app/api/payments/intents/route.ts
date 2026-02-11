@@ -35,10 +35,10 @@ export const POST = withApiHandler(
     const { amount, recipient_id, listing_id, payment_method_id, type, description } = intentData
 
     // Get payer profile
-    const { data: payerProfile } = await (supabase as any)
+    const { data: payerProfile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!payerProfile) {
@@ -47,15 +47,15 @@ export const POST = withApiHandler(
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer(
-      userId,
+      userId!,
       payerProfile.email,
-      payerProfile.name
+      payerProfile.name ?? undefined
     )
 
     // Get recipient's Connect account if paying to another user
     let recipientConnectAccountId: string | undefined
     if (recipient_id) {
-      const { data: payoutAccount } = await (supabase as any)
+      const { data: payoutAccount } = await supabase
         .from('payout_accounts')
         .select('stripe_connect_account_id, charges_enabled')
         .eq('user_id', recipient_id)
@@ -74,7 +74,7 @@ export const POST = withApiHandler(
       recipientConnectAccountId,
       description: description || `NestMatch ${type} payment`,
       metadata: {
-        payer_id: userId,
+        payer_id: userId!,
         recipient_id: recipient_id || '',
         listing_id: listing_id || '',
         payment_type: type,
@@ -84,10 +84,10 @@ export const POST = withApiHandler(
     // Create payment record in database
     const platformFee = recipientConnectAccountId ? calculatePlatformFee(amount) : 0
 
-    const { data: payment, error: paymentError } = await (supabase as any)
+    const { data: payment, error: paymentError } = await supabase
       .from('payments')
       .insert({
-        payer_id: userId,
+        payer_id: userId!,
         recipient_id: recipient_id || null,
         listing_id: listing_id || null,
         amount,
@@ -134,13 +134,13 @@ export const GET = withApiHandler(
     }
 
     // Verify user owns this payment
-    const { data: payment } = await (supabase as any)
+    const { data: payment } = await supabase
       .from('payments')
       .select('*')
       .eq('stripe_payment_intent_id', paymentIntentId)
       .single()
 
-    if (!payment || (payment.payer_id !== userId && payment.recipient_id !== userId)) {
+    if (!payment || (payment.payer_id !== userId! && payment.recipient_id !== userId!)) {
       throw new NotFoundError('Payment not found')
     }
 

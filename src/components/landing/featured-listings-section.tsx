@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { PublicListingCard } from '@/components/listings/public-listing-card'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -45,7 +46,7 @@ export function FeaturedListingsSection() {
           setError(true)
         }
       } catch (err) {
-        console.error('Error fetching featured listings:', err)
+        clientLogger.error('Error fetching featured listings', err)
         setError(true)
       } finally {
         setLoading(false)

@@ -26,7 +26,7 @@ export const GET = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
 
-    const { data: group, error } = await (supabase as any)
+    const { data: group, error } = await supabase
       .from('co_renter_groups')
       .select(`
         *,
@@ -58,19 +58,19 @@ export const GET = withApiHandler(
         )
       `)
       .eq('id', id)
-      .single()
+      .single() as { data: any; error: any }
 
     if (error || !group) {
       throw new NotFoundError('Group not found')
     }
 
     // Verify user is a member
-    const isMember = group.members?.some((m: any) => m.user?.user_id === userId)
+    const isMember = group.members?.some((m: any) => m.user?.user_id === userId!)
     if (!isMember) {
       throw new AuthorizationError('Access denied')
     }
 
-    const userMember = group.members?.find((m: any) => m.user?.user_id === userId)
+    const userMember = group.members?.find((m: any) => m.user?.user_id === userId!)
 
     return apiResponse({
       group: {
@@ -79,7 +79,8 @@ export const GET = withApiHandler(
         is_admin: userMember?.role === 'admin',
       },
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // Update a group (admin only)
@@ -88,11 +89,11 @@ export const PUT = withApiHandler(
     const { id } = params
 
     // Check if user is admin of the group
-    const { data: membership } = await (supabase as any)
+    const { data: membership } = await supabase
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!membership || membership.role !== 'admin') {
@@ -122,7 +123,7 @@ export const PUT = withApiHandler(
       }
     }
 
-    const { data: group, error: updateError } = await (supabase as any)
+    const { data: group, error: updateError } = await supabase
       .from('co_renter_groups')
       .update(updateData)
       .eq('id', id)
@@ -146,6 +147,7 @@ export const PUT = withApiHandler(
     return apiResponse({ group }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'co_renter_group',
@@ -160,11 +162,11 @@ export const DELETE = withApiHandler(
     const { id } = params
 
     // Check if user is admin of the group
-    const { data: membership } = await (supabase as any)
+    const { data: membership } = await supabase
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!membership || membership.role !== 'admin') {
@@ -172,17 +174,17 @@ export const DELETE = withApiHandler(
     }
 
     // Delete in order: invitations, members, then group
-    await (supabase as any)
+    await supabase
       .from('co_renter_invitations')
       .delete()
       .eq('group_id', id)
 
-    await (supabase as any)
+    await supabase
       .from('co_renter_members')
       .delete()
       .eq('group_id', id)
 
-    const { error: deleteError } = await (supabase as any)
+    const { error: deleteError } = await supabase
       .from('co_renter_groups')
       .delete()
       .eq('id', id)
@@ -192,6 +194,7 @@ export const DELETE = withApiHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'delete',
       resourceType: 'co_renter_group',

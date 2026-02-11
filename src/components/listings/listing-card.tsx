@@ -109,6 +109,8 @@ export function ListingCard({
             e.stopPropagation()
             isSaved ? onUnsave?.() : onSave?.()
           }}
+          aria-label={isSaved ? 'Remove from saved listings' : 'Save listing'}
+          aria-pressed={isSaved}
           className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white hover:scale-110 transition-all duration-300 shadow-sm z-10"
         >
           <Heart

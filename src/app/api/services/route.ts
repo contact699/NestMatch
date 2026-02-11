@@ -23,7 +23,7 @@ export const GET = withPublicHandler(
     const city = searchParams.get('city')
     const verified = searchParams.get('verified')
 
-    let query = (supabase as any)
+    let query = supabase
       .from('service_providers')
       .select(`
         *,
@@ -74,7 +74,8 @@ export const GET = withPublicHandler(
     })
 
     return apiResponse({ providers: enrichedProviders }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )
 
 // Register as a service provider
@@ -98,10 +99,10 @@ export const POST = withApiHandler(
     } = body
 
     // Check if user already has a provider profile
-    const { data: existingProvider } = await (supabase as any)
+    const { data: existingProvider } = await supabase
       .from('service_providers')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (existingProvider) {
@@ -113,10 +114,10 @@ export const POST = withApiHandler(
     }
 
     // Create provider
-    const { data: provider, error: createError } = await (supabase as any)
+    const { data: provider, error: createError } = await supabase
       .from('service_providers')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         business_name,
         service_type,
         description,
@@ -140,6 +141,7 @@ export const POST = withApiHandler(
     return apiResponse({ provider }, 201, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'create',
       resourceType: 'service_provider',

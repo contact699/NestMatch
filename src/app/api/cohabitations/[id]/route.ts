@@ -13,7 +13,7 @@ export const GET = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
 
-    const { data: cohabitation, error } = await (supabase as any)
+    const { data: cohabitation, error } = await supabase
       .from('cohabitation_periods')
       .select(`
         *,
@@ -53,20 +53,20 @@ export const GET = withApiHandler(
         )
       `)
       .eq('id', id)
-      .single()
+      .single() as { data: any; error: any }
 
     if (error || !cohabitation) {
       throw new NotFoundError('Cohabitation not found')
     }
 
     // Verify user is a participant
-    if (cohabitation.provider_id !== userId && cohabitation.seeker_id !== userId) {
+    if (cohabitation.provider_id !== userId! && cohabitation.seeker_id !== userId!) {
       throw new AuthorizationError('Access denied')
     }
 
     // Add review status
     const userHasReviewed = cohabitation.reviews?.some(
-      (r: any) => r.reviewer_id === userId
+      (r: any) => r.reviewer_id === userId!
     )
     const canReview = !userHasReviewed && (
       cohabitation.status === 'completed' ||
@@ -78,10 +78,11 @@ export const GET = withApiHandler(
         ...cohabitation,
         user_has_reviewed: userHasReviewed,
         can_review: canReview,
-        is_provider: cohabitation.provider_id === userId,
+        is_provider: cohabitation.provider_id === userId!,
       },
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // Update a cohabitation (provider only)
@@ -90,7 +91,7 @@ export const PUT = withApiHandler(
     const { id } = params
 
     // Get existing cohabitation
-    const { data: existingCohabitation } = await (supabase as any)
+    const { data: existingCohabitation } = await supabase
       .from('cohabitation_periods')
       .select('*')
       .eq('id', id)
@@ -101,7 +102,7 @@ export const PUT = withApiHandler(
     }
 
     // Only provider can update
-    if (existingCohabitation.provider_id !== userId) {
+    if (existingCohabitation.provider_id !== userId!) {
       throw new AuthorizationError('Only the provider can update the cohabitation')
     }
 
@@ -125,7 +126,7 @@ export const PUT = withApiHandler(
       updateData.status = body.status
     }
 
-    const { data: cohabitation, error: updateError } = await (supabase as any)
+    const { data: cohabitation, error: updateError } = await supabase
       .from('cohabitation_periods')
       .update(updateData)
       .eq('id', id)
@@ -151,6 +152,7 @@ export const PUT = withApiHandler(
     return apiResponse({ cohabitation }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
       resourceType: 'cohabitation',

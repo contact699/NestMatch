@@ -13,11 +13,11 @@ export async function requireAdmin() {
       error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
       isAdmin: false,
       user: null,
-      supabase: supabase as any,
+      supabase,
     }
   }
 
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from('profiles')
     .select('is_admin')
     .eq('user_id', user.id)
@@ -28,7 +28,7 @@ export async function requireAdmin() {
       error: NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 }),
       isAdmin: false,
       user,
-      supabase: supabase as any,
+      supabase,
     }
   }
 
@@ -36,6 +36,6 @@ export async function requireAdmin() {
     error: null,
     isAdmin: true,
     user,
-    supabase: supabase as any,
+    supabase,
   }
 }

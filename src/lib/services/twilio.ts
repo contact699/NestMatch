@@ -1,5 +1,7 @@
 // Twilio Verify service wrapper
 
+import { logger } from '@/lib/logger'
+
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN
 const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID
@@ -21,7 +23,7 @@ function getTwilioAuth(): string {
 
 export async function sendVerificationCode(phoneNumber: string): Promise<VerificationResponse> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
-    console.error('Twilio credentials not configured')
+    logger.error('Twilio credentials not configured')
     return { success: false, error: 'Phone verification is not configured' }
   }
 
@@ -47,7 +49,7 @@ export async function sendVerificationCode(phoneNumber: string): Promise<Verific
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Twilio error:', data)
+      logger.error('Twilio error', new Error(JSON.stringify(data)))
 
       // Handle specific Twilio errors
       if (data.code === 60200) {
@@ -62,14 +64,14 @@ export async function sendVerificationCode(phoneNumber: string): Promise<Verific
 
     return { success: true, status: data.status }
   } catch (error) {
-    console.error('Error sending verification code:', error)
+    logger.error('Error sending verification code', error instanceof Error ? error : new Error(String(error)))
     return { success: false, error: 'Failed to send verification code' }
   }
 }
 
 export async function verifyCode(phoneNumber: string, code: string): Promise<VerificationResponse> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
-    console.error('Twilio credentials not configured')
+    logger.error('Twilio credentials not configured')
     return { success: false, error: 'Phone verification is not configured' }
   }
 
@@ -95,7 +97,7 @@ export async function verifyCode(phoneNumber: string, code: string): Promise<Ver
     const data = await response.json()
 
     if (!response.ok) {
-      console.error('Twilio verification error:', data)
+      logger.error('Twilio verification error', new Error(JSON.stringify(data)))
 
       if (data.code === 60200) {
         return { success: false, error: 'Invalid phone number' }
@@ -110,7 +112,7 @@ export async function verifyCode(phoneNumber: string, code: string): Promise<Ver
       return { success: false, error: 'Invalid verification code' }
     }
   } catch (error) {
-    console.error('Error verifying code:', error)
+    logger.error('Error verifying code', error instanceof Error ? error : new Error(String(error)))
     return { success: false, error: 'Failed to verify code' }
   }
 }

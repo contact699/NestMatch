@@ -15,7 +15,7 @@ export const GET = withPublicHandler(
 
     const now = new Date().toISOString()
 
-    let query = (supabase as any)
+    let query = supabase
       .from('faqs')
       .select(`
         *,
@@ -37,7 +37,7 @@ export const GET = withPublicHandler(
 
     // Filter by category slug
     if (category) {
-      const { data: categoryData } = await (supabase as any)
+      const { data: categoryData } = await supabase
         .from('resource_categories')
         .select('id')
         .eq('slug', category)

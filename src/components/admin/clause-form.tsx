@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { clientLogger } from '@/lib/client-logger'
 import { Save, Loader2, ArrowLeft, Plus, X } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -160,23 +161,23 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
 
     try {
       if (isEditing && clause) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('agreement_clauses')
-          .update(clauseData)
+          .update(clauseData as any)
           .eq('id', clause.id)
 
         if (error) throw error
       } else {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
           .from('agreement_clauses')
-          .insert(clauseData)
+          .insert(clauseData as any)
 
         if (error) throw error
       }
 
       router.push('/admin/clauses')
     } catch (error) {
-      console.error('Error saving clause:', error)
+      clientLogger.error('Error saving clause', error)
       alert('Failed to save clause')
     } finally {
       setIsLoading(false)

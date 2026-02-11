@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -97,7 +98,7 @@ export default function RoommatesPage() {
     }
 
     // Fetch all profiles except current user
-    const { data: profilesData, error } = await (supabase as any)
+    const { data: profilesData, error } = await supabase
       .from('profiles')
       .select('*')
       .neq('user_id', user.id)
@@ -105,7 +106,7 @@ export default function RoommatesPage() {
       .limit(50) as { data: Profile[] | null; error: any }
 
     if (error) {
-      console.error('Error fetching profiles:', error)
+      clientLogger.error('Error fetching profiles', error)
       setLoading(false)
       return
     }

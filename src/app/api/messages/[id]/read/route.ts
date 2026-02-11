@@ -6,7 +6,7 @@ export const PUT = withApiHandler(
     const messageId = params.id
 
     // Get message and verify user can mark it as read
-    const { data: message, error: messageError } = await (supabase as any)
+    const { data: message, error: messageError } = await supabase
       .from('messages')
       .select(`
         id,
@@ -35,7 +35,7 @@ export const PUT = withApiHandler(
     }
 
     // Mark as read
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('messages')
       .update({ read_at: new Date().toISOString() })
       .eq('id', messageId)
@@ -43,5 +43,6 @@ export const PUT = withApiHandler(
     if (error) throw error
 
     return apiResponse({ success: true }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

@@ -17,7 +17,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ConfirmModal } from '@/components/ui/modal'
 import { Resource, ResourceCategory } from '@/types/database'
+import { toast } from 'sonner'
 
 export default function AdminResourcesPage() {
   const [resources, setResources] = useState<Resource[]>([])
@@ -26,6 +28,7 @@ export default function AdminResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('')
   const [filterPublished, setFilterPublished] = useState<string>('')
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchData()
@@ -50,20 +53,29 @@ export default function AdminResourcesPage() {
     setIsLoading(false)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this resource?')) return
+  const handleDelete = (id: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Resource',
+      message: 'Are you sure you want to delete this resource?',
+      onConfirm: async () => {
+        const supabase = createClient()
+        const { error } = await supabase.from('resources').delete().eq('id', id)
 
-    const supabase = createClient()
-    const { error } = await (supabase as any).from('resources').delete().eq('id', id)
-
-    if (!error) {
-      setResources(resources.filter((r) => r.id !== id))
-    }
+        if (!error) {
+          setResources(resources.filter((r) => r.id !== id))
+          toast.success('Resource deleted successfully')
+        } else {
+          toast.error('Failed to delete resource')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const togglePublished = async (resource: Resource) => {
     const supabase = createClient()
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('resources')
       .update({ is_published: !resource.is_published })
       .eq('id', resource.id)
@@ -74,12 +86,15 @@ export default function AdminResourcesPage() {
           r.id === resource.id ? { ...r, is_published: !r.is_published } : r
         )
       )
+      toast.success(`Resource ${!resource.is_published ? 'published' : 'unpublished'}`)
+    } else {
+      toast.error('Failed to update resource status')
     }
   }
 
   const toggleFeatured = async (resource: Resource) => {
     const supabase = createClient()
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('resources')
       .update({ featured: !resource.featured })
       .eq('id', resource.id)
@@ -90,6 +105,9 @@ export default function AdminResourcesPage() {
           r.id === resource.id ? { ...r, featured: !r.featured } : r
         )
       )
+      toast.success(`Resource ${!resource.featured ? 'featured' : 'unfeatured'}`)
+    } else {
+      toast.error('Failed to update featured status')
     }
   }
 
@@ -298,6 +316,16 @@ export default function AdminResourcesPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   )
 }

@@ -16,10 +16,10 @@ const reportSchema = z.object({
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
     // Get user's reports
-    const { data: reports, error } = await (supabase as any)
+    const { data: reports, error } = await supabase
       .from('reports')
       .select('*')
-      .eq('reporter_id', userId)
+      .eq('reporter_id', userId!)
       .order('created_at', { ascending: false })
 
     if (error) throw error
@@ -47,10 +47,10 @@ export const POST = withApiHandler(
     const oneDayAgo = new Date()
     oneDayAgo.setDate(oneDayAgo.getDate() - 1)
 
-    let existingQuery = (supabase as any)
+    let existingQuery = supabase
       .from('reports')
       .select('id')
-      .eq('reporter_id', userId)
+      .eq('reporter_id', userId!)
       .gte('created_at', oneDayAgo.toISOString())
 
     if (reportData.reported_user_id) {
@@ -67,10 +67,10 @@ export const POST = withApiHandler(
     }
 
     // Create report
-    const { data: report, error } = await (supabase as any)
+    const { data: report, error } = await supabase
       .from('reports')
       .insert({
-        reporter_id: userId,
+        reporter_id: userId!,
         reported_user_id: reportData.reported_user_id || null,
         reported_listing_id: reportData.reported_listing_id || null,
         type: reportData.type,

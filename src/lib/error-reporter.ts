@@ -151,7 +151,7 @@ export function captureException(
   context?: ErrorContext
 ): void {
   reportError(error, context).catch((e) => {
-    console.error('Failed to report error:', e)
+    logger.error('Failed to report error', e instanceof Error ? e : new Error(String(e)))
   })
 }
 
@@ -176,7 +176,7 @@ async function sendToSentry(error: ReportedError): Promise<void> {
   // Sentry integration placeholder
   // In production, use @sentry/nextjs package
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Sentry] Would send error:', error.id)
+    logger.info(`[Sentry] Would send error: ${error.id}`)
     return
   }
 
@@ -188,7 +188,7 @@ async function sendToSentry(error: ReportedError): Promise<void> {
     // The actual implementation would use Sentry SDK:
     // Sentry.captureException(error, { contexts: { ... } })
   } catch (e) {
-    console.error('Failed to send to Sentry:', e)
+    logger.error('Failed to send to Sentry', e instanceof Error ? e : new Error(String(e)))
   }
 }
 
@@ -217,7 +217,7 @@ async function handleCriticalError(error: ReportedError): Promise<void> {
         }),
       })
     } catch (e) {
-      console.error('Failed to send Slack alert:', e)
+      logger.error('Failed to send Slack alert', e instanceof Error ? e : new Error(String(e)))
     }
   }
 }

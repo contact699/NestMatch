@@ -50,7 +50,7 @@ export default async function ProfilePage() {
     .single() as { data: any }
 
   // Fetch reviews received
-  const { data: reviews } = await (supabase as any)
+  const { data: reviews } = await supabase
     .from('reviews')
     .select('overall_rating')
     .eq('reviewee_id', user.id)

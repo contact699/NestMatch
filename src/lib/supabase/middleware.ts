@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { logger } from '@/lib/logger'
 
 // Check if Supabase is properly configured (not using placeholder values)
 function isSupabaseConfigured(): boolean {
@@ -54,7 +55,7 @@ export async function updateSession(request: NextRequest) {
     user = data?.user
   } catch (error) {
     // If Supabase fails, continue without auth
-    console.error('Supabase auth error:', error)
+    logger.error('Supabase auth error', error instanceof Error ? error : new Error(String(error)))
     return supabaseResponse
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import {
   BookOpen,
   HelpCircle,
@@ -92,7 +93,7 @@ export default function ResourcesPage() {
           setCategories(data.categories || [])
         }
       } catch (error) {
-        console.error('Error fetching resources:', error)
+        clientLogger.error('Error fetching resources', error)
       } finally {
         setIsLoading(false)
       }

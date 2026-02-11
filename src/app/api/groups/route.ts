@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { logger } from '@/lib/logger'
 
 const createGroupSchema = z.object({
   name: z.string().min(1).max(255),
@@ -28,7 +29,7 @@ export const GET = withApiHandler(
     const status = searchParams.get('status')
 
     // Get groups where user is a member
-    let query = (supabase as any)
+    let query = supabase
       .from('co_renter_groups')
       .select(`
         *,
@@ -66,12 +67,12 @@ export const GET = withApiHandler(
 
     // Filter to only groups where user is a member
     const userGroups = (allGroups || []).filter((group: any) =>
-      group.members?.some((m: any) => m.user?.user_id === userId)
+      group.members?.some((m: any) => m.user?.user_id === userId!)
     )
 
     // Add user's role to each group
     const enrichedGroups = userGroups.map((group: any) => {
-      const userMember = group.members?.find((m: any) => m.user?.user_id === userId)
+      const userMember = group.members?.find((m: any) => m.user?.user_id === userId!)
       return {
         ...group,
         user_role: userMember?.role || 'member',
@@ -105,7 +106,7 @@ export const POST = withApiHandler(
     } = groupData
 
     // Create group (include created_by for RLS policy)
-    const { data: group, error: groupError } = await (supabase as any)
+    const { data: group, error: groupError } = await supabase
       .from('co_renter_groups')
       .insert({
         name,
@@ -118,31 +119,31 @@ export const POST = withApiHandler(
         is_public: false,
         group_size_min: 2,
         group_size_max: 5,
-        created_by: userId,
+        created_by: userId!,
       })
       .select()
       .single()
 
     if (groupError) {
-      console.error('Group creation error:', groupError)
+      logger.error('Group creation error', groupError instanceof Error ? groupError : new Error(String(groupError)))
       throw groupError
     }
 
     // Add creator as admin member
-    const { error: memberError } = await (supabase as any)
+    const { error: memberError } = await supabase
       .from('co_renter_members')
       .insert({
         group_id: group.id,
-        user_id: userId,
+        user_id: userId!,
         role: 'admin',
         status: 'active',
         budget_contribution: groupData.budget_contribution || null,
       })
 
     if (memberError) {
-      console.error('Member creation error:', memberError)
+      logger.error('Member creation error', memberError instanceof Error ? memberError : new Error(String(memberError)))
       // Rollback group creation
-      await (supabase as any)
+      await supabase
         .from('co_renter_groups')
         .delete()
         .eq('id', group.id)
@@ -151,7 +152,7 @@ export const POST = withApiHandler(
     }
 
     // Fetch complete group with members
-    const { data: completeGroup } = await (supabase as any)
+    const { data: completeGroup } = await supabase
       .from('co_renter_groups')
       .select(`
         *,

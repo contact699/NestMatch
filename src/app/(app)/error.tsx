@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react'
@@ -15,7 +16,7 @@ export default function Error({
 }) {
   useEffect(() => {
     // Log the error to an error reporting service
-    console.error('Application error:', error)
+    clientLogger.error('Application error', error)
   }, [error])
 
   return (

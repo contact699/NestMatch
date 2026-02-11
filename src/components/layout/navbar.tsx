@@ -2,6 +2,7 @@
 
 import { useState, useEffect, memo, useCallback } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -113,7 +114,7 @@ export function Navbar({ user }: NavbarProps) {
           setUnreadCount(total)
         }
       } catch (error) {
-        console.error('Error fetching unread count:', error)
+        clientLogger.error('Error fetching unread count', error)
       }
     }
 

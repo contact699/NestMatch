@@ -19,7 +19,7 @@ export const GET = withPublicHandler(
     const supabase = await createClient()
     const { id } = params
 
-    const { data: provider, error } = await (supabase as any)
+    const { data: provider, error } = await supabase
       .from('service_providers')
       .select(`
         *,
@@ -42,7 +42,7 @@ export const GET = withPublicHandler(
         )
       `)
       .eq('id', id)
-      .single()
+      .single() as { data: any; error: any }
 
     if (error || !provider) {
       throw new NotFoundError('Service provider not found')
@@ -61,7 +61,8 @@ export const GET = withPublicHandler(
         review_count: ratings.length,
       },
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'search' }
 )
 
 // Update a service provider (owner only)
@@ -70,7 +71,7 @@ export const PUT = withApiHandler(
     const { id } = params
 
     // Verify ownership
-    const { data: existingProvider } = await (supabase as any)
+    const { data: existingProvider } = await supabase
       .from('service_providers')
       .select('user_id')
       .eq('id', id)
@@ -80,7 +81,7 @@ export const PUT = withApiHandler(
       throw new NotFoundError('Service provider not found')
     }
 
-    if (existingProvider.user_id !== userId) {
+    if (existingProvider.user_id !== userId!) {
       throw new AuthorizationError('You can only update your own provider profile')
     }
 
@@ -107,7 +108,7 @@ export const PUT = withApiHandler(
       }
     }
 
-    const { data: provider, error: updateError } = await (supabase as any)
+    const { data: provider, error: updateError } = await supabase
       .from('service_providers')
       .update(updateData)
       .eq('id', id)
@@ -119,8 +120,54 @@ export const PUT = withApiHandler(
     return apiResponse({ provider }, 200, requestId)
   },
   {
+    rateLimit: 'default',
     audit: {
       action: 'update',
+      resourceType: 'service_provider',
+      getResourceId: (_req, _res, params) => params?.id,
+    },
+  }
+)
+
+// Soft-delete a service provider (owner only)
+export const DELETE = withApiHandler(
+  async (req, { userId, supabase, requestId, params }) => {
+    const { id } = params
+
+    // Verify ownership
+    const { data: existingProvider } = await supabase
+      .from('service_providers')
+      .select('user_id')
+      .eq('id', id)
+      .single()
+
+    if (!existingProvider) {
+      throw new NotFoundError('Service provider not found')
+    }
+
+    if (existingProvider.user_id !== userId!) {
+      throw new AuthorizationError('You can only delete your own provider profile')
+    }
+
+    // Soft delete by setting is_active to false
+    const { data: provider, error: deleteError } = await supabase
+      .from('service_providers')
+      .update({
+        is_active: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (deleteError) throw deleteError
+
+    return apiResponse({ provider }, 200, requestId)
+  },
+  {
+    rateLimit: 'default',
+    audit: {
+      action: 'delete',
       resourceType: 'service_provider',
       getResourceId: (_req, _res, params) => params?.id,
     },

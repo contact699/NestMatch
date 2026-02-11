@@ -24,11 +24,11 @@ export const POST = withApiHandler(
     const { groupName, message } = body
 
     // Fetch the suggestion
-    const { data: suggestion, error: fetchError } = await (supabase as any)
+    const { data: suggestion, error: fetchError } = await supabase
       .from('group_suggestions')
       .select('*')
       .eq('id', id)
-      .eq('target_user_id', userId)
+      .eq('target_user_id', userId!)
       .eq('status', 'active')
       .single()
 
@@ -37,17 +37,17 @@ export const POST = withApiHandler(
     }
 
     // Get creator's profile for default group name
-    const { data: creatorProfile } = await (supabase as any)
+    const { data: creatorProfile } = await supabase
       .from('profiles')
       .select('name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     const finalGroupName = groupName || `${creatorProfile?.name || 'User'}'s Group`
 
     // Create the co-renter group
-    const matchCriteria = suggestion.match_criteria || {}
-    const { data: group, error: groupError } = await (supabase as any)
+    const matchCriteria = (suggestion.match_criteria || {}) as any
+    const { data: group, error: groupError } = await supabase
       .from('co_renter_groups')
       .insert({
         name: finalGroupName,
@@ -60,7 +60,7 @@ export const POST = withApiHandler(
         group_size_max: suggestion.suggested_users.length + 1,
         status: 'forming',
         is_public: false,
-        created_by: userId,
+        created_by: userId!,
       })
       .select()
       .single()
@@ -70,18 +70,18 @@ export const POST = withApiHandler(
     }
 
     // Add creator as admin member
-    const { error: memberError } = await (supabase as any)
+    const { error: memberError } = await supabase
       .from('co_renter_members')
       .insert({
         group_id: group.id,
-        user_id: userId,
+        user_id: userId!,
         role: 'admin',
         status: 'active',
       })
 
     if (memberError) {
       // Rollback group creation
-      await (supabase as any)
+      await supabase
         .from('co_renter_groups')
         .delete()
         .eq('id', group.id)
@@ -92,14 +92,14 @@ export const POST = withApiHandler(
     // Create invitations for suggested users
     const invitations = suggestion.suggested_users.map((inviteeId: string) => ({
       group_id: group.id,
-      inviter_id: userId,
+      inviter_id: userId!,
       invitee_id: inviteeId,
       message: message || 'You\'ve been matched as a potential roommate! Would you like to join this group?',
       status: 'pending',
       expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
     }))
 
-    const { error: inviteError } = await (supabase as any)
+    const { error: inviteError } = await supabase
       .from('co_renter_invitations')
       .insert(invitations)
 
@@ -109,7 +109,7 @@ export const POST = withApiHandler(
     }
 
     // Update suggestion status
-    await (supabase as any)
+    await supabase
       .from('group_suggestions')
       .update({
         status: 'converted',
@@ -118,11 +118,11 @@ export const POST = withApiHandler(
       .eq('id', id)
 
     // Record the interested interaction
-    await (supabase as any)
+    await supabase
       .from('suggestion_interactions')
       .upsert({
         suggestion_id: id,
-        user_id: userId,
+        user_id: userId!,
         action: 'interested',
       })
 

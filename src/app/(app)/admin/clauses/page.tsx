@@ -5,11 +5,14 @@ import Link from 'next/link'
 import { Plus, FileText, Loader2, Pencil, Trash2, GripVertical } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ConfirmModal } from '@/components/ui/modal'
 import { AgreementClause } from '@/types/database'
+import { toast } from 'sonner'
 
 export default function AdminClausesPage() {
   const [clauses, setClauses] = useState<AgreementClause[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchClauses()
@@ -17,7 +20,7 @@ export default function AdminClausesPage() {
 
   const fetchClauses = async () => {
     const supabase = createClient()
-    const { data } = await (supabase as any)
+    const { data } = await supabase
       .from('agreement_clauses')
       .select('*')
       .order('category')
@@ -27,15 +30,24 @@ export default function AdminClausesPage() {
     setIsLoading(false)
   }
 
-  const deleteClause = async (id: string) => {
-    if (!confirm('Delete this clause?')) return
+  const deleteClause = (id: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete Clause',
+      message: 'Are you sure you want to delete this clause?',
+      onConfirm: async () => {
+        const supabase = createClient()
+        const { error } = await supabase.from('agreement_clauses').delete().eq('id', id)
 
-    const supabase = createClient()
-    const { error } = await (supabase as any).from('agreement_clauses').delete().eq('id', id)
-
-    if (!error) {
-      setClauses(clauses.filter((c) => c.id !== id))
-    }
+        if (!error) {
+          setClauses(clauses.filter((c) => c.id !== id))
+          toast.success('Clause deleted successfully')
+        } else {
+          toast.error('Failed to delete clause')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const groupedClauses = clauses.reduce((acc, clause) => {
@@ -166,6 +178,16 @@ export default function AdminClausesPage() {
           ))
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   )
 }

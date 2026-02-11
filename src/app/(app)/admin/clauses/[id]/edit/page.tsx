@@ -14,7 +14,7 @@ export default function EditClausePage({ params }: { params: Promise<{ id: strin
   useEffect(() => {
     const fetchClause = async () => {
       const supabase = createClient()
-      const { data } = await (supabase as any)
+      const { data } = await supabase
         .from('agreement_clauses')
         .select('*')
         .eq('id', id)

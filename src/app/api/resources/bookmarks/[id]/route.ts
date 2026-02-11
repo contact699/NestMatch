@@ -7,10 +7,10 @@ export const DELETE = withApiHandler(
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type')
 
-    let query = (supabase as any)
+    let query = supabase
       .from('resource_bookmarks')
       .delete()
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
 
     if (type === 'resource') {
       query = query.eq('resource_id', id)
@@ -26,5 +26,6 @@ export const DELETE = withApiHandler(
     if (error) throw error
 
     return apiResponse({ success: true }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

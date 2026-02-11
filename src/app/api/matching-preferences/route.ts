@@ -14,10 +14,10 @@ const updatePreferencesSchema = z.object({
 // GET /api/matching-preferences - Get current preferences
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    const { data: preferences, error } = await (supabase as any)
+    const { data: preferences, error } = await supabase
       .from('user_matching_preferences')
       .select('*')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (error && error.code !== 'PGRST116') {
@@ -28,7 +28,7 @@ export const GET = withApiHandler(
     // Return preferences or defaults
     return apiResponse({
       preferences: preferences || {
-        user_id: userId,
+        user_id: userId!,
         preferred_group_size: 2,
         budget_flexibility_percent: 20,
         date_flexibility_days: 30,
@@ -36,7 +36,8 @@ export const GET = withApiHandler(
         is_discoverable: true,
       },
     }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // PUT /api/matching-preferences - Update preferences
@@ -51,11 +52,11 @@ export const PUT = withApiHandler(
     }
 
     // Upsert preferences
-    const { data: preferences, error } = await (supabase as any)
+    const { data: preferences, error } = await supabase
       .from('user_matching_preferences')
       .upsert(
         {
-          user_id: userId,
+          user_id: userId!,
           ...updates,
           updated_at: new Date().toISOString(),
         },
@@ -69,7 +70,8 @@ export const PUT = withApiHandler(
     if (error) throw error
 
     return apiResponse({ preferences }, 200, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )
 
 // POST /api/matching-preferences - Create preferences (if not exists)
@@ -84,10 +86,10 @@ export const POST = withApiHandler(
     }
 
     // Check if preferences already exist
-    const { data: existing } = await (supabase as any)
+    const { data: existing } = await supabase
       .from('user_matching_preferences')
       .select('id')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (existing) {
@@ -99,10 +101,10 @@ export const POST = withApiHandler(
     }
 
     // Insert new preferences
-    const { data: preferences, error } = await (supabase as any)
+    const { data: preferences, error } = await supabase
       .from('user_matching_preferences')
       .insert({
-        user_id: userId,
+        user_id: userId!,
         preferred_group_size: data.preferred_group_size || 2,
         budget_flexibility_percent: data.budget_flexibility_percent || 20,
         date_flexibility_days: data.date_flexibility_days || 30,
@@ -115,5 +117,6 @@ export const POST = withApiHandler(
     if (error) throw error
 
     return apiResponse({ preferences }, 201, requestId)
-  }
+  },
+  { rateLimit: 'default' }
 )

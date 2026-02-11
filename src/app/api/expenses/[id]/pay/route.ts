@@ -16,45 +16,33 @@ export const POST = withApiHandler(
 
     const { id: expenseId } = params
 
-    // Get expense and user's share
-    const { data: expense } = await (supabase as any)
-      .from('shared_expenses')
-      .select(`
-        *,
-        creator:profiles!shared_expenses_created_by_fkey(
-          user_id,
-          email,
-          name
-        )
-      `)
-      .eq('id', expenseId)
-      .single()
+    // Atomically lock and validate the expense share (prevents double-pay race condition)
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('pay_expense_share', {
+      p_expense_id: expenseId,
+      p_user_id: userId!,
+    })
 
-    if (!expense) {
-      throw new NotFoundError('Expense not found')
+    if (rpcError) {
+      const msg = rpcError.message
+      if (msg.includes('not found')) {
+        throw new NotFoundError('Expense share not found')
+      }
+      if (msg.includes('already paid')) {
+        throw new ValidationError('This share has already been paid')
+      }
+      if (msg.includes('already being processed')) {
+        throw new ValidationError('This share is already being processed')
+      }
+      throw rpcError
     }
 
-    // Get user's share
-    const { data: share } = await (supabase as any)
-      .from('expense_shares')
-      .select('*')
-      .eq('expense_id', expenseId)
-      .eq('user_id', userId)
-      .single()
-
-    if (!share) {
-      throw new AuthorizationError('You do not have a share in this expense')
-    }
-
-    if (share.status === 'paid') {
-      throw new ValidationError('This share has already been paid')
-    }
+    const { share, expense } = rpcResult as { share: any; expense: any }
 
     // Get payer profile
-    const { data: payerProfile } = await (supabase as any)
+    const { data: payerProfile } = await supabase
       .from('profiles')
       .select('email, name')
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
       .single()
 
     if (!payerProfile) {
@@ -63,15 +51,15 @@ export const POST = withApiHandler(
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer(
-      userId,
+      userId!,
       payerProfile.email,
-      payerProfile.name
+      payerProfile.name ?? undefined
     )
 
     // Check if creator has a Connect account for direct payment
     let recipientConnectAccountId: string | undefined
-    if (expense.created_by !== userId) {
-      const { data: payoutAccount } = await (supabase as any)
+    if (expense.created_by !== userId!) {
+      const { data: payoutAccount } = await supabase
         .from('payout_accounts')
         .select('stripe_connect_account_id, charges_enabled')
         .eq('user_id', expense.created_by)
@@ -91,7 +79,7 @@ export const POST = withApiHandler(
       metadata: {
         expense_id: expenseId,
         share_id: share.id,
-        payer_id: userId,
+        payer_id: userId!,
         recipient_id: expense.created_by,
       },
     })
@@ -99,10 +87,10 @@ export const POST = withApiHandler(
     // Create payment record
     const platformFee = recipientConnectAccountId ? calculatePlatformFee(share.amount) : 0
 
-    const { data: payment } = await (supabase as any)
+    const { data: payment } = await supabase
       .from('payments')
       .insert({
-        payer_id: userId,
+        payer_id: userId!,
         recipient_id: expense.created_by,
         listing_id: expense.listing_id,
         amount: share.amount,
@@ -121,7 +109,7 @@ export const POST = withApiHandler(
       .single()
 
     // Update share with payment ID
-    await (supabase as any)
+    await supabase
       .from('expense_shares')
       .update({
         payment_id: payment?.id,

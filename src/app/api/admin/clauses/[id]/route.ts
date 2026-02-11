@@ -16,7 +16,8 @@ export const GET = withAdminHandler(
     }
 
     return apiResponse(data, 200, requestId)
-  }
+  },
+  { rateLimit: 'api' }
 )
 
 export const PATCH = withAdminHandler(
@@ -36,6 +37,7 @@ export const PATCH = withAdminHandler(
     return apiResponse(data, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'update',
       resourceType: 'agreement_clause',
@@ -58,6 +60,7 @@ export const DELETE = withAdminHandler(
     return apiResponse({ success: true }, 200, requestId)
   },
   {
+    rateLimit: 'api',
     audit: {
       action: 'delete',
       resourceType: 'agreement_clause',

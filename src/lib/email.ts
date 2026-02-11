@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { logger } from '@/lib/logger'
 
 // Lazy initialization to avoid build errors when API key is not set
 let resendClient: Resend | null = null
@@ -20,7 +21,7 @@ export async function sendEmail({
   html: string
 }) {
   if (!process.env.RESEND_API_KEY) {
-    console.log('Email would be sent to:', to, 'Subject:', subject)
+    logger.info(`Email would be sent to: ${to}, Subject: ${subject}`)
     return { success: true, mock: true }
   }
 
@@ -34,13 +35,13 @@ export async function sendEmail({
     })
 
     if (error) {
-      console.error('Email error:', error)
+      logger.error('Email error', error instanceof Error ? error : new Error(String(error)))
       return { success: false, error }
     }
 
     return { success: true, data }
   } catch (error) {
-    console.error('Email error:', error)
+    logger.error('Email error', error instanceof Error ? error : new Error(String(error)))
     return { success: false, error }
   }
 }

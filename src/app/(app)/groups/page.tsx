@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Modal, ModalHeader, ModalTitle, ModalContent } from '@/components/ui/modal'
@@ -100,7 +101,7 @@ export default function GroupsPage() {
         refetchInvitations()
       }
     } catch (error) {
-      console.error('Error responding to invitation:', error)
+      clientLogger.error('Error responding to invitation', error)
     }
   }
 
@@ -429,7 +430,7 @@ function CreateGroupModal({
 
       onSuccess()
     } catch (err) {
-      console.error('Create group error:', err)
+      clientLogger.error('Create group error', err)
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)

@@ -1,4 +1,5 @@
 import { createServiceClient } from '@/lib/supabase/service'
+import { logger } from '@/lib/logger'
 
 export type JobType =
   | 'send_email'
@@ -47,7 +48,7 @@ export async function enqueueJob(
 ): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('background_jobs')
     .insert({
       job_type: jobType,
@@ -61,7 +62,7 @@ export async function enqueueJob(
     .single()
 
   if (error) {
-    console.error('Failed to enqueue job:', error)
+    logger.error('Failed to enqueue job', error instanceof Error ? error : new Error(String(error)))
     return null
   }
 
@@ -85,13 +86,13 @@ export async function enqueueJobs(
     max_attempts: job.options?.maxAttempts || 3,
   }))
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('background_jobs')
     .insert(records)
     .select()
 
   if (error) {
-    console.error('Failed to enqueue jobs:', error)
+    logger.error('Failed to enqueue jobs', error instanceof Error ? error : new Error(String(error)))
     return 0
   }
 
@@ -128,7 +129,7 @@ export async function scheduleRecurringJob(
 export async function claimJob(queue: JobQueue = 'default'): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await (supabase as any).rpc('claim_background_job', {
+  const { data, error } = await supabase.rpc('claim_background_job', {
     p_queue: queue,
   })
 
@@ -145,7 +146,7 @@ export async function claimJob(queue: JobQueue = 'default'): Promise<Job | null>
 export async function completeJob(jobId: string, result?: Record<string, any>): Promise<void> {
   const supabase = createServiceClient()
 
-  await (supabase as any).rpc('complete_background_job', {
+  await supabase.rpc('complete_background_job', {
     p_job_id: jobId,
     p_result: result || null,
   })
@@ -157,7 +158,7 @@ export async function completeJob(jobId: string, result?: Record<string, any>): 
 export async function failJob(jobId: string, errorMessage: string): Promise<void> {
   const supabase = createServiceClient()
 
-  await (supabase as any).rpc('fail_background_job', {
+  await supabase.rpc('fail_background_job', {
     p_job_id: jobId,
     p_error: errorMessage,
   })
@@ -169,7 +170,7 @@ export async function failJob(jobId: string, errorMessage: string): Promise<void
 export async function cancelJob(jobId: string): Promise<boolean> {
   const supabase = createServiceClient()
 
-  const { error } = await (supabase as any)
+  const { error } = await supabase
     .from('background_jobs')
     .update({ status: 'cancelled' })
     .eq('id', jobId)
@@ -184,7 +185,7 @@ export async function cancelJob(jobId: string): Promise<boolean> {
 export async function getJob(jobId: string): Promise<Job | null> {
   const supabase = createServiceClient()
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('background_jobs')
     .select('*')
     .eq('id', jobId)
@@ -203,7 +204,7 @@ export async function getJob(jobId: string): Promise<Job | null> {
 export async function getPendingJobsCount(): Promise<Record<JobQueue, number>> {
   const supabase = createServiceClient()
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from('background_jobs')
     .select('queue')
     .eq('status', 'pending')

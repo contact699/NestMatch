@@ -16,7 +16,9 @@ import {
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
+import { ConfirmModal } from '@/components/ui/modal'
 import { FAQ, ResourceCategory } from '@/types/database'
+import { toast } from 'sonner'
 
 export default function AdminFAQsPage() {
   const [faqs, setFaqs] = useState<FAQ[]>([])
@@ -25,6 +27,7 @@ export default function AdminFAQsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCategory, setFilterCategory] = useState<string>('')
   const [filterPublished, setFilterPublished] = useState<string>('')
+  const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   useEffect(() => {
     fetchData()
@@ -43,20 +46,29 @@ export default function AdminFAQsPage() {
     setIsLoading(false)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this FAQ?')) return
+  const handleDelete = (id: string) => {
+    setConfirmModal({
+      open: true,
+      title: 'Delete FAQ',
+      message: 'Are you sure you want to delete this FAQ?',
+      onConfirm: async () => {
+        const supabase = createClient()
+        const { error } = await supabase.from('faqs').delete().eq('id', id)
 
-    const supabase = createClient()
-    const { error } = await (supabase as any).from('faqs').delete().eq('id', id)
-
-    if (!error) {
-      setFaqs(faqs.filter((f) => f.id !== id))
-    }
+        if (!error) {
+          setFaqs(faqs.filter((f) => f.id !== id))
+          toast.success('FAQ deleted successfully')
+        } else {
+          toast.error('Failed to delete FAQ')
+        }
+        setConfirmModal(prev => ({ ...prev, open: false }))
+      },
+    })
   }
 
   const togglePublished = async (faq: FAQ) => {
     const supabase = createClient()
-    const { error } = await (supabase as any)
+    const { error } = await supabase
       .from('faqs')
       .update({ is_published: !faq.is_published })
       .eq('id', faq.id)
@@ -67,6 +79,9 @@ export default function AdminFAQsPage() {
           f.id === faq.id ? { ...f, is_published: !f.is_published } : f
         )
       )
+      toast.success(`FAQ ${!faq.is_published ? 'published' : 'unpublished'}`)
+    } else {
+      toast.error('Failed to update FAQ status')
     }
   }
 
@@ -253,6 +268,16 @@ export default function AdminFAQsPage() {
           ))
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={confirmModal.open}
+        onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText="Delete"
+        variant="danger"
+      />
     </div>
   )
 }

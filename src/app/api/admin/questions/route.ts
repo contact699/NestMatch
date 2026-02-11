@@ -12,7 +12,7 @@ export const GET = withAdminHandler(
       .order('created_at', { ascending: false })
 
     if (status) {
-      query = query.eq('status', status)
+      query = query.eq('status', status as any)
     }
 
     const { data: questions, error: fetchError } = await query
@@ -20,5 +20,6 @@ export const GET = withAdminHandler(
     if (fetchError) throw fetchError
 
     return apiResponse({ questions }, 200, requestId)
-  }
+  },
+  { rateLimit: 'api' }
 )

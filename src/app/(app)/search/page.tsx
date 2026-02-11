@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import dynamic from 'next/dynamic'
+import { clientLogger } from '@/lib/client-logger'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -150,7 +151,7 @@ export default function SearchPage() {
         const data = await response.json()
         setListings(data.listings || [])
       } catch (err) {
-        console.error('Error fetching listings:', err)
+        clientLogger.error('Error fetching listings', err)
         setError('Failed to load listings. Please try again.')
       } finally {
         setIsLoading(false)

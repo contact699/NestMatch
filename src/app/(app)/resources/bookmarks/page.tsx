@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { clientLogger } from '@/lib/client-logger'
 import { Loader2, Bookmark, BookOpen, HelpCircle, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -20,7 +21,7 @@ export default function BookmarksPage() {
         setBookmarks(data.bookmarks || [])
       }
     } catch (error) {
-      console.error('Error fetching bookmarks:', error)
+      clientLogger.error('Error fetching bookmarks', error)
     } finally {
       setIsLoading(false)
     }
@@ -44,7 +45,7 @@ export default function BookmarksPage() {
         setBookmarks((prev) => prev.filter((b) => b.id !== bookmark.id))
       }
     } catch (error) {
-      console.error('Error deleting bookmark:', error)
+      clientLogger.error('Error deleting bookmark', error)
     } finally {
       setDeletingId(null)
     }

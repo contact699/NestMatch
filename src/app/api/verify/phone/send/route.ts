@@ -27,10 +27,10 @@ export const POST = withApiHandler(
     }
 
     // Store phone number temporarily in profile (unverified)
-    await (supabase as any)
+    await supabase
       .from('profiles')
       .update({ phone })
-      .eq('user_id', userId)
+      .eq('user_id', userId!)
 
     return apiResponse({
       success: true,
