@@ -17,7 +17,13 @@ import {
   MessageCircle,
   Settings,
   AlertCircle,
+  Search,
+  Filter,
+  DollarSign,
+  Calendar,
+  X,
 } from 'lucide-react'
+import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE } from '@/lib/utils'
 
 interface MemberProfile {
   userId: string
@@ -90,6 +96,19 @@ export default function DiscoverPage() {
 
   // Groups state
   const [publicGroups, setPublicGroups] = useState<PublicGroup[]>([])
+
+  // People filters
+  const [peopleFilters, setPeopleFilters] = useState({
+    province: '',
+    city: '',
+    gender: '',
+    ageMin: '',
+    ageMax: '',
+    budgetMin: '',
+    budgetMax: '',
+    searchQuery: '',
+  })
+  const [showFilters, setShowFilters] = useState(false)
 
   // Counts
   const [counts, setCounts] = useState({
@@ -377,90 +396,263 @@ export default function DiscoverPage() {
             {/* Compatible People Tab */}
             {activeTab === 'people' && (
               <div>
-                <p className="text-sm text-gray-500 mb-4">
-                  {profiles.length} compatible people found
-                </p>
-
-                {profiles.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No profiles found
-                    </h3>
-                    <p className="text-gray-500">
-                      Complete your lifestyle quiz to see compatible matches.
+                {/* Filters Section */}
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm text-gray-500">
+                      {(() => {
+                        const filtered = profiles.filter(profile => {
+                          if (peopleFilters.province && profile.province !== peopleFilters.province) return false
+                          if (peopleFilters.city && profile.city !== peopleFilters.city) return false
+                          if (peopleFilters.gender && (profile as any).gender !== peopleFilters.gender) return false
+                          if (peopleFilters.ageMin && (profile as any).age && (profile as any).age < parseInt(peopleFilters.ageMin)) return false
+                          if (peopleFilters.ageMax && (profile as any).age && (profile as any).age > parseInt(peopleFilters.ageMax)) return false
+                          if (peopleFilters.searchQuery) {
+                            const q = peopleFilters.searchQuery.toLowerCase()
+                            const name = (profile.name || '').toLowerCase()
+                            const bio = (profile.bio || '').toLowerCase()
+                            if (!name.includes(q) && !bio.includes(q)) return false
+                          }
+                          return true
+                        })
+                        return `${filtered.length} compatible people found`
+                      })()}
                     </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                    >
+                      <Filter className="h-4 w-4 mr-1" />
+                      Filters
+                      {Object.values(peopleFilters).some(v => v !== '') && (
+                        <span className="ml-1 w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
+                          {Object.values(peopleFilters).filter(v => v !== '').length}
+                        </span>
+                      )}
+                    </Button>
                   </div>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {profiles.map(profile => (
-                      <Card key={profile.user_id} variant="bordered" animate>
-                        <CardContent className="p-6">
-                          <div className="flex items-start gap-4 mb-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-                              {profile.profile_photo ? (
-                                <img
-                                  src={profile.profile_photo}
-                                  alt={profile.name || 'User'}
-                                  className="w-full h-full object-cover"
+
+                  {showFilters && (
+                    <Card variant="bordered" className="p-4 mb-4">
+                      <div className="space-y-4">
+                        {/* Search */}
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={peopleFilters.searchQuery}
+                            onChange={(e) => setPeopleFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
+                            placeholder="Search by name or bio..."
+                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {/* Province */}
+                          <select
+                            value={peopleFilters.province}
+                            onChange={(e) => {
+                              setPeopleFilters(prev => ({ ...prev, province: e.target.value, city: '' }))
+                            }}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">All Provinces</option>
+                            {CANADIAN_PROVINCES.map(p => (
+                              <option key={p.value} value={p.value}>{p.label}</option>
+                            ))}
+                          </select>
+
+                          {/* City */}
+                          <select
+                            value={peopleFilters.city}
+                            onChange={(e) => setPeopleFilters(prev => ({ ...prev, city: e.target.value }))}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">{peopleFilters.province ? 'All Cities' : 'Select Province'}</option>
+                            {(CITIES_BY_PROVINCE[peopleFilters.province] || []).map(city => (
+                              <option key={city} value={city}>{city}</option>
+                            ))}
+                          </select>
+
+                          {/* Gender */}
+                          <select
+                            value={peopleFilters.gender}
+                            onChange={(e) => setPeopleFilters(prev => ({ ...prev, gender: e.target.value }))}
+                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="">Any Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="non_binary">Non-binary</option>
+                            <option value="other">Other</option>
+                          </select>
+
+                          {/* Age Range */}
+                          <div className="flex gap-2">
+                            <input
+                              type="number"
+                              value={peopleFilters.ageMin}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, ageMin: e.target.value }))}
+                              placeholder="Age min"
+                              min="18"
+                              max="120"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                            <input
+                              type="number"
+                              value={peopleFilters.ageMax}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, ageMax: e.target.value }))}
+                              placeholder="Age max"
+                              min="18"
+                              max="120"
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Budget Range */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="relative">
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="number"
+                              value={peopleFilters.budgetMin}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, budgetMin: e.target.value }))}
+                              placeholder="Budget min"
+                              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                          <div className="relative">
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <input
+                              type="number"
+                              value={peopleFilters.budgetMax}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, budgetMax: e.target.value }))}
+                              placeholder="Budget max"
+                              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Clear Filters */}
+                        {Object.values(peopleFilters).some(v => v !== '') && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setPeopleFilters({
+                              province: '', city: '', gender: '', ageMin: '', ageMax: '',
+                              budgetMin: '', budgetMax: '', searchQuery: '',
+                            })}
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            Clear All Filters
+                          </Button>
+                        )}
+                      </div>
+                    </Card>
+                  )}
+                </div>
+
+                {(() => {
+                  const filteredProfiles = profiles.filter(profile => {
+                    if (peopleFilters.province && profile.province !== peopleFilters.province) return false
+                    if (peopleFilters.city && profile.city !== peopleFilters.city) return false
+                    if (peopleFilters.gender && (profile as any).gender !== peopleFilters.gender) return false
+                    if (peopleFilters.ageMin && (profile as any).age && (profile as any).age < parseInt(peopleFilters.ageMin)) return false
+                    if (peopleFilters.ageMax && (profile as any).age && (profile as any).age > parseInt(peopleFilters.ageMax)) return false
+                    if (peopleFilters.searchQuery) {
+                      const q = peopleFilters.searchQuery.toLowerCase()
+                      const name = (profile.name || '').toLowerCase()
+                      const bio = (profile.bio || '').toLowerCase()
+                      if (!name.includes(q) && !bio.includes(q)) return false
+                    }
+                    return true
+                  })
+
+                  return filteredProfiles.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+                        No profiles found
+                      </h3>
+                      <p className="text-gray-500">
+                        {Object.values(peopleFilters).some(v => v !== '')
+                          ? 'Try adjusting your filters to see more results.'
+                          : 'Complete your lifestyle quiz to see compatible matches.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {filteredProfiles.map(profile => (
+                        <Card key={profile.user_id} variant="bordered" animate>
+                          <CardContent className="p-6">
+                            <div className="flex items-start gap-4 mb-4">
+                              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                                {profile.profile_photo ? (
+                                  <img
+                                    src={profile.profile_photo}
+                                    alt={profile.name || 'User'}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <Users className="h-8 w-8 text-blue-600" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-semibold text-gray-900 truncate">
+                                  {profile.name || 'Anonymous'}
+                                </h3>
+                                <VerificationBadge
+                                  level={(profile.verification_level || 'basic') as 'basic' | 'verified' | 'trusted'}
+                                  size="sm"
                                 />
-                              ) : (
-                                <Users className="h-8 w-8 text-blue-600" />
-                              )}
+                                {(profile.city || profile.province) && (
+                                  <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="truncate">
+                                      {[profile.city, profile.province].filter(Boolean).join(', ')}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate">
-                                {profile.name || 'Anonymous'}
-                              </h3>
-                              <VerificationBadge
-                                level={(profile.verification_level || 'basic') as 'basic' | 'verified' | 'trusted'}
-                                size="sm"
-                              />
-                              {(profile.city || profile.province) && (
-                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
-                                  <MapPin className="h-3 w-3" />
-                                  <span className="truncate">
-                                    {[profile.city, profile.province].filter(Boolean).join(', ')}
-                                  </span>
-                                </div>
-                              )}
+
+                            {profile.compatibilityScore > 0 && (
+                              <div className="mb-4">
+                                <CompatibilityBadgeStatic
+                                  score={profile.compatibilityScore}
+                                  size="md"
+                                  showLabel
+                                />
+                              </div>
+                            )}
+
+                            {profile.bio && (
+                              <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                                {profile.bio}
+                              </p>
+                            )}
+
+                            <div className="flex gap-2 pt-4 border-t border-gray-100">
+                              <Link href={`/profile/${profile.user_id}`} className="flex-1">
+                                <Button variant="outline" className="w-full" size="sm">
+                                  View Profile
+                                </Button>
+                              </Link>
+                              <Link href={`/messages?to=${profile.user_id}`} className="flex-1">
+                                <Button variant="glow" className="w-full" size="sm">
+                                  <MessageCircle className="h-4 w-4 mr-1" />
+                                  Message
+                                </Button>
+                              </Link>
                             </div>
-                          </div>
-
-                          {profile.compatibilityScore > 0 && (
-                            <div className="mb-4">
-                              <CompatibilityBadgeStatic
-                                score={profile.compatibilityScore}
-                                size="md"
-                                showLabel
-                              />
-                            </div>
-                          )}
-
-                          {profile.bio && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-                              {profile.bio}
-                            </p>
-                          )}
-
-                          <div className="flex gap-2 pt-4 border-t border-gray-100">
-                            <Link href={`/profile/${profile.user_id}`} className="flex-1">
-                              <Button variant="outline" className="w-full" size="sm">
-                                View Profile
-                              </Button>
-                            </Link>
-                            <Link href={`/messages?to=${profile.user_id}`} className="flex-1">
-                              <Button variant="glow" className="w-full" size="sm">
-                                <MessageCircle className="h-4 w-4 mr-1" />
-                                Message
-                              </Button>
-                            </Link>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )
+                })()}
               </div>
             )}
 

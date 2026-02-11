@@ -30,6 +30,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
 
   const generatePDF = async () => {
     setIsGenerating(true)
+    setDownloadError(null)
     try {
       const doc = (
         <AgreementPDF
@@ -48,17 +49,63 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       )
 
       const blob = await pdf(doc).toBlob()
-      const url = URL.createObjectURL(blob)
+      const fileName = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
 
       if (isMobile()) {
-        // On mobile, open PDF in a new tab so the user can view/save it
-        // Programmatic <a> click downloads don't work reliably on iOS Safari and some Android browsers
-        window.open(url, '_blank')
+        // On mobile, try multiple strategies for reliable download
+
+        // Strategy 1: Use Web Share API with file (best for mobile)
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], fileName, { type: 'application/pdf' })
+            if (navigator.canShare({ files: [file] })) {
+              await navigator.share({
+                files: [file],
+                title: data.title,
+              })
+              return
+            }
+          } catch {
+            // Share cancelled or failed, try next strategy
+          }
+        }
+
+        // Strategy 2: Convert to data URL and open (works on iOS Safari)
+        try {
+          const reader = new FileReader()
+          reader.onloadend = () => {
+            const dataUrl = reader.result as string
+            const newWindow = window.open()
+            if (newWindow) {
+              newWindow.document.write(
+                `<html><head><title>${fileName}</title></head><body style="margin:0">` +
+                `<embed width="100%" height="100%" src="${dataUrl}" type="application/pdf" />` +
+                `</body></html>`
+              )
+              newWindow.document.close()
+            } else {
+              // Strategy 3: Direct link download as fallback
+              const link = document.createElement('a')
+              link.href = dataUrl
+              link.download = fileName
+              link.style.display = 'none'
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+            }
+          }
+          reader.readAsDataURL(blob)
+        } catch {
+          // Final fallback: blob URL
+          const url = URL.createObjectURL(blob)
+          window.location.href = url
+        }
       } else {
         // On desktop, trigger a direct download
+        const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
-        link.download = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
+        link.download = fileName
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
@@ -66,7 +113,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       }
     } catch (error) {
       console.error('Failed to generate PDF:', error)
-      setDownloadError('Failed to generate PDF. Please try again or use a desktop browser.')
+      setDownloadError('Failed to generate PDF. Please try again.')
     } finally {
       setIsGenerating(false)
     }

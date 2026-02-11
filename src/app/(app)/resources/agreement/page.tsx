@@ -191,6 +191,27 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
       street_only: 'Visitors must park on the street.',
     }[data.visitorParkingPolicy || 'available']
     parkingContent += ` ${visitorPolicyText}`
+    if (data.parkingHoursRestriction && data.parkingHoursDetails) {
+      parkingContent += ` Parking hours restriction: ${data.parkingHoursDetails}.`
+    }
+    const snowRemovalText = {
+      landlord: 'Snow removal is handled by the landlord.',
+      tenants_rotate: 'Tenants will take turns clearing snow from the parking area.',
+      tenants_own_spot: 'Each tenant is responsible for clearing snow from their own parking spot.',
+      not_applicable: '',
+    }[data.parkingSnowRemoval || 'not_applicable']
+    if (snowRemovalText) {
+      parkingContent += ` ${snowRemovalText}`
+    }
+    if (data.parkingEvCharging) {
+      parkingContent += ` EV charging is available on premises.`
+      if (data.parkingEvDetails) {
+        parkingContent += ` ${data.parkingEvDetails}.`
+      }
+    }
+    if (data.parkingTowingPolicy) {
+      parkingContent += ` Unauthorized vehicles parked in assigned spots may be towed at the vehicle owner's expense.`
+    }
     if (data.vehicleRestrictions) {
       parkingContent += ` Vehicle restrictions: ${data.vehicleRestrictions}`
     }
@@ -250,6 +271,15 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
     helpContent += '.'
     if (data.helpExchangeCompensation) {
       helpContent += ` In exchange, the assisting roommate receives ${compensationLabels[data.helpExchangeCompensation] || data.helpExchangeCompensation}.`
+    }
+    if (data.helpExchangeHoursPerWeek && data.helpExchangeHoursPerWeek > 0) {
+      helpContent += ` The expected commitment is approximately ${data.helpExchangeHoursPerWeek} hours per week.`
+    }
+    if (data.helpExchangeSchedule) {
+      helpContent += ` Schedule: ${data.helpExchangeSchedule}.`
+    }
+    if (data.helpExchangeTrialPeriod && data.helpExchangeTrialPeriod > 0) {
+      helpContent += ` A trial period of ${data.helpExchangeTrialPeriod} days is agreed upon to evaluate if the arrangement works for both parties.`
     }
     if (data.helpExchangeDetails) {
       helpContent += ` Details: ${data.helpExchangeDetails}`

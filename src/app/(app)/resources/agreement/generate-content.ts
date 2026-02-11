@@ -226,6 +226,23 @@ ${data.parkingIncluded
         street_only: 'Visitors must park on the street.',
       }[data.visitorParkingPolicy || 'available']
       content += `\n${visitorPolicy}`
+      if (data.parkingHoursRestriction && data.parkingHoursDetails) {
+        content += `\nParking hours restriction: ${data.parkingHoursDetails}.`
+      }
+      const snowText = {
+        landlord: '\nSnow removal is handled by the landlord.',
+        tenants_rotate: '\nTenants will take turns clearing snow from the parking area.',
+        tenants_own_spot: '\nEach tenant is responsible for clearing snow from their own parking spot.',
+        not_applicable: '',
+      }[data.parkingSnowRemoval || 'not_applicable']
+      if (snowText) content += snowText
+      if (data.parkingEvCharging) {
+        content += `\nEV charging is available on premises.`
+        if (data.parkingEvDetails) content += ` ${data.parkingEvDetails}.`
+      }
+      if (data.parkingTowingPolicy) {
+        content += `\nUnauthorized vehicles parked in assigned spots may be towed at the vehicle owner's expense.`
+      }
       if (data.vehicleRestrictions) {
         content += `\nVehicle restrictions: ${data.vehicleRestrictions}`
       }
@@ -257,6 +274,43 @@ ${(() => {
   return needs.length > 0
     ? `${needs.join('\n')}\n\nAll roommates agree to respect and accommodate these care needs.`
     : 'No specific care or support needs noted.'
+})()}
+
+4.4 Assistance Required
+${(() => {
+  if (!data.helpExchangeEnabled) return 'No assistance exchange arrangement is in place.'
+  let content = 'An assistance exchange arrangement is in place.'
+  if (data.helpExchangeProvider) {
+    content += ` ${data.helpExchangeProvider} will provide assistance`
+  }
+  const tasks = data.helpExchangeTasks || []
+  if (tasks.length > 0) {
+    content += ` including: ${tasks.join(', ')}`
+  }
+  content += '.'
+  const compensationLabels: Record<string, string> = {
+    reduced_rent: 'reduced rent',
+    free_rent: 'free rent',
+    utilities_covered: 'utilities covered',
+    other: 'an alternative arrangement',
+  }
+  if (data.helpExchangeCompensation) {
+    content += ` In exchange, the assisting roommate receives ${compensationLabels[data.helpExchangeCompensation] || data.helpExchangeCompensation}.`
+  }
+  if (data.helpExchangeHoursPerWeek && data.helpExchangeHoursPerWeek > 0) {
+    content += ` The expected commitment is approximately ${data.helpExchangeHoursPerWeek} hours per week.`
+  }
+  if (data.helpExchangeSchedule) {
+    content += `\nSchedule: ${data.helpExchangeSchedule}.`
+  }
+  if (data.helpExchangeTrialPeriod && data.helpExchangeTrialPeriod > 0) {
+    content += `\nA trial period of ${data.helpExchangeTrialPeriod} days is agreed upon to evaluate if the arrangement works for both parties.`
+  }
+  if (data.helpExchangeDetails) {
+    content += `\nAdditional details: ${data.helpExchangeDetails}`
+  }
+  content += '\n\nBoth parties agree to discuss and renegotiate terms if circumstances change.'
+  return content
 })()}
 `)
 

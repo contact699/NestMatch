@@ -51,6 +51,12 @@ export const agreementSchema = z.object({
   visitorParkingPolicy: z.enum(['available', 'limited', 'none', 'street_only']).optional(),
   parkingRotation: z.boolean().optional(),
   vehicleRestrictions: z.string().optional(),
+  parkingHoursRestriction: z.boolean().optional(),
+  parkingHoursDetails: z.string().optional(),
+  parkingSnowRemoval: z.enum(['landlord', 'tenants_rotate', 'tenants_own_spot', 'not_applicable']).optional(),
+  parkingEvCharging: z.boolean().optional(),
+  parkingEvDetails: z.string().optional(),
+  parkingTowingPolicy: z.boolean().optional(),
 
   // Accessibility
   accessibilityWheelchair: z.boolean(),
@@ -61,12 +67,15 @@ export const agreementSchema = z.object({
   careAccessibilityMods: z.boolean(),
   careAdditionalDetails: z.string().optional(),
 
-  // Help/Assistance Exchange
+  // Help/Assistance Exchange (Assistance Required)
   helpExchangeEnabled: z.boolean(),
   helpExchangeTasks: z.array(z.string()).optional(),
   helpExchangeProvider: z.string().optional(),
   helpExchangeCompensation: z.string().optional(),
   helpExchangeDetails: z.string().optional(),
+  helpExchangeHoursPerWeek: z.number().min(0).optional(),
+  helpExchangeSchedule: z.string().optional(),
+  helpExchangeTrialPeriod: z.number().min(0).optional(),
 
   // Step 6: Agreement Terms
   noticeToLeave: z.number().min(1),
@@ -110,6 +119,12 @@ export const defaultValues: Partial<AgreementFormData> = {
   visitorParkingPolicy: 'available',
   parkingRotation: false,
   vehicleRestrictions: '',
+  parkingHoursRestriction: false,
+  parkingHoursDetails: '',
+  parkingSnowRemoval: 'not_applicable',
+  parkingEvCharging: false,
+  parkingEvDetails: '',
+  parkingTowingPolicy: false,
   accessibilityWheelchair: false,
   accessibilityMobilityStorage: false,
   accessibilityServiceAnimal: false,
@@ -122,6 +137,9 @@ export const defaultValues: Partial<AgreementFormData> = {
   helpExchangeProvider: '',
   helpExchangeCompensation: 'reduced_rent',
   helpExchangeDetails: '',
+  helpExchangeHoursPerWeek: 0,
+  helpExchangeSchedule: '',
+  helpExchangeTrialPeriod: 0,
   noticeToLeave: 30,
   disputeResolution: 'direct',
   agreementDuration: 'month_to_month',

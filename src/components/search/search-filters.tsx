@@ -11,6 +11,7 @@ import {
   Leaf,
   Bath,
   GraduationCap,
+  HandHelping,
 } from 'lucide-react'
 
 export function SearchFilters() {
@@ -29,6 +30,7 @@ export function SearchFilters() {
     newcomerFriendly: searchParams.get('newcomerFriendly') === 'true',
     noCreditOk: searchParams.get('noCreditOk') === 'true',
     idealForStudents: searchParams.get('idealForStudents') === 'true',
+    assistanceRequired: searchParams.get('assistanceRequired') === 'true',
   })
 
   // Get cities for selected province
@@ -50,6 +52,7 @@ export function SearchFilters() {
     if (filters.newcomerFriendly) params.set('newcomerFriendly', 'true')
     if (filters.noCreditOk) params.set('noCreditOk', 'true')
     if (filters.idealForStudents) params.set('idealForStudents', 'true')
+    if (filters.assistanceRequired) params.set('assistanceRequired', 'true')
 
     const queryString = params.toString()
     const url = queryString ? `/search?${queryString}` : '/search'
@@ -206,6 +209,16 @@ export function SearchFilters() {
           />
           <GraduationCap className="h-4 w-4 text-purple-600" />
           Ideal for Students
+        </label>
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+          <input
+            type="checkbox"
+            checked={filters.assistanceRequired}
+            onChange={(e) => handleChange('assistanceRequired', e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <HandHelping className="h-4 w-4 text-orange-600" />
+          Assistance Required
         </label>
       </div>
     </form>

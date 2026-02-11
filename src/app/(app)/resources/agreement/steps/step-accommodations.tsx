@@ -185,6 +185,103 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               </div>
             </label>
 
+            {/* Parking Hours Restriction */}
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('parkingHoursRestriction')}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Parking Hours Restriction</p>
+                <p className="text-xs text-gray-500">Are there specific hours when parking is restricted?</p>
+              </div>
+            </label>
+
+            {watch('parkingHoursRestriction') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Parking Hours Details
+                </label>
+                <input
+                  type="text"
+                  {...register('parkingHoursDetails')}
+                  placeholder="e.g., No overnight parking 2am-6am, No parking during snow removal"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                />
+              </div>
+            )}
+
+            {/* Snow Removal */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Snow Removal Responsibility
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'landlord', label: 'Landlord', desc: 'Landlord handles all snow removal' },
+                  { value: 'tenants_rotate', label: 'Tenants Rotate', desc: 'Tenants take turns clearing snow' },
+                  { value: 'tenants_own_spot', label: 'Own Spot', desc: 'Each tenant clears their own spot' },
+                  { value: 'not_applicable', label: 'N/A', desc: 'Not applicable (e.g., underground parking)' },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setValue('parkingSnowRemoval', option.value as any)}
+                    className={`
+                      p-2 rounded-lg border-2 text-left transition-colors
+                      ${watch('parkingSnowRemoval') === option.value
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300'}
+                    `}
+                  >
+                    <p className="font-medium text-xs text-gray-900">{option.label}</p>
+                    <p className="text-xs text-gray-500">{option.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* EV Charging */}
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('parkingEvCharging')}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">EV Charging Available</p>
+                <p className="text-xs text-gray-500">Electric vehicle charging station on premises</p>
+              </div>
+            </label>
+
+            {watch('parkingEvCharging') && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  EV Charging Details
+                </label>
+                <input
+                  type="text"
+                  {...register('parkingEvDetails')}
+                  placeholder="e.g., Level 2 charger, shared between tenants, electricity cost split equally"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                />
+              </div>
+            )}
+
+            {/* Towing Policy */}
+            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+              <input
+                type="checkbox"
+                {...register('parkingTowingPolicy')}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <div>
+                <p className="text-sm font-medium text-gray-900">Unauthorized Vehicle Towing</p>
+                <p className="text-xs text-gray-500">Unauthorized vehicles may be towed at owner's expense</p>
+              </div>
+            </label>
+
             {/* Vehicle Restrictions */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -192,7 +289,7 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               </label>
               <textarea
                 {...register('vehicleRestrictions')}
-                placeholder="e.g., No commercial vehicles, size limitations, electric vehicle charging rules..."
+                placeholder="e.g., No commercial vehicles, size limitations..."
                 rows={2}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
               />
@@ -302,17 +399,17 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
         )}
       </div>
 
-      {/* Help/Assistance Exchange Section */}
+      {/* Assistance Required / Help Exchange Section */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Help/Assistance Exchange</h4>
+        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Assistance Required</h4>
         <p className="text-sm text-gray-500">
-          If a roommate provides help or assistance (e.g., cleaning, errands, caregiving) in exchange for reduced rent or other compensation, document it here.
+          If a roommate provides help or assistance (e.g., cleaning, errands, caregiving, elderly care, babysitting) in exchange for reduced rent or other compensation, document the arrangement here.
         </p>
 
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
           <div>
-            <p className="font-medium text-sm text-gray-900">Help Exchange Arrangement</p>
-            <p className="text-xs text-gray-500">Does this living arrangement include an assistance exchange?</p>
+            <p className="font-medium text-sm text-gray-900">Assistance Required Arrangement</p>
+            <p className="text-xs text-gray-500">Does this living arrangement include assistance in exchange for compensation?</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -388,14 +485,58 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               </select>
             </div>
 
+            {/* Hours Per Week */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Expected Hours Per Week
+                </label>
+                <input
+                  type="number"
+                  {...register('helpExchangeHoursPerWeek', { valueAsNumber: true })}
+                  min="0"
+                  max="40"
+                  placeholder="e.g., 10"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trial Period (days)
+                </label>
+                <input
+                  type="number"
+                  {...register('helpExchangeTrialPeriod', { valueAsNumber: true })}
+                  min="0"
+                  max="90"
+                  placeholder="e.g., 30"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">Period to evaluate if the arrangement works</p>
+              </div>
+            </div>
+
+            {/* Schedule */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Assistance Schedule
+              </label>
+              <input
+                type="text"
+                {...register('helpExchangeSchedule')}
+                placeholder="e.g., Weekday mornings 8am-12pm, or as needed"
+                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+              />
+            </div>
+
             {/* Additional Details */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Details of the arrangement
+                Additional Details
               </label>
               <textarea
                 {...register('helpExchangeDetails')}
-                placeholder="Describe the specific arrangement, expected hours, schedule, and any other relevant details..."
+                placeholder="Describe any specific requirements, expectations, boundaries, or other relevant details..."
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
               />

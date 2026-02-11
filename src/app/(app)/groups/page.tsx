@@ -412,19 +412,25 @@ function CreateGroupModal({
         }),
       })
 
-      const data = await res.json()
+      let data: any
+      try {
+        data = await res.json()
+      } catch {
+        if (!res.ok) throw new Error(`Server error (${res.status})`)
+      }
 
       if (!res.ok) {
         // Handle both string and object error formats
-        const errorMessage = typeof data.error === 'string'
+        const errorMessage = typeof data?.error === 'string'
           ? data.error
-          : data.error?.message || 'Failed to create group'
+          : data?.error?.message || data?.message || `Failed to create group (${res.status})`
         throw new Error(errorMessage)
       }
 
       onSuccess()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      console.error('Create group error:', err)
+      setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }

@@ -50,6 +50,7 @@ export const GET = withPublicHandler(
     const newcomerFriendly = searchParams.get('newcomerFriendly')
     const noCreditOk = searchParams.get('noCreditOk')
     const idealForStudents = searchParams.get('idealForStudents')
+    const assistanceRequired = searchParams.get('assistanceRequired')
     const userId = searchParams.get('userId')
     const q = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '24')
@@ -60,7 +61,16 @@ export const GET = withPublicHandler(
 
     let query = supabase
       .from('listings')
-      .select('*')
+      .select(`
+        *,
+        profiles (
+          id,
+          user_id,
+          name,
+          profile_photo,
+          verification_level
+        )
+      `)
       .order('created_at', { ascending: false })
 
     // If fetching user's own listings, show all (active + inactive)
@@ -96,6 +106,9 @@ export const GET = withPublicHandler(
     }
     if (idealForStudents === 'true') {
       query = query.eq('ideal_for_students', true)
+    }
+    if (assistanceRequired === 'true') {
+      query = query.eq('help_needed', true)
     }
     if (q) {
       // Search in title, description, city, and province

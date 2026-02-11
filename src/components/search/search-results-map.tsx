@@ -17,13 +17,15 @@ interface Listing {
   photos: string[] | null
   newcomer_friendly: boolean
   no_credit_history_ok: boolean
+  help_needed: boolean
+  ideal_for_students: boolean
   utilities_included: boolean
   available_date: string
   bathroom_type: string
   created_at: string
   user_id: string
-  latitude?: number | null
-  longitude?: number | null
+  lat?: number | null
+  lng?: number | null
 }
 
 interface SearchResultsMapProps {
@@ -62,8 +64,8 @@ function SearchResultsMapInner({
   // Filter listings with valid coordinates
   const listingsWithCoords = useMemo(() => {
     return listings.filter(
-      (l) => l.latitude !== null && l.latitude !== undefined &&
-             l.longitude !== null && l.longitude !== undefined
+      (l) => l.lat !== null && l.lat !== undefined &&
+             l.lng !== null && l.lng !== undefined
     )
   }, [listings])
 
@@ -73,8 +75,8 @@ function SearchResultsMapInner({
 
     const bounds = new google.maps.LatLngBounds()
     listingsWithCoords.forEach((listing) => {
-      if (listing.latitude && listing.longitude) {
-        bounds.extend({ lat: listing.latitude, lng: listing.longitude })
+      if (listing.lat && listing.lng) {
+        bounds.extend({ lat: listing.lat, lng: listing.lng })
       }
     })
     return bounds
@@ -95,8 +97,8 @@ function SearchResultsMapInner({
   const center = useMemo(() => {
     if (listingsWithCoords.length === 0) return DEFAULT_CENTER
 
-    const sumLat = listingsWithCoords.reduce((sum, l) => sum + (l.latitude || 0), 0)
-    const sumLng = listingsWithCoords.reduce((sum, l) => sum + (l.longitude || 0), 0)
+    const sumLat = listingsWithCoords.reduce((sum, l) => sum + (l.lat || 0), 0)
+    const sumLng = listingsWithCoords.reduce((sum, l) => sum + (l.lng || 0), 0)
 
     return {
       lat: sumLat / listingsWithCoords.length,
@@ -133,8 +135,8 @@ function SearchResultsMapInner({
           <Marker
             key={listing.id}
             position={{
-              lat: listing.latitude!,
-              lng: listing.longitude!,
+              lat: listing.lat!,
+              lng: listing.lng!,
             }}
             onClick={() => setSelectedListing(listing)}
             icon={{
@@ -148,11 +150,11 @@ function SearchResultsMapInner({
           />
         ))}
 
-        {selectedListing && selectedListing.latitude && selectedListing.longitude && (
+        {selectedListing && selectedListing.lat && selectedListing.lng && (
           <InfoWindow
             position={{
-              lat: selectedListing.latitude,
-              lng: selectedListing.longitude,
+              lat: selectedListing.lat,
+              lng: selectedListing.lng,
             }}
             onCloseClick={() => setSelectedListing(null)}
             options={{

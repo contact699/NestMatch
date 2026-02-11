@@ -13,6 +13,8 @@ import {
   Leaf,
   Lock,
   Bath,
+  HandHelping,
+  GraduationCap,
 } from 'lucide-react'
 
 interface PublicListingCardProps {
@@ -28,6 +30,8 @@ interface PublicListingCardProps {
     photos: string[] | null
     newcomer_friendly: boolean
     no_credit_history_ok: boolean
+    help_needed?: boolean
+    ideal_for_students?: boolean
     utilities_included: boolean
     available_date: string
     created_at: string
@@ -73,6 +77,18 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
             )}
             {listing.no_credit_history_ok && (
               <Badge variant="info">No Credit History OK</Badge>
+            )}
+            {listing.help_needed && (
+              <Badge variant="warning" className="flex items-center gap-1">
+                <HandHelping className="h-3 w-3" />
+                Assistance Required
+              </Badge>
+            )}
+            {listing.ideal_for_students && (
+              <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
+                <GraduationCap className="h-3 w-3" />
+                Ideal for Students
+              </Badge>
             )}
           </div>
 

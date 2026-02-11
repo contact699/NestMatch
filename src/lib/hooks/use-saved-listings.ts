@@ -57,11 +57,20 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
   }, [savedIds])
 
   const save = useCallback(async (listingId: string) => {
-    // Wait for auth check to complete; if still loading, don't redirect
+    // If auth check hasn't completed yet, wait for it
     if (isAuthenticated === null) {
-      return false
-    }
-    if (isAuthenticated === false) {
+      // Re-check auth directly
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        if (options.onAuthRequired) {
+          options.onAuthRequired()
+        } else {
+          router.push(`/login?redirect=/search`)
+        }
+        return false
+      }
+    } else if (isAuthenticated === false) {
       if (options.onAuthRequired) {
         options.onAuthRequired()
       } else {
@@ -112,8 +121,14 @@ export function useSavedListings(options: UseSavedListingsOptions = {}) {
   }, [isAuthenticated, router, options])
 
   const unsave = useCallback(async (listingId: string) => {
-    if (!isAuthenticated) {
+    if (isAuthenticated === false) {
       return false
+    }
+    // If auth check hasn't completed, re-check directly
+    if (isAuthenticated === null) {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return false
     }
 
     // Optimistic update

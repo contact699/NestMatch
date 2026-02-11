@@ -13,13 +13,15 @@ interface Listing {
   photos: string[] | null
   newcomer_friendly: boolean
   no_credit_history_ok: boolean
+  help_needed: boolean
+  ideal_for_students: boolean
   utilities_included: boolean
   available_date: string
   bathroom_type: string
   created_at: string
   user_id: string
-  latitude?: number | null
-  longitude?: number | null
+  lat?: number | null
+  lng?: number | null
   profiles?: {
     id: string
     user_id: string

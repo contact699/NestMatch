@@ -40,13 +40,15 @@ interface Listing {
   photos: string[] | null
   newcomer_friendly: boolean
   no_credit_history_ok: boolean
+  help_needed: boolean
+  ideal_for_students: boolean
   utilities_included: boolean
   available_date: string
   bathroom_type: string
   created_at: string
   user_id: string
-  latitude?: number | null
-  longitude?: number | null
+  lat?: number | null
+  lng?: number | null
   profiles?: {
     id: string
     user_id: string
@@ -121,6 +123,7 @@ export default function SearchPage() {
         const newcomerFriendly = searchParams.get('newcomerFriendly')
         const noCreditOk = searchParams.get('noCreditOk')
         const idealForStudents = searchParams.get('idealForStudents')
+        const assistanceRequired = searchParams.get('assistanceRequired')
         const q = searchParams.get('q')
 
         if (city) params.set('city', city)
@@ -132,6 +135,7 @@ export default function SearchPage() {
         if (newcomerFriendly) params.set('newcomerFriendly', newcomerFriendly)
         if (noCreditOk) params.set('noCreditOk', noCreditOk)
         if (idealForStudents) params.set('idealForStudents', idealForStudents)
+        if (assistanceRequired) params.set('assistanceRequired', assistanceRequired)
         if (q) params.set('q', q)
 
         const queryString = params.toString()

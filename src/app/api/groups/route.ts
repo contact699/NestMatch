@@ -5,12 +5,12 @@ import { ValidationError } from '@/lib/error-reporter'
 
 const createGroupSchema = z.object({
   name: z.string().min(1).max(255),
-  description: z.string().max(2000).optional(),
-  combined_budget_min: z.number().positive().optional(),
-  combined_budget_max: z.number().positive().optional(),
-  target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  preferred_cities: z.array(z.string()).optional(),
-  budget_contribution: z.number().positive().optional(),
+  description: z.string().max(2000).optional().nullable(),
+  combined_budget_min: z.number().positive().optional().nullable(),
+  combined_budget_max: z.number().positive().optional().nullable(),
+  target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+  preferred_cities: z.array(z.string()).optional().nullable(),
+  budget_contribution: z.number().positive().optional().nullable(),
 }).refine(
   (data) => {
     if (data.combined_budget_min && data.combined_budget_max) {
@@ -109,18 +109,24 @@ export const POST = withApiHandler(
       .from('co_renter_groups')
       .insert({
         name,
-        description,
-        combined_budget_min,
-        combined_budget_max,
-        target_move_date,
-        preferred_cities,
+        description: description || null,
+        combined_budget_min: combined_budget_min || null,
+        combined_budget_max: combined_budget_max || null,
+        target_move_date: target_move_date || null,
+        preferred_cities: preferred_cities || null,
         status: 'forming',
+        is_public: false,
+        group_size_min: 2,
+        group_size_max: 5,
         created_by: userId,
       })
       .select()
       .single()
 
-    if (groupError) throw groupError
+    if (groupError) {
+      console.error('Group creation error:', groupError)
+      throw groupError
+    }
 
     // Add creator as admin member
     const { error: memberError } = await (supabase as any)
@@ -129,10 +135,12 @@ export const POST = withApiHandler(
         group_id: group.id,
         user_id: userId,
         role: 'admin',
+        status: 'active',
         budget_contribution: groupData.budget_contribution || null,
       })
 
     if (memberError) {
+      console.error('Member creation error:', memberError)
       // Rollback group creation
       await (supabase as any)
         .from('co_renter_groups')
