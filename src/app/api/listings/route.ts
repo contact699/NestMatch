@@ -25,13 +25,22 @@ const listingSchema = z.object({
   photos: z.array(z.string()).default([]),
   amenities: z.array(z.string()).default([]),
   bathroom_type: z.enum(['ensuite', 'private', 'shared']).default('shared'),
-  bathroom_size: z.enum(['full', 'three_quarter', 'half']).optional().nullable(),
-  roommate_gender_preference: z.enum(['male', 'female', 'any']).optional(),
+  bathroom_size: z.preprocess(
+    (val) => (val === '' ? null : val),
+    z.enum(['full', 'three_quarter', 'half']).nullable()
+  ).optional(),
+  roommate_gender_preference: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.enum(['male', 'female', 'any'])
+  ).optional(),
   roommate_age_min: z.number().min(18).optional(),
   roommate_age_max: z.number().max(120).optional(),
   newcomer_friendly: z.boolean().default(false),
   no_credit_history_ok: z.boolean().default(false),
   ideal_for_students: z.boolean().default(false),
+  pets_allowed: z.boolean().default(false),
+  smoking_allowed: z.boolean().default(false),
+  parking_included: z.boolean().default(false),
   help_needed: z.boolean().default(false),
   help_tasks: z.array(z.string()).optional(),
   help_details: z.string().max(500).optional(),
@@ -51,6 +60,9 @@ export const GET = withPublicHandler(
     const noCreditOk = searchParams.get('noCreditOk')
     const idealForStudents = searchParams.get('idealForStudents')
     const assistanceRequired = searchParams.get('assistanceRequired')
+    const petsAllowed = searchParams.get('petsAllowed')
+    const noSmoking = searchParams.get('noSmoking')
+    const parkingIncluded = searchParams.get('parkingIncluded')
     const userId = searchParams.get('userId')
     const q = searchParams.get('q')
     const limit = parseInt(searchParams.get('limit') || '24')
@@ -110,6 +122,15 @@ export const GET = withPublicHandler(
     if (assistanceRequired === 'true') {
       query = query.eq('help_needed', true)
     }
+    if (petsAllowed === 'true') {
+      query = query.eq('pets_allowed', true)
+    }
+    if (noSmoking === 'true') {
+      query = query.eq('smoking_allowed', false)
+    }
+    if (parkingIncluded === 'true') {
+      query = query.eq('parking_included', true)
+    }
     if (q) {
       // Search in title, description, city, and province
       query = query.or(
@@ -166,6 +187,9 @@ export const POST = withApiHandler(
         newcomer_friendly: listingData.newcomer_friendly,
         no_credit_history_ok: listingData.no_credit_history_ok,
         ideal_for_students: listingData.ideal_for_students || false,
+        pets_allowed: listingData.pets_allowed || false,
+        smoking_allowed: listingData.smoking_allowed || false,
+        parking_included: listingData.parking_included || false,
         help_needed: listingData.help_needed || false,
         help_tasks: listingData.help_tasks || [],
         help_details: listingData.help_details || null,

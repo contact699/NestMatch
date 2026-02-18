@@ -10,6 +10,7 @@ import {
   Search,
   MessageCircle,
   User,
+  Users,
   ClipboardList,
   ArrowRight,
   CheckCircle,
@@ -264,6 +265,21 @@ export default async function DashboardPage() {
                               ? `${savedCount} saved`
                               : 'Your saved listings'}
                           </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+                <Link href="/roommates" data-animate className="delay-700">
+                  <Card variant="feature" animate className="h-full">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-teal-100 rounded-xl flex items-center justify-center">
+                          <Users className="h-6 w-6 text-teal-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">Find a roommate</p>
+                          <p className="text-sm text-gray-500">Browse compatible profiles</p>
                         </div>
                       </div>
                     </CardContent>

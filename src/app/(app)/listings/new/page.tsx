@@ -20,6 +20,7 @@ import {
   Users,
   Check,
   AlertCircle,
+  X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { listingSchema, ListingFormData } from './types'
@@ -54,6 +55,9 @@ const LISTING_DEFAULTS: Partial<ListingFormData> = {
   newcomer_friendly: false,
   no_credit_history_ok: false,
   ideal_for_students: false,
+  pets_allowed: false,
+  smoking_allowed: false,
+  parking_included: false,
   help_needed: false,
   help_tasks: [],
 }
@@ -133,10 +137,17 @@ export default function NewListingPage() {
     setError(null)
 
     try {
+      // Clean optional fields that may be empty strings from HTML selects
+      const cleanData = {
+        ...data,
+        bathroom_size: data.bathroom_size || null,
+        roommate_gender_preference: data.roommate_gender_preference || undefined,
+      }
+
       const response = await fetch('/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(cleanData),
       })
 
       const text = await response.text()
@@ -209,10 +220,21 @@ export default function NewListingPage() {
 
       <Card variant="bordered">
         <CardHeader>
-          <CardTitle>Create a Listing</CardTitle>
-          <CardDescription>
-            Create a listing to find compatible roommates
-          </CardDescription>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle>Create a Listing</CardTitle>
+              <CardDescription>
+                Create a listing to find compatible roommates
+              </CardDescription>
+            </div>
+            <Link
+              href="/dashboard"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label="Cancel and return to dashboard"
+            >
+              <X className="h-5 w-5" />
+            </Link>
+          </div>
         </CardHeader>
 
         {/* Progress indicator */}

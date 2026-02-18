@@ -25,6 +25,7 @@ import {
   DollarSign,
   Calendar,
   X,
+  Info,
 } from 'lucide-react'
 import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE } from '@/lib/utils'
 
@@ -364,12 +365,30 @@ export default function DiscoverPage() {
           <h1 className="text-2xl font-bold text-gray-900">Discover</h1>
           <p className="text-gray-600">Find your perfect roommate match</p>
         </div>
-        <Link href="/settings">
+        <Link href="/quiz">
           <Button variant="outline" size="sm">
             <Settings className="h-4 w-4 mr-1" />
-            Preferences
+            Matching Preferences
           </Button>
         </Link>
+      </div>
+
+      {/* How it works */}
+      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+        <div className="flex items-start gap-3">
+          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-gray-700 space-y-1">
+            <p className="font-medium text-gray-900">How Discovery Works</p>
+            <ul className="space-y-1">
+              <li><span className="font-medium">Suggestions</span> — AI-generated group matches based on your profile and preferences</li>
+              <li><span className="font-medium">People</span> — Browse individuals ranked by lifestyle compatibility</li>
+              <li><span className="font-medium">Groups</span> — Join existing public groups looking for members</li>
+            </ul>
+            <p className="text-gray-500 pt-1">
+              Complete your <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link> and <Link href="/profile/edit" className="text-blue-600 hover:underline">profile</Link> for better matches.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -434,8 +453,11 @@ export default function DiscoverPage() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No suggestions yet
                     </h3>
-                    <p className="text-gray-500 mb-4">
-                      Complete your seeking profile to get personalized group suggestions.
+                    <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                      To get AI-generated group suggestions, complete your{' '}
+                      <Link href="/profile/edit" className="text-blue-600 hover:underline">profile</Link>,{' '}
+                      <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link>, and{' '}
+                      <Link href="/seeking" className="text-blue-600 hover:underline">seeking preferences</Link>, then click below.
                     </p>
                     <Button variant="glow" onClick={handleRefreshSuggestions}>
                       Generate Suggestions
@@ -614,10 +636,15 @@ export default function DiscoverPage() {
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       No profiles found
                     </h3>
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 max-w-md mx-auto">
                       {Object.values(peopleFilters).some(v => v !== '')
                         ? 'Try adjusting your filters to see more results.'
-                        : 'Complete your lifestyle quiz to see compatible matches.'}
+                        : (
+                          <>
+                            Complete your <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link> to see
+                            compatibility scores and get ranked matches.
+                          </>
+                        )}
                     </p>
                   </div>
                 ) : (
@@ -704,13 +731,13 @@ export default function DiscoverPage() {
                   <div className="text-center py-12">
                     <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      No public groups
+                      No public groups yet
                     </h3>
-                    <p className="text-gray-500 mb-4">
-                      Be the first to create a public group!
+                    <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                      No public groups are forming right now. Create a group and set it to public so others can find and join you.
                     </p>
                     <Link href="/groups">
-                      <Button variant="glow">Create Group</Button>
+                      <Button variant="glow">Create a Group</Button>
                     </Link>
                   </div>
                 ) : (

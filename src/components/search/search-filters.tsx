@@ -12,6 +12,9 @@ import {
   Bath,
   GraduationCap,
   HandHelping,
+  PawPrint,
+  CigaretteOff,
+  Car,
 } from 'lucide-react'
 
 export function SearchFilters() {
@@ -31,6 +34,9 @@ export function SearchFilters() {
     noCreditOk: searchParams.get('noCreditOk') === 'true',
     idealForStudents: searchParams.get('idealForStudents') === 'true',
     assistanceRequired: searchParams.get('assistanceRequired') === 'true',
+    petsAllowed: searchParams.get('petsAllowed') === 'true',
+    noSmoking: searchParams.get('noSmoking') === 'true',
+    parkingIncluded: searchParams.get('parkingIncluded') === 'true',
   })
 
   // Get cities for selected province
@@ -53,6 +59,9 @@ export function SearchFilters() {
     if (filters.noCreditOk) params.set('noCreditOk', 'true')
     if (filters.idealForStudents) params.set('idealForStudents', 'true')
     if (filters.assistanceRequired) params.set('assistanceRequired', 'true')
+    if (filters.petsAllowed) params.set('petsAllowed', 'true')
+    if (filters.noSmoking) params.set('noSmoking', 'true')
+    if (filters.parkingIncluded) params.set('parkingIncluded', 'true')
 
     const queryString = params.toString()
     const url = queryString ? `/search?${queryString}` : '/search'
@@ -219,6 +228,36 @@ export function SearchFilters() {
           />
           <HandHelping className="h-4 w-4 text-orange-600" />
           Assistance Required
+        </label>
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+          <input
+            type="checkbox"
+            checked={filters.petsAllowed}
+            onChange={(e) => handleChange('petsAllowed', e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <PawPrint className="h-4 w-4 text-amber-600" />
+          Pets Allowed
+        </label>
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+          <input
+            type="checkbox"
+            checked={filters.noSmoking}
+            onChange={(e) => handleChange('noSmoking', e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <CigaretteOff className="h-4 w-4 text-red-600" />
+          No Smoking
+        </label>
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+          <input
+            type="checkbox"
+            checked={filters.parkingIncluded}
+            onChange={(e) => handleChange('parkingIncluded', e.target.checked)}
+            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <Car className="h-4 w-4 text-blue-600" />
+          Parking Included
         </label>
       </div>
     </form>

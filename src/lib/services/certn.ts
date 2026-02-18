@@ -30,7 +30,7 @@ export async function initiateIDVerification(
 ): Promise<CertnResponse> {
   if (!CERTN_API_KEY) {
     logger.error('Certn API key not configured')
-    return { success: false, error: 'ID verification is not configured' }
+    return { success: false, error: 'ID verification is not yet available. Please try again later.' }
   }
 
   try {
@@ -75,7 +75,7 @@ export async function initiateIDVerification(
 export async function checkVerificationStatus(applicationId: string): Promise<CertnResponse> {
   if (!CERTN_API_KEY) {
     logger.error('Certn API key not configured')
-    return { success: false, error: 'ID verification is not configured' }
+    return { success: false, error: 'ID verification is not yet available. Please try again later.' }
   }
 
   try {

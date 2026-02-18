@@ -10,6 +10,18 @@ export const GET = withApiHandler(
       .eq('user_id', userId!)
       .single()
 
+    // Sync email verification from auth if profile is out of date
+    if (profile && !profile.email_verified) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email_confirmed_at) {
+        await supabase
+          .from('profiles')
+          .update({ email_verified: true })
+          .eq('user_id', userId!)
+        profile.email_verified = true
+      }
+    }
+
     // Get all verification records
     const { data: verifications, error } = await supabase
       .from('verifications')

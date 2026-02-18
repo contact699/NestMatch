@@ -13,6 +13,7 @@ import {
   Users,
   Home,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 
 interface Conversation {
@@ -48,6 +49,7 @@ export default function MessagesPage() {
   const searchParams = useSearchParams()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -131,6 +133,8 @@ export default function MessagesPage() {
 
       if (response.ok) {
         setConversations(data.conversations)
+      } else {
+        setError(data.error || 'Failed to load conversations')
       }
 
       setIsLoading(false)
@@ -217,8 +221,20 @@ export default function MessagesPage() {
         )}
       </div>
 
+      {/* Error state */}
+      {error && (
+        <Card variant="bordered" data-animate className="delay-200 mb-4">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
+              <p className="text-sm">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Conversations list */}
-      {conversations.length === 0 ? (
+      {conversations.length === 0 && !error ? (
         <Card variant="bordered" data-animate className="delay-200">
           <CardContent className="py-12 text-center">
             <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />

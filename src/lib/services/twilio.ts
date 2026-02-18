@@ -24,7 +24,7 @@ function getTwilioAuth(): string {
 export async function sendVerificationCode(phoneNumber: string): Promise<VerificationResponse> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
     logger.error('Twilio credentials not configured')
-    return { success: false, error: 'Phone verification is not configured' }
+    return { success: false, error: 'Phone verification is not yet available. Please try again later.' }
   }
 
   // Normalize phone number (ensure it starts with +)
@@ -72,7 +72,7 @@ export async function sendVerificationCode(phoneNumber: string): Promise<Verific
 export async function verifyCode(phoneNumber: string, code: string): Promise<VerificationResponse> {
   if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
     logger.error('Twilio credentials not configured')
-    return { success: false, error: 'Phone verification is not configured' }
+    return { success: false, error: 'Phone verification is not yet available. Please try again later.' }
   }
 
   // Normalize phone number

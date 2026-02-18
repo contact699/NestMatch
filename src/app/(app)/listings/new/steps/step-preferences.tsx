@@ -64,6 +64,62 @@ export function StepPreferences({ register }: StepPreferencesProps) {
         </div>
       </div>
 
+      {/* Property features */}
+      <div className="space-y-3 pt-4 border-t border-gray-200">
+        <p className="text-sm font-medium text-gray-700">
+          Property features
+        </p>
+
+        <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <input
+            type="checkbox"
+            {...register('pets_allowed')}
+            className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              Pets Allowed
+            </p>
+            <p className="text-sm text-gray-500">
+              Tenants can bring pets (dogs, cats, etc.)
+            </p>
+          </div>
+        </label>
+
+        <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <input
+            type="checkbox"
+            {...register('smoking_allowed')}
+            className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              Smoking Allowed
+            </p>
+            <p className="text-sm text-gray-500">
+              Smoking is permitted on the premises
+            </p>
+          </div>
+        </label>
+
+        <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <input
+            type="checkbox"
+            {...register('parking_included')}
+            className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <div>
+            <p className="text-sm font-medium text-gray-900">
+              Parking Included
+            </p>
+            <p className="text-sm text-gray-500">
+              A parking spot is available for tenants
+            </p>
+          </div>
+        </label>
+      </div>
+
+      {/* Special accommodations */}
       <div className="space-y-3 pt-4 border-t border-gray-200">
         <p className="text-sm font-medium text-gray-700">
           Special accommodations

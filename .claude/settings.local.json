@@ -34,7 +34,21 @@
       "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" push origin master)",
       "Bash(cd:*)",
       "Bash(pip install:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(npx next build:*)",
+      "Bash(npm audit:*)",
+      "Bash(xargs:*)",
+      "Bash(findstr:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint:*)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" status)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" diff --stat)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" log --oneline -5)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" add eslint.config.mjs package-lock.json package.json supabase/migrations/014_atomic_payment_operations.sql src/lib/client-logger.ts src/lib/hooks/use-debounce.ts src/lib/hooks/use-form-draft.ts src/app/global-error.tsx \"src/app/\\(app\\)/admin/error.tsx\" \"src/app/\\(app\\)/resources/error.tsx\" \"src/app/\\(app\\)/discover/loading.tsx\" \"src/app/\\(app\\)/groups/loading.tsx\" \"src/app/\\(app\\)/my-listings/loading.tsx\" \"src/app/\\(app\\)/settings/loading.tsx\" src/types/database.ts src/lib/api/with-handler.ts src/lib/admin.ts src/lib/api-utils.ts src/lib/audit.ts src/lib/email.ts src/lib/error-reporter.ts src/lib/jobs.ts src/lib/rate-limit.ts src/lib/webhook.ts src/lib/matching/group-matcher.ts src/lib/services/certn.ts src/lib/services/twilio.ts src/lib/supabase/middleware.ts src/lib/hooks/use-fetch.ts src/lib/hooks/use-saved-listings.ts src/app/layout.tsx)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" add \"src/app/api/\" \"src/app/\\(app\\)/\" src/components/)",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" commit -m \"$\\(cat <<''EOF''\nfeat: comprehensive 8-phase audit fix across security, type safety, performance, and UX\n\nPhase 1: Add atomic RPC functions \\(pay_expense_share, set_default_payment_method,\ncreate_expense_with_shares\\) to eliminate race conditions in financial operations.\n\nPhase 2: Fix root-cause type safety issue in HandlerContext by typing supabase as\nSupabaseClient<Database>, removing ~310 `as any` casts across 78+ files. Add\nRelationships arrays to all 40 database table types.\n\nPhase 3: Optimize N+1 conversation query from 3N+1 to 4 queries using batch lookups.\n\nPhase 4: Replace 93 console.* calls with structured logging \\(server: logger,\nclient: clientLogger\\). Add ESLint no-console rule.\n\nPhase 5: Add rate limiting to all 60 API route handlers via withApiHandler config.\n\nPhase 6: Fix ARIA accessibility in InviteModal, ListingCard, FAQAccordion,\nLoginForm, and SignupForm.\n\nPhase 7: Add sonner toast system, replace window.confirm\\(\\) with ConfirmModal in 7\npages, add error boundaries and loading skeletons.\n\nPhase 8: Add useDebounce and useFormDraft hooks, fix inconsistent error responses,\nadd service DELETE endpoint.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" push)",
+      "Bash(git stash:*)"
     ]
   }
 }

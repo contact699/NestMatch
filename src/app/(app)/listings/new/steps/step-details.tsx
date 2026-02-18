@@ -141,7 +141,7 @@ export function StepDetails({ register, errors, watch, setValue }: StepDetailsPr
             Bathroom Size (optional)
           </label>
           <select
-            {...register('bathroom_size')}
+            {...register('bathroom_size', { setValueAs: (v) => v === '' ? null : v })}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
             <option value="">Not specified</option>

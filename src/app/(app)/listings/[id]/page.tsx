@@ -26,6 +26,9 @@ import {
   Bath,
   GraduationCap,
   HandHelping,
+  PawPrint,
+  CigaretteOff,
+  Car,
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
@@ -165,6 +168,23 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
                     <GraduationCap className="h-3 w-3" />
                     Ideal for Students
+                  </Badge>
+                )}
+                {listing.pets_allowed && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-amber-100 text-amber-800">
+                    <PawPrint className="h-3 w-3" />
+                    Pets Allowed
+                  </Badge>
+                )}
+                {listing.smoking_allowed && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-gray-100 text-gray-800">
+                    Smoking Allowed
+                  </Badge>
+                )}
+                {listing.parking_included && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-blue-100 text-blue-800">
+                    <Car className="h-3 w-3" />
+                    Parking Included
                   </Badge>
                 )}
                 {!listing.is_active && (

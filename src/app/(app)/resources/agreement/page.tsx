@@ -15,6 +15,7 @@ import {
   Check,
   Download,
   Accessibility,
+  X,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -438,16 +439,25 @@ export default function AgreementGeneratorPage() {
 
       <Card variant="bordered">
         <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-              <Scale className="h-5 w-5 text-amber-600" />
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
+                <Scale className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <CardTitle>Roommate Agreement Generator</CardTitle>
+                <CardDescription>
+                  Create a customized agreement for your living situation
+                </CardDescription>
+              </div>
             </div>
-            <div>
-              <CardTitle>Roommate Agreement Generator</CardTitle>
-              <CardDescription>
-                Create a customized agreement for your living situation
-              </CardDescription>
-            </div>
+            <Link
+              href="/resources"
+              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+              aria-label="Cancel and return to resources"
+            >
+              <X className="h-5 w-5" />
+            </Link>
           </div>
         </CardHeader>
 

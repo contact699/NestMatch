@@ -186,6 +186,9 @@ export interface Database {
           help_tasks: string[] | null
           help_details: string | null
           ideal_for_students: boolean
+          pets_allowed: boolean
+          smoking_allowed: boolean
+          parking_included: boolean
           is_active: boolean
           is_verified: boolean
           views_count: number
@@ -221,6 +224,9 @@ export interface Database {
           help_tasks?: string[] | null
           help_details?: string | null
           ideal_for_students?: boolean
+          pets_allowed?: boolean
+          smoking_allowed?: boolean
+          parking_included?: boolean
           is_active?: boolean
           is_verified?: boolean
           views_count?: number
@@ -256,6 +262,9 @@ export interface Database {
           help_tasks?: string[] | null
           help_details?: string | null
           ideal_for_students?: boolean
+          pets_allowed?: boolean
+          smoking_allowed?: boolean
+          parking_included?: boolean
           is_active?: boolean
           is_verified?: boolean
           views_count?: number

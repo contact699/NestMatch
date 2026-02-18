@@ -11,6 +11,14 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
+      // Sync email verification status to profiles table
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email_confirmed_at) {
+        await supabase
+          .from('profiles')
+          .update({ email_verified: true })
+          .eq('user_id', user.id)
+      }
       return NextResponse.redirect(`${origin}${redirect}`)
     }
   }
