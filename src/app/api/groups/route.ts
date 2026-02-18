@@ -3,18 +3,20 @@ import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
 import { logger } from '@/lib/logger'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const createGroupSchema = z.object({
-  name: z.string().min(1).max(255),
-  description: z.string().max(2000).optional().nullable(),
+  name: z.string().trim().min(1).max(255),
+  description: z.string().trim().max(2000).optional().nullable(),
   combined_budget_min: z.number().positive().optional().nullable(),
   combined_budget_max: z.number().positive().optional().nullable(),
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
   preferred_cities: z.array(z.string()).optional().nullable(),
   budget_contribution: z.number().positive().optional().nullable(),
+  is_public: z.boolean().default(true),
 }).refine(
   (data) => {
-    if (data.combined_budget_min && data.combined_budget_max) {
+    if (data.combined_budget_min != null && data.combined_budget_max != null) {
       return data.combined_budget_min <= data.combined_budget_max
     }
     return true
@@ -103,10 +105,24 @@ export const POST = withApiHandler(
       combined_budget_max,
       target_move_date,
       preferred_cities,
+      is_public,
     } = groupData
 
-    // Create group (include created_by for RLS policy)
-    const { data: group, error: groupError } = await supabase
+    // Use service role for writes when available to avoid RLS edge cases during bootstrap.
+    const writeClient = (() => {
+      try {
+        return createServiceClient()
+      } catch {
+        logger.warn('Service client unavailable for group creation; falling back to user-scoped client', {
+          requestId,
+          userId: userId!,
+        })
+        return supabase
+      }
+    })()
+
+    // Create group (include created_by for policy checks and ownership)
+    const { data: group, error: groupError } = await writeClient
       .from('co_renter_groups')
       .insert({
         name,
@@ -116,7 +132,7 @@ export const POST = withApiHandler(
         target_move_date: target_move_date || null,
         preferred_cities: preferred_cities || null,
         status: 'forming',
-        is_public: false,
+        is_public,
         group_size_min: 2,
         group_size_max: 5,
         created_by: userId!,
@@ -130,7 +146,7 @@ export const POST = withApiHandler(
     }
 
     // Add creator as admin member
-    const { error: memberError } = await supabase
+    const { error: memberError } = await writeClient
       .from('co_renter_members')
       .insert({
         group_id: group.id,
@@ -143,7 +159,7 @@ export const POST = withApiHandler(
     if (memberError) {
       logger.error('Member creation error', memberError instanceof Error ? memberError : new Error(String(memberError)))
       // Rollback group creation
-      await supabase
+      await writeClient
         .from('co_renter_groups')
         .delete()
         .eq('id', group.id)
@@ -152,7 +168,7 @@ export const POST = withApiHandler(
     }
 
     // Fetch complete group with members
-    const { data: completeGroup } = await supabase
+    const { data: completeGroup } = await writeClient
       .from('co_renter_groups')
       .select(`
         *,

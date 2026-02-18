@@ -125,6 +125,9 @@ export default function SearchPage() {
         const noCreditOk = searchParams.get('noCreditOk')
         const idealForStudents = searchParams.get('idealForStudents')
         const assistanceRequired = searchParams.get('assistanceRequired')
+        const petsAllowed = searchParams.get('petsAllowed')
+        const noSmoking = searchParams.get('noSmoking')
+        const parkingIncluded = searchParams.get('parkingIncluded')
         const q = searchParams.get('q')
 
         if (city) params.set('city', city)
@@ -137,6 +140,9 @@ export default function SearchPage() {
         if (noCreditOk) params.set('noCreditOk', noCreditOk)
         if (idealForStudents) params.set('idealForStudents', idealForStudents)
         if (assistanceRequired) params.set('assistanceRequired', assistanceRequired)
+        if (petsAllowed) params.set('petsAllowed', petsAllowed)
+        if (noSmoking) params.set('noSmoking', noSmoking)
+        if (parkingIncluded) params.set('parkingIncluded', parkingIncluded)
         if (q) params.set('q', q)
 
         const queryString = params.toString()

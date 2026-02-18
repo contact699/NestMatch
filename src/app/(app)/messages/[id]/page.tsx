@@ -64,6 +64,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [isSending, setIsSending] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [showMenu, setShowMenu] = useState(false)
   const [showReportModal, setShowReportModal] = useState(false)
@@ -72,6 +73,16 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  const mergeMessages = (existing: Message[], incoming: Message[]) => {
+    const byId = new Map<string, Message>()
+    for (const msg of existing) byId.set(msg.id, msg)
+    for (const msg of incoming) byId.set(msg.id, msg)
+
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    )
+  }
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -114,7 +125,7 @@ export default function ChatPage() {
       const msgData = await msgResponse.json()
 
       if (msgResponse.ok) {
-        setMessages(msgData.messages)
+        setMessages((prev) => mergeMessages(prev, msgData.messages || []))
       }
 
       setIsLoading(false)
@@ -133,22 +144,12 @@ export default function ChatPage() {
           (payload) => {
             const newMsg = payload.new as Message
 
-            // Skip messages from current user - they're handled by the API response
-            // This prevents race conditions between realtime and API response
-            if (newMsg.sender_id === user.id) {
-              return
+            setMessages((prev) => mergeMessages(prev, [newMsg]))
+
+            // Mark as read since it's from the other user
+            if (newMsg.sender_id !== user.id) {
+              fetch(`/api/messages/${newMsg.id}/read`, { method: 'PUT' })
             }
-
-            setMessages((prev) => {
-              // Avoid duplicates
-              if (prev.some((m) => m.id === newMsg.id)) {
-                return prev
-              }
-              return [...prev, newMsg]
-            })
-
-            // Mark as read since it's from other user
-            fetch(`/api/messages/${newMsg.id}/read`, { method: 'PUT' })
           }
         )
         .subscribe()
@@ -167,6 +168,7 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!newMessage.trim() || isSending) return
 
+    setSendError(null)
     setIsSending(true)
     const messageContent = newMessage.trim()
     setNewMessage('')
@@ -180,7 +182,7 @@ export default function ChatPage() {
       read_at: null,
       created_at: new Date().toISOString(),
     }
-    setMessages((prev) => [...prev, optimisticMessage])
+    setMessages((prev) => mergeMessages(prev, [optimisticMessage]))
 
     try {
       const response = await fetch(`/api/conversations/${conversationId}/messages`, {
@@ -190,22 +192,33 @@ export default function ChatPage() {
       })
 
       if (!response.ok) {
+        let errorMessage = 'Failed to send message'
+        try {
+          const errData = await response.json()
+          if (typeof errData?.error === 'string') {
+            errorMessage = errData.error
+          }
+        } catch {}
+
         // Remove optimistic message on failure
         setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id))
         setNewMessage(messageContent)
+        setSendError(errorMessage)
       } else {
-        // Success - remove optimistic message, real-time subscription will add the real one
+        // Success - reconcile optimistic message with persisted message id.
         const data = await response.json()
         if (data.message) {
-          setMessages((prev) =>
-            prev.map((m) => m.id === optimisticMessage.id ? data.message : m)
-          )
+          setMessages((prev) => {
+            const withoutTemp = prev.filter((m) => m.id !== optimisticMessage.id)
+            return mergeMessages(withoutTemp, [data.message])
+          })
         }
       }
     } catch {
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id))
       setNewMessage(messageContent)
+      setSendError('Failed to send message. Please try again.')
     } finally {
       setIsSending(false)
       inputRef.current?.focus()
@@ -490,7 +503,10 @@ export default function ChatPage() {
           <textarea
             ref={inputRef}
             value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
+            onChange={(e) => {
+              setNewMessage(e.target.value)
+              if (sendError) setSendError(null)
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
@@ -522,6 +538,11 @@ export default function ChatPage() {
             )}
           </Button>
         </div>
+        {sendError && (
+          <div className="max-w-3xl mx-auto mt-2 text-sm text-red-600">
+            {sendError}
+          </div>
+        )}
       </div>
 
       {/* Report Modal */}
