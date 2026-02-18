@@ -2,10 +2,6 @@
 
 import { logger } from '@/lib/logger'
 
-const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID
-const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN
-const TWILIO_VERIFY_SERVICE_SID = process.env.TWILIO_VERIFY_SERVICE_SID
-
 interface TwilioError {
   code: number
   message: string
@@ -17,26 +13,72 @@ interface VerificationResponse {
   error?: string
 }
 
-function getTwilioAuth(): string {
-  return Buffer.from(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`).toString('base64')
+interface TwilioConfig {
+  accountSid: string
+  authToken: string
+  verifyServiceSid: string
+}
+
+function cleanEnv(value?: string): string {
+  if (!value) return ''
+  return value.trim().replace(/^['"]|['"]$/g, '')
+}
+
+function getTwilioConfig():
+  | { ok: true; config: TwilioConfig }
+  | { ok: false; missing: string[]; error: string } {
+  const accountSid = cleanEnv(process.env.TWILIO_ACCOUNT_SID)
+  const authToken = cleanEnv(process.env.TWILIO_AUTH_TOKEN)
+  // Support a common alias as fallback.
+  const verifyServiceSid = cleanEnv(
+    process.env.TWILIO_VERIFY_SERVICE_SID || process.env.TWILIO_SERVICE_SID
+  )
+
+  const missing: string[] = []
+  if (!accountSid) missing.push('TWILIO_ACCOUNT_SID')
+  if (!authToken) missing.push('TWILIO_AUTH_TOKEN')
+  if (!verifyServiceSid) missing.push('TWILIO_VERIFY_SERVICE_SID')
+
+  if (missing.length > 0) {
+    return {
+      ok: false,
+      missing,
+      error: `Phone verification is not configured. Missing: ${missing.join(', ')}`,
+    }
+  }
+
+  return {
+    ok: true,
+    config: { accountSid, authToken, verifyServiceSid },
+  }
+}
+
+function getTwilioAuth(accountSid: string, authToken: string): string {
+  return Buffer.from(`${accountSid}:${authToken}`).toString('base64')
 }
 
 export async function sendVerificationCode(phoneNumber: string): Promise<VerificationResponse> {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
-    logger.error('Twilio credentials not configured')
-    return { success: false, error: 'Phone verification is not yet available. Please try again later.' }
+  const configResult = getTwilioConfig()
+  if (!configResult.ok) {
+    logger.error(
+      'Twilio credentials not configured',
+      new Error(configResult.error),
+      { missing: configResult.missing }
+    )
+    return { success: false, error: configResult.error }
   }
+  const { accountSid, authToken, verifyServiceSid } = configResult.config
 
   // Normalize phone number (ensure it starts with +)
   const normalizedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber.replace(/\D/g, '')}`
 
   try {
     const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${TWILIO_VERIFY_SERVICE_SID}/Verifications`,
+      `https://verify.twilio.com/v2/Services/${verifyServiceSid}/Verifications`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${getTwilioAuth()}`,
+          'Authorization': `Basic ${getTwilioAuth(accountSid, authToken)}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
@@ -70,21 +112,27 @@ export async function sendVerificationCode(phoneNumber: string): Promise<Verific
 }
 
 export async function verifyCode(phoneNumber: string, code: string): Promise<VerificationResponse> {
-  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_VERIFY_SERVICE_SID) {
-    logger.error('Twilio credentials not configured')
-    return { success: false, error: 'Phone verification is not yet available. Please try again later.' }
+  const configResult = getTwilioConfig()
+  if (!configResult.ok) {
+    logger.error(
+      'Twilio credentials not configured',
+      new Error(configResult.error),
+      { missing: configResult.missing }
+    )
+    return { success: false, error: configResult.error }
   }
+  const { accountSid, authToken, verifyServiceSid } = configResult.config
 
   // Normalize phone number
   const normalizedPhone = phoneNumber.startsWith('+') ? phoneNumber : `+1${phoneNumber.replace(/\D/g, '')}`
 
   try {
     const response = await fetch(
-      `https://verify.twilio.com/v2/Services/${TWILIO_VERIFY_SERVICE_SID}/VerificationCheck`,
+      `https://verify.twilio.com/v2/Services/${verifyServiceSid}/VerificationCheck`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Basic ${getTwilioAuth()}`,
+          'Authorization': `Basic ${getTwilioAuth(accountSid, authToken)}`,
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({
