@@ -111,41 +111,63 @@ export const POST = withApiHandler(
       content,
     }
 
-    // Insert message with a safe fallback for environments with stale/missing RLS policies.
-    let message: any = null
-    let insertError: any = null
+    // Use service client for writes after participant authorization to avoid
+    // environment-specific RLS drift and to allow profile self-healing.
+    const writeClient = (() => {
+      try {
+        return createServiceClient()
+      } catch {
+        logger.warn('Service client unavailable for message send; falling back to user-scoped client', {
+          requestId,
+          userId: userId!,
+          conversationId,
+        })
+        return supabase
+      }
+    })()
 
-    const primaryInsert = await supabase
+    // Self-heal missing profile rows (sender_id FK on messages depends on profiles.user_id).
+    const { data: senderProfile } = await writeClient
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', userId!)
+      .maybeSingle()
+
+    if (!senderProfile) {
+      const { data: authUser } = await supabase.auth.getUser()
+      const email = authUser.user?.email || `${userId}@example.com`
+      const emailVerified = !!authUser.user?.email_confirmed_at
+
+      const { error: profileInsertError } = await writeClient
+        .from('profiles')
+        .upsert(
+          {
+            user_id: userId!,
+            email,
+            email_verified: emailVerified,
+          },
+          { onConflict: 'user_id' }
+        )
+
+      if (profileInsertError) {
+        logger.error(
+          'Failed to restore missing sender profile before message insert',
+          new Error(profileInsertError.message || 'Unknown profile insert error'),
+          {
+            requestId,
+            userId: userId!,
+            conversationId,
+            errorCode: profileInsertError.code,
+          }
+        )
+      }
+    }
+
+    const { data: message, error: insertError } = await writeClient
       .from('messages')
       .insert(insertPayload)
       .select()
       .single()
-    message = primaryInsert.data
-    insertError = primaryInsert.error
-
-    const isRlsError =
-      !!insertError &&
-      (insertError.code === '42501' || /row-level security/i.test(insertError.message || ''))
-
-    if (isRlsError) {
-      try {
-        const serviceSupabase = createServiceClient()
-        const fallbackInsert = await serviceSupabase
-          .from('messages')
-          .insert(insertPayload)
-          .select()
-          .single()
-
-        message = fallbackInsert.data
-        insertError = fallbackInsert.error
-      } catch (fallbackErr) {
-        logger.error(
-          'Message insert fallback failed',
-          fallbackErr instanceof Error ? fallbackErr : new Error(String(fallbackErr)),
-          { requestId, userId: userId!, conversationId }
-        )
-      }
-    }
 
     if (insertError) {
       logger.error(
@@ -166,7 +188,7 @@ export const POST = withApiHandler(
     }
 
     // Update conversation timestamp (fire and forget)
-    void supabase
+    void writeClient
       .from('conversations')
       .update({ last_message_at: new Date().toISOString() })
       .eq('id', conversationId)
