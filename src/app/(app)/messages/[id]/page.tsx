@@ -49,6 +49,7 @@ interface Conversation {
     profile_photo: string | null
     verification_level: 'basic' | 'verified' | 'trusted'
     bio: string | null
+    is_online?: boolean
   } | null
   listings: {
     id: string
@@ -76,6 +77,8 @@ export default function ChatPage() {
   const [showReportModal, setShowReportModal] = useState(false)
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [isBlocking, setIsBlocking] = useState(false)
+  const [isOnline, setIsOnline] = useState(false)
+  const [otherUserOnline, setOtherUserOnline] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -115,6 +118,14 @@ export default function ChatPage() {
 
       setCurrentUserId(user.id)
 
+      // Fetch current user's online status
+      const { data: myProfile } = await supabase
+        .from('profiles')
+        .select('is_online')
+        .eq('user_id', user.id)
+        .single()
+      if (myProfile) setIsOnline(myProfile.is_online)
+
       // Load conversation details
       const convResponse = await fetch(`/api/conversations/${conversationId}`)
       const convData = await convResponse.json()
@@ -125,6 +136,10 @@ export default function ChatPage() {
       }
 
       setConversation(convData.conversation)
+
+      if (convData.conversation?.other_profile?.is_online !== undefined) {
+        setOtherUserOnline(convData.conversation.other_profile.is_online)
+      }
 
       // Load messages
       const msgResponse = await fetch(`/api/conversations/${conversationId}/messages`)
@@ -265,6 +280,21 @@ export default function ChatPage() {
     }
   }
 
+  const toggleOnlineStatus = async () => {
+    const newStatus = !isOnline
+    setIsOnline(newStatus) // Optimistic update
+    try {
+      const res = await fetch('/api/profile/status', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_online: newStatus }),
+      })
+      if (!res.ok) setIsOnline(!newStatus) // Revert on failure
+    } catch {
+      setIsOnline(!newStatus) // Revert on error
+    }
+  }
+
   const groupMessagesByDate = (messages: Message[]) => {
     const groups: { date: string; messages: Message[] }[] = []
     let currentDate = ''
@@ -325,6 +355,9 @@ export default function ChatPage() {
                 <h1 className="font-semibold text-gray-900 truncate">
                   {conversation.other_profile?.name || 'Anonymous'}
                 </h1>
+                {otherUserOnline && (
+                  <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
+                )}
                 <VerificationBadge
                   level={conversation.other_profile?.verification_level || 'basic'}
                   size="sm"
@@ -432,6 +465,22 @@ export default function ChatPage() {
           </div>
         </div>
       )}
+
+      {/* Online Status Bar */}
+      <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-4 py-2">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
+            <span className="text-gray-600">{isOnline ? 'Online' : 'Offline'}</span>
+          </div>
+          <button
+            onClick={toggleOnlineStatus}
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            Go {isOnline ? 'offline' : 'online'}
+          </button>
+        </div>
+      </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-4 py-4">

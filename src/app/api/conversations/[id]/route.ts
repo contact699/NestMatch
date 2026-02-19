@@ -40,7 +40,7 @@ export const GET = withApiHandler(
     if (otherParticipantId) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, user_id, name, profile_photo, verification_level, bio')
+        .select('id, user_id, name, profile_photo, verification_level, bio, is_online')
         .eq('user_id', otherParticipantId)
         .single()
       otherProfile = profile
