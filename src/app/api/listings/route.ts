@@ -156,8 +156,9 @@ export const POST = withApiHandler(
     let listingData: z.infer<typeof listingSchema>
     try {
       listingData = await parseBody(req, listingSchema)
-    } catch (e) {
-      throw new ValidationError('Invalid listing data')
+    } catch (e: any) {
+      const details = e?.issues?.map((i: any) => `${i.path?.join('.')}: ${i.message}`).join('; ')
+      throw new ValidationError(details ? `Validation failed: ${details}` : 'Invalid listing data')
     }
 
     // Use service client for writes when available to avoid RLS edge cases.
@@ -207,7 +208,13 @@ export const POST = withApiHandler(
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      return apiResponse(
+        { error: `Failed to create listing: ${error.message || 'Unknown database error'}` },
+        500,
+        requestId
+      )
+    }
 
     return apiResponse({ listing }, 201, requestId)
   },

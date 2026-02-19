@@ -38,12 +38,24 @@ export const GET = withApiHandler(
 
     let otherProfile = null
     if (otherParticipantId) {
-      const { data: profile } = await supabase
+      // Try with is_online first (requires migration), fall back without it
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('id, user_id, name, profile_photo, verification_level, bio, is_online')
         .eq('user_id', otherParticipantId)
         .single()
-      otherProfile = profile
+
+      if (profileError && profileError.message?.includes('is_online')) {
+        // is_online column doesn't exist yet — retry without it
+        const { data: fallbackProfile } = await supabase
+          .from('profiles')
+          .select('id, user_id, name, profile_photo, verification_level, bio')
+          .eq('user_id', otherParticipantId)
+          .single()
+        otherProfile = fallbackProfile
+      } else {
+        otherProfile = profile
+      }
     }
 
     return apiResponse({
