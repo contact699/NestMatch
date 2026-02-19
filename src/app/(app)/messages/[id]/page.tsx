@@ -21,6 +21,7 @@ import {
   Ban,
   Check,
   CheckCheck,
+  Paperclip,
 } from 'lucide-react'
 import { ReportModal } from '@/components/ui/report-modal'
 import { ConfirmModal } from '@/components/ui/modal'
@@ -82,6 +83,8 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const mergeMessages = (existing: Message[], incoming: Message[]) => {
     const byId = new Map<string, Message>()
@@ -277,6 +280,63 @@ export default function ChatPage() {
       clientLogger.error('Block error', err)
       setIsBlocking(false)
       setShowBlockConfirm(false)
+    }
+  }
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsUploading(true)
+    setSendError(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/upload?bucket=chat-attachments', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Upload failed')
+      }
+
+      const { url } = await response.json()
+
+      // Determine attachment type
+      let attachmentType: 'image' | 'video' | 'document' = 'document'
+      if (file.type.startsWith('image/')) attachmentType = 'image'
+      else if (file.type.startsWith('video/')) attachmentType = 'video'
+
+      // Send as message with attachment
+      const msgResponse = await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: '',
+          attachment_url: url,
+          attachment_type: attachmentType,
+          attachment_name: file.name,
+        }),
+      })
+
+      if (!msgResponse.ok) {
+        const errData = await msgResponse.json()
+        throw new Error(errData.error || 'Failed to send attachment')
+      }
+
+      const data = await msgResponse.json()
+      if (data.message) {
+        setMessages((prev) => mergeMessages(prev, [data.message]))
+      }
+    } catch (err) {
+      setSendError(err instanceof Error ? err.message : 'Failed to upload file')
+    } finally {
+      setIsUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
@@ -526,9 +586,41 @@ export default function ChatPage() {
                             }
                           `}
                         >
-                          <p className="whitespace-pre-wrap break-words">
-                            {message.content}
-                          </p>
+                          {message.attachment_url && (
+                            <div className="mb-2">
+                              {message.attachment_type === 'image' || message.attachment_type === 'gif' ? (
+                                <img
+                                  src={message.attachment_url}
+                                  alt={message.attachment_name || 'Image'}
+                                  className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer"
+                                  onClick={() => window.open(message.attachment_url!, '_blank')}
+                                />
+                              ) : message.attachment_type === 'video' ? (
+                                <video
+                                  src={message.attachment_url}
+                                  controls
+                                  className="max-w-full rounded-lg max-h-64"
+                                />
+                              ) : (
+                                <a
+                                  href={message.attachment_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                    isOwn ? 'bg-blue-500/30' : 'bg-gray-200'
+                                  }`}
+                                >
+                                  <Paperclip className="h-4 w-4 flex-shrink-0" />
+                                  <span className="text-sm truncate">{message.attachment_name || 'Document'}</span>
+                                </a>
+                              )}
+                            </div>
+                          )}
+                          {message.content && (
+                            <p className="whitespace-pre-wrap break-words">
+                              {message.content}
+                            </p>
+                          )}
                           <p
                             className={`text-xs mt-1 ${
                               isOwn ? 'text-blue-200' : 'text-gray-400'
@@ -565,6 +657,24 @@ export default function ChatPage() {
       {/* Input */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            className="hidden"
+            accept="image/*,video/mp4,video/webm,application/pdf"
+            onChange={handleFileSelect}
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+          >
+            {isUploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Paperclip className="h-5 w-5" />
+            )}
+          </button>
           <textarea
             ref={inputRef}
             value={newMessage}

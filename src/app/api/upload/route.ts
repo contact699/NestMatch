@@ -36,9 +36,11 @@ export async function POST(request: NextRequest) {
       return rateLimitResponse(rateLimitResult)
     }
 
+    const { searchParams } = new URL(request.url)
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const bucket = formData.get('bucket') as string || 'listing-photos'
+    // Allow bucket via query param or form field, default to listing-photos
+    const bucket = searchParams.get('bucket') || formData.get('bucket') as string || 'listing-photos'
 
     if (!file) {
       return NextResponse.json(
@@ -47,20 +49,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate file type
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    // Validate file type — chat-attachments allows additional types
+    const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+    const chatExtraTypes = ['video/mp4', 'video/webm', 'application/pdf']
+    const allowedTypes = bucket === 'chat-attachments'
+      ? [...imageTypes, ...chatExtraTypes]
+      : imageTypes
+
     if (!allowedTypes.includes(file.type)) {
+      const typeLabel = bucket === 'chat-attachments'
+        ? 'Only JPEG, PNG, WebP, GIF, MP4, WebM, and PDF are allowed.'
+        : 'Only JPEG, PNG, WebP, and GIF are allowed.'
       return NextResponse.json(
-        { error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.', requestId },
+        { error: `Invalid file type. ${typeLabel}`, requestId },
         { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }
 
-    // Validate file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024
+    // Validate file size — 25MB for chat-attachments, 5MB otherwise
+    const maxSize = bucket === 'chat-attachments' ? 25 * 1024 * 1024 : 5 * 1024 * 1024
+    const maxLabel = bucket === 'chat-attachments' ? '25MB' : '5MB'
     if (file.size > maxSize) {
       return NextResponse.json(
-        { error: 'File too large. Maximum size is 5MB.', requestId },
+        { error: `File too large. Maximum size is ${maxLabel}.`, requestId },
         { status: 400, headers: { 'X-Request-ID': requestId } }
       )
     }

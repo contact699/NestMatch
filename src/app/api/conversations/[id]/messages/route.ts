@@ -6,8 +6,14 @@ import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
 
 const messageSchema = z.object({
-  content: z.string().min(1, 'Message cannot be empty').max(5000),
-})
+  content: z.string().max(5000).default(''),
+  attachment_url: z.string().url().optional(),
+  attachment_type: z.enum(['image', 'video', 'document', 'gif']).optional(),
+  attachment_name: z.string().max(255).optional(),
+}).refine(
+  (data) => data.content.trim().length > 0 || data.attachment_url,
+  { message: 'Message must have content or an attachment' }
+)
 
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
@@ -115,10 +121,9 @@ export const POST = withApiHandler(
     }
 
     // Validate input
-    let content: string
+    let body: z.infer<typeof messageSchema>
     try {
-      const body = await parseBody(req, messageSchema)
-      content = body.content
+      body = await parseBody(req, messageSchema)
     } catch (e) {
       throw new ValidationError('Invalid message content')
     }
@@ -126,7 +131,10 @@ export const POST = withApiHandler(
     const insertPayload = {
       conversation_id: conversationId,
       sender_id: userId!,
-      content,
+      content: body.content || '',
+      attachment_url: body.attachment_url || null,
+      attachment_type: body.attachment_type || null,
+      attachment_name: body.attachment_name || null,
     }
 
     // Use service client for writes after participant authorization to avoid
