@@ -89,6 +89,11 @@ export const POST = withApiHandler(
       .single()
 
     if (convError || !conversation) {
+      logger.error('Conversation lookup failed for message send', convError instanceof Error ? convError : new Error(String(convError || 'not found')), {
+        requestId,
+        userId: userId!,
+        conversationId,
+      })
       throw new NotFoundError('Conversation', conversationId)
     }
 
@@ -158,6 +163,8 @@ export const POST = withApiHandler(
             userId: userId!,
             conversationId,
             errorCode: profileInsertError.code,
+            errorDetails: profileInsertError.details,
+            usingServiceClient: writeClient !== supabase,
           }
         )
       }
@@ -178,10 +185,13 @@ export const POST = withApiHandler(
           userId: userId!,
           conversationId,
           errorCode: insertError.code,
+          errorDetails: insertError.details,
+          errorHint: insertError.hint,
+          usingServiceClient: writeClient !== supabase,
         }
       )
       return apiResponse(
-        { error: 'Could not send message right now. Please try again.' },
+        { error: `Could not send message: ${insertError.message || 'Unknown error'}. Please try again.` },
         500,
         requestId
       )
