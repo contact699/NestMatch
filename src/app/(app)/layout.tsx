@@ -14,7 +14,7 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar user={user} />
-      <main>{children}</main>
+      <main className="relative z-0">{children}</main>
     </div>
   )
 }

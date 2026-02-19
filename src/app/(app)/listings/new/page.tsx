@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import { useForm } from 'react-hook-form'
@@ -84,11 +84,20 @@ export default function NewListingPage() {
     defaultValues: draft as ListingFormData,
   })
 
-  // Persist form values to draft on every change
-  const watchedValues = watch()
+  // Persist form values to draft on change (using subscription to avoid re-render loops)
+  const draftTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => {
-    setDraft(watchedValues)
-  }, [watchedValues, setDraft])
+    const subscription = watch((values) => {
+      if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current)
+      draftTimeoutRef.current = setTimeout(() => {
+        setDraft(values as Partial<ListingFormData>)
+      }, 500)
+    })
+    return () => {
+      subscription.unsubscribe()
+      if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current)
+    }
+  }, [watch, setDraft])
 
   const validateStep = async () => {
     let fieldsToValidate: (keyof ListingFormData)[] = []
