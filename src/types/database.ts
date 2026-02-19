@@ -30,6 +30,8 @@ export interface Database {
           city: string | null
           province: string | null
           is_admin: boolean
+          is_online: boolean
+          last_seen_at: string | null
           created_at: string
           updated_at: string
         }
@@ -53,6 +55,8 @@ export interface Database {
           city?: string | null
           province?: string | null
           is_admin?: boolean
+          is_online?: boolean
+          last_seen_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -76,6 +80,8 @@ export interface Database {
           city?: string | null
           province?: string | null
           is_admin?: boolean
+          is_online?: boolean
+          last_seen_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -342,6 +348,51 @@ export interface Database {
         }
         Relationships: []
       }
+      chat_events: {
+        Row: {
+          id: string
+          conversation_id: string
+          created_by: string
+          title: string
+          description: string | null
+          event_date: string
+          start_time: string
+          end_time: string | null
+          location: string | null
+          status: 'proposed' | 'accepted' | 'declined' | 'cancelled'
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          conversation_id: string
+          created_by: string
+          title: string
+          description?: string | null
+          event_date: string
+          start_time: string
+          end_time?: string | null
+          location?: string | null
+          status?: 'proposed' | 'accepted' | 'declined' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          conversation_id?: string
+          created_by?: string
+          title?: string
+          description?: string | null
+          event_date?: string
+          start_time?: string
+          end_time?: string | null
+          location?: string | null
+          status?: 'proposed' | 'accepted' | 'declined' | 'cancelled'
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           id: string
@@ -349,6 +400,10 @@ export interface Database {
           sender_id: string
           content: string
           read_at: string | null
+          status: 'sent' | 'delivered' | 'read'
+          attachment_url: string | null
+          attachment_type: 'image' | 'video' | 'document' | 'gif' | null
+          attachment_name: string | null
           created_at: string
         }
         Insert: {
@@ -357,6 +412,10 @@ export interface Database {
           sender_id: string
           content: string
           read_at?: string | null
+          status?: 'sent' | 'delivered' | 'read'
+          attachment_url?: string | null
+          attachment_type?: 'image' | 'video' | 'document' | 'gif' | null
+          attachment_name?: string | null
           created_at?: string
         }
         Update: {
@@ -365,6 +424,10 @@ export interface Database {
           sender_id?: string
           content?: string
           read_at?: string | null
+          status?: 'sent' | 'delivered' | 'read'
+          attachment_url?: string | null
+          attachment_type?: 'image' | 'video' | 'document' | 'gif' | null
+          attachment_name?: string | null
           created_at?: string
         }
         Relationships: []
@@ -2041,6 +2104,7 @@ export type Listing = Database['public']['Tables']['listings']['Row']
 export type SeekingProfile = Database['public']['Tables']['seeking_profiles']['Row']
 export type LifestyleResponses = Database['public']['Tables']['lifestyle_responses']['Row']
 export type Conversation = Database['public']['Tables']['conversations']['Row']
+export type ChatEvent = Database['public']['Tables']['chat_events']['Row']
 export type Message = Database['public']['Tables']['messages']['Row']
 export type Verification = Database['public']['Tables']['verifications']['Row']
 export type Report = Database['public']['Tables']['reports']['Row']
