@@ -123,17 +123,15 @@ export const POST = withApiHandler(
       throw new ValidationError('Invalid message content')
     }
 
-    const insertPayload: Record<string, unknown> = {
+    const insertPayload = {
       conversation_id: conversationId,
       sender_id: userId!,
       content: body.content || '',
-    }
-
-    // Only include attachment fields when present (columns may not exist if migration not applied)
-    if (body.attachment_url) {
-      insertPayload.attachment_url = body.attachment_url
-      insertPayload.attachment_type = body.attachment_type || null
-      insertPayload.attachment_name = body.attachment_name || null
+      ...(body.attachment_url ? {
+        attachment_url: body.attachment_url,
+        attachment_type: body.attachment_type || null,
+        attachment_name: body.attachment_name || null,
+      } : {}),
     }
 
     // Use service client for writes after participant authorization to avoid
