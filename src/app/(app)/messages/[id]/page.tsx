@@ -22,6 +22,7 @@ import {
   Check,
   CheckCheck,
   Paperclip,
+  Smile,
 } from 'lucide-react'
 import { ReportModal } from '@/components/ui/report-modal'
 import { ConfirmModal } from '@/components/ui/modal'
@@ -62,6 +63,13 @@ interface Conversation {
   } | null
 }
 
+const EMOJI_CATEGORIES: Record<string, string[]> = {
+  'Smileys': ['😀', '😂', '🥹', '😊', '😍', '🤔', '😢', '😡', '🥳', '😎', '🤗', '😴', '🤮', '🫡', '🫠'],
+  'Gestures': ['👍', '👎', '👋', '🤝', '✌️', '🤞', '💪', '👏', '🙌', '🤙', '🫶', '🙏', '✋', '🤚', '👊'],
+  'Hearts': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💕', '💖', '💗', '💘', '💝', '🔥', '✨'],
+  'Objects': ['🏠', '🔑', '📦', '🛋️', '🚿', '🍳', '🧹', '💰', '📅', '📍', '🎉', '🎂', '🎁', '📸', '🎵'],
+}
+
 export default function ChatPage() {
   const router = useRouter()
   const params = useParams()
@@ -79,6 +87,7 @@ export default function ChatPage() {
   const [showBlockConfirm, setShowBlockConfirm] = useState(false)
   const [isBlocking, setIsBlocking] = useState(false)
   const [isOnline, setIsOnline] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [otherUserOnline, setOtherUserOnline] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -192,6 +201,7 @@ export default function ChatPage() {
   const handleSend = async () => {
     if (!newMessage.trim() || isSending) return
 
+    setShowEmojiPicker(false)
     setSendError(null)
     setIsSending(true)
     const messageContent = newMessage.trim()
@@ -337,6 +347,23 @@ export default function ChatPage() {
     } finally {
       setIsUploading(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const insertEmoji = (emoji: string) => {
+    const textarea = inputRef.current
+    if (textarea) {
+      const start = textarea.selectionStart
+      const end = textarea.selectionEnd
+      const newValue = newMessage.substring(0, start) + emoji + newMessage.substring(end)
+      setNewMessage(newValue)
+      // Set cursor position after emoji
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + emoji.length
+        textarea.focus()
+      }, 0)
+    } else {
+      setNewMessage((prev) => prev + emoji)
     }
   }
 
@@ -654,6 +681,33 @@ export default function ChatPage() {
         </div>
       </div>
 
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+          <div className="max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+              {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
+                <div key={category}>
+                  <p className="text-xs font-medium text-gray-500 mb-1">{category}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {emojis.map((emoji) => (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() => insertEmoji(emoji)}
+                        className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
@@ -674,6 +728,13 @@ export default function ChatPage() {
             ) : (
               <Paperclip className="h-5 w-5" />
             )}
+          </button>
+          <button
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+            type="button"
+          >
+            <Smile className="h-5 w-5" />
           </button>
           <textarea
             ref={inputRef}
