@@ -23,6 +23,7 @@ import {
   CheckCheck,
   Paperclip,
   Smile,
+  Calendar as CalendarIcon,
 } from 'lucide-react'
 import { ReportModal } from '@/components/ui/report-modal'
 import { ConfirmModal } from '@/components/ui/modal'
@@ -89,6 +90,16 @@ export default function ChatPage() {
   const [isOnline, setIsOnline] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showGifPicker, setShowGifPicker] = useState(false)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [eventForm, setEventForm] = useState({
+    title: '',
+    event_date: '',
+    start_time: '',
+    end_time: '',
+    location: '',
+    description: '',
+  })
+  const [isCreatingEvent, setIsCreatingEvent] = useState(false)
   const [gifSearchQuery, setGifSearchQuery] = useState('')
   const [gifs, setGifs] = useState<Array<{ id: string; url: string; preview: string }>>([])
   const [isLoadingGifs, setIsLoadingGifs] = useState(false)
@@ -452,6 +463,44 @@ export default function ChatPage() {
     }
   }
 
+  const handleCreateEvent = async () => {
+    if (!eventForm.title.trim() || !eventForm.event_date || !eventForm.start_time) return
+
+    setIsCreatingEvent(true)
+    try {
+      const res = await fetch(`/api/conversations/${conversationId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: eventForm.title.trim(),
+          event_date: eventForm.event_date,
+          start_time: eventForm.start_time,
+          end_time: eventForm.end_time || undefined,
+          location: eventForm.location.trim() || undefined,
+          description: eventForm.description.trim() || undefined,
+        }),
+      })
+
+      if (!res.ok) throw new Error('Failed to create event')
+
+      // Send a message about the event
+      await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `Proposed a meetup: ${eventForm.title} on ${eventForm.event_date} at ${eventForm.start_time}${eventForm.location ? ` -- ${eventForm.location}` : ''}`,
+        }),
+      })
+
+      setShowScheduleModal(false)
+      setEventForm({ title: '', event_date: '', start_time: '', end_time: '', location: '', description: '' })
+    } catch {
+      setSendError('Failed to schedule meetup')
+    } finally {
+      setIsCreatingEvent(false)
+    }
+  }
+
   useEffect(() => {
     if (showGifPicker && gifs.length === 0) {
       searchGifs('')
@@ -542,6 +591,14 @@ export default function ChatPage() {
               )}
             </div>
           </div>
+
+          <button
+            onClick={() => setShowScheduleModal(true)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Schedule meetup"
+          >
+            <CalendarIcon className="h-5 w-5 text-gray-600" />
+          </button>
 
           <div className="relative">
             <button
@@ -939,6 +996,101 @@ export default function ChatPage() {
         variant="danger"
         isLoading={isBlocking}
       />
+
+      {/* Schedule Meetup Modal */}
+      {showScheduleModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-50"
+            onClick={() => setShowScheduleModal(false)}
+          />
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-white rounded-xl shadow-xl z-50 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Schedule a Meetup
+            </h3>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="What's the meetup for?"
+                value={eventForm.title}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, title: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                maxLength={200}
+              />
+              <input
+                type="date"
+                value={eventForm.event_date}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, event_date: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="time"
+                  value={eventForm.start_time}
+                  onChange={(e) =>
+                    setEventForm({ ...eventForm, start_time: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="Start"
+                />
+                <input
+                  type="time"
+                  value={eventForm.end_time}
+                  onChange={(e) =>
+                    setEventForm({ ...eventForm, end_time: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="End (optional)"
+                />
+              </div>
+              <input
+                type="text"
+                placeholder="Location (optional)"
+                value={eventForm.location}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, location: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+              />
+              <textarea
+                placeholder="Description (optional)"
+                value={eventForm.description}
+                onChange={(e) =>
+                  setEventForm({ ...eventForm, description: e.target.value })
+                }
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+              />
+            </div>
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowScheduleModal(false)}
+                className="flex-1"
+                disabled={isCreatingEvent}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateEvent}
+                className="flex-1"
+                disabled={
+                  !eventForm.title.trim() ||
+                  !eventForm.event_date ||
+                  !eventForm.start_time ||
+                  isCreatingEvent
+                }
+              >
+                {isCreatingEvent ? 'Scheduling...' : 'Propose Meetup'}
+              </Button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

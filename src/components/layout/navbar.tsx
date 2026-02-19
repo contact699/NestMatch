@@ -23,6 +23,7 @@ import {
   Receipt,
   BookOpen,
   Sparkles,
+  Calendar,
   LucideIcon,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
@@ -172,6 +173,7 @@ export function Navbar({ user }: NavbarProps) {
         { href: '/roommates', label: 'Roommates', icon: Users },
         { href: '/listings/new', label: 'Create', icon: PlusCircle },
         { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
+        { href: '/calendar', label: 'Calendar', icon: Calendar },
         { href: '/saved', label: 'Saved', icon: Heart },
       ]
     : []
