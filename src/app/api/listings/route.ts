@@ -3,6 +3,7 @@ import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
 
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -12,19 +13,19 @@ const listingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']),
   title: z.string().min(5, 'Title must be at least 5 characters').max(100),
   description: z.string().max(2000).optional(),
-  price: z.number().min(0, 'Price must be positive').max(50000),
-  utilities_included: z.boolean().default(false),
-  available_date: z.string(),
-  minimum_stay: z.number().min(1).max(24).optional(),
+  price: z.number().min(100, 'Price must be at least $100').max(50000),
+  utilities_included: z.boolean(),
+  available_date: z.string().min(1, 'Available date is required'),
+  minimum_stay: z.number().min(1).max(24),
   address: z.string().optional(),
   city: z.string().min(1, 'City is required'),
   province: z.string().min(1, 'Province is required'),
   postal_code: z.string().optional(),
   lat: z.number().optional(),
   lng: z.number().optional(),
-  photos: z.array(z.string()).default([]),
-  amenities: z.array(z.string()).default([]),
-  bathroom_type: z.enum(['ensuite', 'private', 'shared']).default('shared'),
+  photos: z.array(z.string()),
+  amenities: z.array(z.string()),
+  bathroom_type: z.enum(['ensuite', 'private', 'shared']),
   bathroom_size: z.preprocess(
     (val) => (val === '' ? null : val),
     z.enum(['full', 'three_quarter', 'half']).nullable()
@@ -35,13 +36,13 @@ const listingSchema = z.object({
   ).optional(),
   roommate_age_min: z.number().min(18).optional(),
   roommate_age_max: z.number().max(120).optional(),
-  newcomer_friendly: z.boolean().default(false),
-  no_credit_history_ok: z.boolean().default(false),
-  ideal_for_students: z.boolean().default(false),
-  pets_allowed: z.boolean().default(false),
-  smoking_allowed: z.boolean().default(false),
-  parking_included: z.boolean().default(false),
-  help_needed: z.boolean().default(false),
+  newcomer_friendly: z.boolean(),
+  no_credit_history_ok: z.boolean(),
+  ideal_for_students: z.boolean(),
+  pets_allowed: z.boolean(),
+  smoking_allowed: z.boolean(),
+  parking_included: z.boolean(),
+  help_needed: z.boolean(),
   help_tasks: z.array(z.string()).optional(),
   help_details: z.string().max(500).optional(),
 })
@@ -159,8 +160,17 @@ export const POST = withApiHandler(
       throw new ValidationError('Invalid listing data')
     }
 
+    // Use service client for writes when available to avoid RLS edge cases.
+    const writeClient = (() => {
+      try {
+        return createServiceClient()
+      } catch {
+        return supabase
+      }
+    })()
+
     // Create listing
-    const { data: listing, error } = await supabase
+    const { data: listing, error } = await writeClient
       .from('listings')
       .insert({
         user_id: userId!,
@@ -170,7 +180,7 @@ export const POST = withApiHandler(
         price: listingData.price,
         utilities_included: listingData.utilities_included,
         available_date: listingData.available_date,
-        minimum_stay: listingData.minimum_stay || 1,
+        minimum_stay: listingData.minimum_stay,
         address: listingData.address || null,
         city: listingData.city,
         province: listingData.province,
@@ -179,18 +189,18 @@ export const POST = withApiHandler(
         lng: listingData.lng || null,
         photos: listingData.photos,
         amenities: listingData.amenities,
-        bathroom_type: listingData.bathroom_type || 'shared',
+        bathroom_type: listingData.bathroom_type,
         bathroom_size: listingData.bathroom_size || null,
         roommate_gender_preference: listingData.roommate_gender_preference || null,
         roommate_age_min: listingData.roommate_age_min || null,
         roommate_age_max: listingData.roommate_age_max || null,
         newcomer_friendly: listingData.newcomer_friendly,
         no_credit_history_ok: listingData.no_credit_history_ok,
-        ideal_for_students: listingData.ideal_for_students || false,
-        pets_allowed: listingData.pets_allowed || false,
-        smoking_allowed: listingData.smoking_allowed || false,
-        parking_included: listingData.parking_included || false,
-        help_needed: listingData.help_needed || false,
+        ideal_for_students: listingData.ideal_for_students,
+        pets_allowed: listingData.pets_allowed,
+        smoking_allowed: listingData.smoking_allowed,
+        parking_included: listingData.parking_included,
+        help_needed: listingData.help_needed,
         help_tasks: listingData.help_tasks || [],
         help_details: listingData.help_details || null,
       })
