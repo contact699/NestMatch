@@ -88,6 +88,10 @@ export default function ChatPage() {
   const [isBlocking, setIsBlocking] = useState(false)
   const [isOnline, setIsOnline] = useState(false)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [showGifPicker, setShowGifPicker] = useState(false)
+  const [gifSearchQuery, setGifSearchQuery] = useState('')
+  const [gifs, setGifs] = useState<Array<{ id: string; url: string; preview: string }>>([])
+  const [isLoadingGifs, setIsLoadingGifs] = useState(false)
   const [otherUserOnline, setOtherUserOnline] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -202,6 +206,7 @@ export default function ChatPage() {
     if (!newMessage.trim() || isSending) return
 
     setShowEmojiPicker(false)
+    setShowGifPicker(false)
     setSendError(null)
     setIsSending(true)
     const messageContent = newMessage.trim()
@@ -367,6 +372,71 @@ export default function ChatPage() {
     }
   }
 
+  const searchGifs = async (query: string) => {
+    setIsLoadingGifs(true)
+    try {
+      const params = new URLSearchParams({ limit: '20' })
+      if (query.trim()) params.set('q', query.trim())
+      const res = await fetch(`/api/gifs?${params}`)
+      const data = await res.json()
+      setGifs(data.gifs || [])
+    } catch {
+      setGifs([])
+    } finally {
+      setIsLoadingGifs(false)
+    }
+  }
+
+  const sendGif = async (gifUrl: string) => {
+    setShowGifPicker(false)
+    setGifSearchQuery('')
+    setGifs([])
+
+    // Create optimistic message
+    const optimisticMessage: Message = {
+      id: `temp-${Date.now()}`,
+      conversation_id: conversationId,
+      sender_id: currentUserId!,
+      content: '',
+      read_at: null,
+      status: 'sent',
+      created_at: new Date().toISOString(),
+      attachment_url: gifUrl,
+      attachment_type: 'gif',
+      attachment_name: 'GIF',
+    }
+    setMessages((prev) => mergeMessages(prev, [optimisticMessage]))
+
+    try {
+      const response = await fetch(`/api/conversations/${conversationId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: '',
+          attachment_url: gifUrl,
+          attachment_type: 'gif',
+          attachment_name: 'GIF',
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.message) {
+          setMessages((prev) => {
+            const withoutTemp = prev.filter((m) => m.id !== optimisticMessage.id)
+            return mergeMessages(withoutTemp, [data.message])
+          })
+        }
+      } else {
+        setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id))
+        setSendError('Failed to send GIF')
+      }
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticMessage.id))
+      setSendError('Failed to send GIF')
+    }
+  }
+
   const toggleOnlineStatus = async () => {
     const newStatus = !isOnline
     setIsOnline(newStatus) // Optimistic update
@@ -381,6 +451,20 @@ export default function ChatPage() {
       setIsOnline(!newStatus) // Revert on error
     }
   }
+
+  useEffect(() => {
+    if (showGifPicker && gifs.length === 0) {
+      searchGifs('')
+    }
+  }, [showGifPicker])
+
+  useEffect(() => {
+    if (!showGifPicker) return
+    const timer = setTimeout(() => {
+      searchGifs(gifSearchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [gifSearchQuery, showGifPicker])
 
   const groupMessagesByDate = (messages: Message[]) => {
     const groups: { date: string; messages: Message[] }[] = []
@@ -708,6 +792,48 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* GIF Picker */}
+      {showGifPicker && (
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+          <div className="max-w-3xl mx-auto">
+            <input
+              type="text"
+              value={gifSearchQuery}
+              onChange={(e) => setGifSearchQuery(e.target.value)}
+              placeholder="Search GIFs..."
+              className="w-full px-3 py-2 mb-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+              {isLoadingGifs ? (
+                <div className="col-span-3 flex justify-center py-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                </div>
+              ) : gifs.length === 0 ? (
+                <p className="col-span-3 text-center text-sm text-gray-400 py-4">
+                  {gifSearchQuery ? 'No GIFs found' : 'Search for GIFs'}
+                </p>
+              ) : (
+                gifs.map((gif) => (
+                  <button
+                    key={gif.id}
+                    type="button"
+                    onClick={() => sendGif(gif.url)}
+                    className="aspect-square overflow-hidden rounded-lg hover:opacity-80 transition-opacity"
+                  >
+                    <img
+                      src={gif.preview || gif.url}
+                      alt="GIF"
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
         <div className="max-w-3xl mx-auto flex items-end gap-3">
@@ -730,11 +856,24 @@ export default function ChatPage() {
             )}
           </button>
           <button
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            onClick={() => {
+              setShowEmojiPicker(!showEmojiPicker)
+              setShowGifPicker(false)
+            }}
             className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
             type="button"
           >
             <Smile className="h-5 w-5" />
+          </button>
+          <button
+            onClick={() => {
+              setShowGifPicker(!showGifPicker)
+              setShowEmojiPicker(false)
+            }}
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+            type="button"
+          >
+            <span className="text-xs font-bold">GIF</span>
           </button>
           <textarea
             ref={inputRef}
