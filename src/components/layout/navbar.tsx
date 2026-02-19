@@ -173,7 +173,6 @@ export function Navbar({ user }: NavbarProps) {
         { href: '/roommates', label: 'Roommates', icon: Users },
         { href: '/listings/new', label: 'Create', icon: PlusCircle },
         { href: '/messages', label: 'Messages', icon: MessageCircle, badge: unreadCount },
-        { href: '/calendar', label: 'Calendar', icon: Calendar },
         { href: '/saved', label: 'Saved', icon: Heart },
       ]
     : []
@@ -272,6 +271,14 @@ export function Navbar({ user }: NavbarProps) {
                       >
                         <BookOpen className="h-4 w-4" />
                         Resources
+                      </Link>
+                      <Link
+                        href="/calendar"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        onClick={() => setProfileMenuOpen(false)}
+                      >
+                        <Calendar className="h-4 w-4" />
+                        Calendar
                       </Link>
                       <Link
                         href="/settings"

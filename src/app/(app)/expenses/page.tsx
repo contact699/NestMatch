@@ -1,11 +1,14 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { FetchError } from '@/components/ui/fetch-error'
+import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter } from '@/components/ui/modal'
 import { useFetch } from '@/lib/hooks/use-fetch'
 import { formatPrice, formatDate } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import {
   Plus,
   Receipt,
@@ -69,6 +72,25 @@ interface ExpenseData {
 export default function ExpensesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [creating, setCreating] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  // Form state
+  const [title, setTitle] = useState('')
+  const [totalAmount, setTotalAmount] = useState('')
+  const [category, setCategory] = useState<string>('other')
+  const [description, setDescription] = useState('')
+  const [dueDate, setDueDate] = useState('')
+
+  useEffect(() => {
+    async function getUser() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) setCurrentUserId(user.id)
+    }
+    getUser()
+  }, [])
 
   const statusParam = filter !== 'all' ? `?status=${filter}` : ''
   const { data, isLoading, error, refetch } = useFetch<ExpenseData>(
@@ -79,8 +101,59 @@ export default function ExpensesPage() {
   const expenses = data?.expenses ?? []
   const summary = data?.summary ?? null
 
-  const getCategoryIcon = (category: string | null) => {
-    switch (category) {
+  const resetForm = () => {
+    setTitle('')
+    setTotalAmount('')
+    setCategory('other')
+    setDescription('')
+    setDueDate('')
+  }
+
+  const handleCreateExpense = async () => {
+    if (!title.trim() || !totalAmount || !currentUserId) return
+
+    const amount = parseFloat(totalAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Please enter a valid amount')
+      return
+    }
+
+    setCreating(true)
+    try {
+      const response = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          total_amount: amount,
+          category,
+          description: description.trim() || undefined,
+          due_date: dueDate || undefined,
+          split_type: 'equal',
+          shares: [{ user_id: currentUserId }],
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.error || 'Failed to create expense')
+        return
+      }
+
+      toast.success('Expense created successfully')
+      setShowCreateModal(false)
+      resetForm()
+      refetch()
+    } catch {
+      toast.error('Failed to create expense')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  const getCategoryIcon = (cat: string | null) => {
+    switch (cat) {
       case 'rent':
         return <Home className="h-4 w-4" />
       case 'utilities':
@@ -126,7 +199,7 @@ export default function ExpensesPage() {
           <h1 className="text-2xl font-bold text-gray-900">Bill Splitting</h1>
           <p className="text-gray-600">Manage shared expenses with roommates</p>
         </div>
-        <Button disabled>
+        <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
           New Expense
         </Button>
@@ -203,6 +276,10 @@ export default function ExpensesPage() {
             <p className="text-gray-500 mb-4">
               Create your first shared expense to start splitting bills with roommates.
             </p>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Expense
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -291,11 +368,6 @@ export default function ExpensesPage() {
                                 {formatPrice(share.amount)}
                               </span>
                               {getStatusBadge(share.status)}
-                              {share.status === 'pending' && (
-                                <Button size="sm" disabled>
-                                  Pay
-                                </Button>
-                              )}
                             </div>
                           </div>
                         ))}
@@ -318,6 +390,115 @@ export default function ExpensesPage() {
           payout account.
         </p>
       </div>
+
+      {/* Create Expense Modal */}
+      <Modal
+        isOpen={showCreateModal}
+        onClose={() => { setShowCreateModal(false); resetForm() }}
+        size="lg"
+        ariaLabel="Create new expense"
+      >
+        <ModalHeader onClose={() => { setShowCreateModal(false); resetForm() }}>
+          <ModalTitle>New Expense</ModalTitle>
+        </ModalHeader>
+        <ModalContent>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="expense-title" className="block text-sm font-medium text-gray-700 mb-1">
+                Title *
+              </label>
+              <input
+                id="expense-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="e.g., February Rent, Groceries, Internet Bill"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                maxLength={255}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="expense-amount" className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount (CAD) *
+                </label>
+                <input
+                  id="expense-amount"
+                  type="number"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                  placeholder="0.00"
+                  min="0.01"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="expense-category" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <select
+                  id="expense-category"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="rent">Rent</option>
+                  <option value="utilities">Utilities</option>
+                  <option value="groceries">Groceries</option>
+                  <option value="internet">Internet</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="expense-due" className="block text-sm font-medium text-gray-700 mb-1">
+                Due Date
+              </label>
+              <input
+                id="expense-due"
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="expense-desc" className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <textarea
+                id="expense-desc"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional details about the expense"
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              />
+            </div>
+          </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => { setShowCreateModal(false); resetForm() }}
+            disabled={creating}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleCreateExpense}
+            isLoading={creating}
+            disabled={!title.trim() || !totalAmount || creating}
+          >
+            Create Expense
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   )
 }
