@@ -8,11 +8,11 @@ import { createServiceClient } from '@/lib/supabase/service'
 const createGroupSchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().trim().max(2000).optional().nullable(),
-  combined_budget_min: z.number().positive().optional().nullable(),
-  combined_budget_max: z.number().positive().optional().nullable(),
+  combined_budget_min: z.number().int().positive().max(99999).optional().nullable(),
+  combined_budget_max: z.number().int().positive().max(99999).optional().nullable(),
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
-  preferred_cities: z.array(z.string()).optional().nullable(),
-  budget_contribution: z.number().positive().optional().nullable(),
+  preferred_cities: z.array(z.string().trim().min(1).max(100)).max(20).optional().nullable(),
+  budget_contribution: z.number().int().positive().max(99999).optional().nullable(),
   is_public: z.boolean().default(true),
 }).refine(
   (data) => {

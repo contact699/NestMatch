@@ -390,7 +390,8 @@ function CreateGroupModal({
     const parseOptionalPositive = (value: string): number | undefined => {
       if (!value.trim()) return undefined
       const num = Number(value)
-      return Number.isFinite(num) && num > 0 ? num : undefined
+      if (!Number.isFinite(num) || num <= 0) return undefined
+      return Math.round(num)
     }
 
     // Client-side budget validation
@@ -491,7 +492,8 @@ function CreateGroupModal({
                 onChange={(e) => setBudgetMin(e.target.value)}
                 placeholder="1000"
                 min="1"
-                step="50"
+                max="99999"
+                step="1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -505,7 +507,8 @@ function CreateGroupModal({
                 onChange={(e) => setBudgetMax(e.target.value)}
                 placeholder="2500"
                 min="1"
-                step="50"
+                max="99999"
+                step="1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -521,7 +524,8 @@ function CreateGroupModal({
               onChange={(e) => setMyBudget(e.target.value)}
               placeholder="Your monthly contribution"
               min="1"
-              step="50"
+              max="99999"
+              step="1"
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">How much can you contribute monthly to the group's combined budget?</p>
