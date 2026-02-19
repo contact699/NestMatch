@@ -19,6 +19,8 @@ import {
   MoreVertical,
   Flag,
   Ban,
+  Check,
+  CheckCheck,
 } from 'lucide-react'
 import { ReportModal } from '@/components/ui/report-modal'
 import { ConfirmModal } from '@/components/ui/modal'
@@ -29,7 +31,11 @@ interface Message {
   sender_id: string
   content: string
   read_at: string | null
+  status: 'sent' | 'delivered' | 'read'
   created_at: string
+  attachment_url?: string | null
+  attachment_type?: 'image' | 'video' | 'document' | 'gif' | null
+  attachment_name?: string | null
 }
 
 interface Conversation {
@@ -180,6 +186,7 @@ export default function ChatPage() {
       sender_id: currentUserId!,
       content: messageContent,
       read_at: null,
+      status: 'sent',
       created_at: new Date().toISOString(),
     }
     setMessages((prev) => mergeMessages(prev, [optimisticMessage]))
@@ -482,8 +489,16 @@ export default function ChatPage() {
                               hour: 'numeric',
                               minute: '2-digit',
                             })}
-                            {isOwn && message.read_at && (
-                              <span className="ml-2">Read</span>
+                            {isOwn && (
+                              <span className="ml-2 inline-flex items-center">
+                                {message.status === 'read' ? (
+                                  <CheckCheck className="h-3.5 w-3.5 text-blue-300" />
+                                ) : message.status === 'delivered' ? (
+                                  <CheckCheck className="h-3.5 w-3.5" />
+                                ) : (
+                                  <Check className="h-3.5 w-3.5" />
+                                )}
+                              </span>
                             )}
                           </p>
                         </div>

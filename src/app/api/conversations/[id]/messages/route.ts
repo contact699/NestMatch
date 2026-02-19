@@ -58,6 +58,19 @@ export const GET = withApiHandler(
 
     if (error) throw error
 
+    // Mark sent messages from other user as delivered (they loaded the conversation)
+    const sentIds = (messages || [])
+      .filter((m: any) => m.sender_id !== userId! && m.status === 'sent')
+      .map((m: any) => m.id)
+
+    if (sentIds.length > 0) {
+      void supabase
+        .from('messages')
+        .update({ status: 'delivered' })
+        .in('id', sentIds)
+        .then(() => {}, () => {})
+    }
+
     // Mark unread messages as read (fire and forget)
     const unreadIds = (messages || [])
       .filter((m: any) => m.sender_id !== userId! && !m.read_at)
@@ -66,7 +79,7 @@ export const GET = withApiHandler(
     if (unreadIds.length > 0) {
       void supabase
         .from('messages')
-        .update({ read_at: new Date().toISOString() })
+        .update({ read_at: new Date().toISOString(), status: 'read' })
         .in('id', unreadIds)
         .then(() => {}, () => {})
     }
