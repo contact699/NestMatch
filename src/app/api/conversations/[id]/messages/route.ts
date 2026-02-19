@@ -64,30 +64,25 @@ export const GET = withApiHandler(
 
     if (error) throw error
 
-    // Mark sent messages from other user as delivered (they loaded the conversation)
-    const sentIds = (messages || [])
-      .filter((m: any) => m.sender_id !== userId! && m.status === 'sent')
-      .map((m: any) => m.id)
-
-    if (sentIds.length > 0) {
-      void supabase
-        .from('messages')
-        .update({ status: 'delivered' })
-        .in('id', sentIds)
-        .then(() => {}, () => {})
-    }
-
     // Mark unread messages as read (fire and forget)
     const unreadIds = (messages || [])
       .filter((m: any) => m.sender_id !== userId! && !m.read_at)
       .map((m: any) => m.id)
 
     if (unreadIds.length > 0) {
+      // Try updating with status column; fall back to just read_at if column doesn't exist
       void supabase
         .from('messages')
         .update({ read_at: new Date().toISOString(), status: 'read' })
         .in('id', unreadIds)
-        .then(() => {}, () => {})
+        .then(() => {}, () => {
+          // status column may not exist yet — retry with just read_at
+          void supabase
+            .from('messages')
+            .update({ read_at: new Date().toISOString() })
+            .in('id', unreadIds)
+            .then(() => {}, () => {})
+        })
     }
 
     return apiResponse({ messages: (messages || []).reverse() }, 200, requestId)
@@ -128,13 +123,17 @@ export const POST = withApiHandler(
       throw new ValidationError('Invalid message content')
     }
 
-    const insertPayload = {
+    const insertPayload: Record<string, unknown> = {
       conversation_id: conversationId,
       sender_id: userId!,
       content: body.content || '',
-      attachment_url: body.attachment_url || null,
-      attachment_type: body.attachment_type || null,
-      attachment_name: body.attachment_name || null,
+    }
+
+    // Only include attachment fields when present (columns may not exist if migration not applied)
+    if (body.attachment_url) {
+      insertPayload.attachment_url = body.attachment_url
+      insertPayload.attachment_type = body.attachment_type || null
+      insertPayload.attachment_name = body.attachment_name || null
     }
 
     // Use service client for writes after participant authorization to avoid
