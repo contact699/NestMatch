@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -335,11 +335,20 @@ export default function AgreementGeneratorPage() {
     mode: 'onBlur',
   })
 
-  // Persist form values to draft on every change
-  const watchedValues = watch()
+  // Persist form values to draft on change (subscription-based to avoid infinite re-render)
+  const draftTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => {
-    setDraft(watchedValues)
-  }, [watchedValues, setDraft])
+    const subscription = watch((values) => {
+      if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current)
+      draftTimeoutRef.current = setTimeout(() => {
+        setDraft(values as Partial<AgreementFormData>)
+      }, 500)
+    })
+    return () => {
+      subscription.unsubscribe()
+      if (draftTimeoutRef.current) clearTimeout(draftTimeoutRef.current)
+    }
+  }, [watch, setDraft])
 
   const validateStep = async () => {
     let fieldsToValidate: (keyof AgreementFormData)[] = []
