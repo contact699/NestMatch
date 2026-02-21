@@ -711,7 +711,7 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-6">
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.length === 0 ? (
             <div className="text-center py-8">
@@ -867,7 +867,7 @@ export default function ChatPage() {
                 </div>
               ) : gifs.length === 0 ? (
                 <p className="col-span-3 text-center text-sm text-gray-400 py-4">
-                  {gifSearchQuery ? 'No GIFs found' : 'Search for GIFs'}
+                  {gifSearchQuery ? 'No GIFs found — try a different keyword' : 'Loading GIFs...'}
                 </p>
               ) : (
                 gifs.map((gif) => (
@@ -892,8 +892,8 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3 pb-[env(safe-area-inset-bottom,12px)]">
-        <div className="max-w-3xl mx-auto flex items-end gap-3">
+      <div className="flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] px-4 pt-3 pb-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)' }}>
+        <div className="max-w-3xl mx-auto flex items-end gap-2 sm:gap-3">
           <input
             ref={fileInputRef}
             type="file"
@@ -904,7 +904,7 @@ export default function ChatPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
           >
             {isUploading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
@@ -917,7 +917,7 @@ export default function ChatPage() {
               setShowEmojiPicker(!showEmojiPicker)
               setShowGifPicker(false)
             }}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
             type="button"
           >
             <Smile className="h-5 w-5" />
@@ -927,7 +927,7 @@ export default function ChatPage() {
               setShowGifPicker(!showGifPicker)
               setShowEmojiPicker(false)
             }}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0 self-end mb-1"
+            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
             type="button"
           >
             <span className="text-xs font-bold">GIF</span>
