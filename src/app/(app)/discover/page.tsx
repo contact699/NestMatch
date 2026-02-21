@@ -69,6 +69,14 @@ interface Profile {
 
 interface ProfileWithScore extends Profile {
   compatibilityScore: number
+  lifestyle?: {
+    sleep_schedule: string | null
+    noise_tolerance: string | null
+    cleanliness_level: string | null
+    smoking: string | null
+    pets_preference: string | null
+    temperature_preference: string | null
+  }
 }
 
 interface PublicGroup {
@@ -115,6 +123,12 @@ export default function DiscoverPage() {
     budgetMin: '',
     budgetMax: '',
     searchQuery: '',
+    sleepSchedule: '',
+    noiseTolerance: '',
+    cleanlinessLevel: '',
+    smoking: '',
+    petsPreference: '',
+    temperaturePreference: '',
   })
   const [showFilters, setShowFilters] = useState(false)
 
@@ -186,6 +200,16 @@ export default function DiscoverPage() {
       ])
     )
 
+    // Fetch lifestyle responses for filtering
+    const { data: lifestyleData } = await supabase
+      .from('lifestyle_responses')
+      .select('user_id, sleep_schedule, noise_tolerance, cleanliness_level, smoking, pets_preference, temperature_preference')
+      .in('user_id', profilesData.map((p: Profile) => p.user_id))
+
+    const lifestyleByUserId = new Map(
+      (lifestyleData || []).map((l: any) => [l.user_id, l])
+    )
+
     // Get compatibility scores
     const userIds = profilesData.map((p: Profile) => p.user_id)
     const response = await fetch('/api/compatibility', {
@@ -200,12 +224,23 @@ export default function DiscoverPage() {
       scores = data.scores || {}
     }
 
-    const profilesWithScores: ProfileWithScore[] = profilesData.map((p: Profile) => ({
-      ...p,
-      budget_min: budgetsByUserId.get(p.user_id)?.budget_min ?? null,
-      budget_max: budgetsByUserId.get(p.user_id)?.budget_max ?? null,
-      compatibilityScore: scores[p.user_id] || 0,
-    }))
+    const profilesWithScores: ProfileWithScore[] = profilesData.map((p: Profile) => {
+      const ls = lifestyleByUserId.get(p.user_id)
+      return {
+        ...p,
+        budget_min: budgetsByUserId.get(p.user_id)?.budget_min ?? null,
+        budget_max: budgetsByUserId.get(p.user_id)?.budget_max ?? null,
+        compatibilityScore: scores[p.user_id] || 0,
+        lifestyle: ls ? {
+          sleep_schedule: ls.sleep_schedule,
+          noise_tolerance: ls.noise_tolerance,
+          cleanliness_level: ls.cleanliness_level,
+          smoking: ls.smoking,
+          pets_preference: ls.pets_preference,
+          temperature_preference: ls.temperature_preference,
+        } : undefined,
+      }
+    })
 
     profilesWithScores.sort((a, b) => b.compatibilityScore - a.compatibilityScore)
     setProfiles(profilesWithScores)
@@ -358,6 +393,14 @@ export default function DiscoverPage() {
         const bio = (profile.bio || '').toLowerCase()
         if (!name.includes(q) && !bio.includes(q)) return false
       }
+
+      // Lifestyle filters — skip profiles that don't match, but show profiles without lifestyle data
+      if (debouncedFilters.sleepSchedule && profile.lifestyle?.sleep_schedule && profile.lifestyle.sleep_schedule !== debouncedFilters.sleepSchedule) return false
+      if (debouncedFilters.noiseTolerance && profile.lifestyle?.noise_tolerance && profile.lifestyle.noise_tolerance !== debouncedFilters.noiseTolerance) return false
+      if (debouncedFilters.cleanlinessLevel && profile.lifestyle?.cleanliness_level && profile.lifestyle.cleanliness_level !== debouncedFilters.cleanlinessLevel) return false
+      if (debouncedFilters.smoking && profile.lifestyle?.smoking && profile.lifestyle.smoking !== debouncedFilters.smoking) return false
+      if (debouncedFilters.petsPreference && profile.lifestyle?.pets_preference && profile.lifestyle.pets_preference !== debouncedFilters.petsPreference) return false
+      if (debouncedFilters.temperaturePreference && profile.lifestyle?.temperature_preference && profile.lifestyle.temperature_preference !== debouncedFilters.temperaturePreference) return false
 
       return true
     })
@@ -634,6 +677,81 @@ export default function DiscoverPage() {
                           </div>
                         </div>
 
+                        {/* Lifestyle Preferences */}
+                        <div>
+                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Lifestyle Preferences</p>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <select
+                              value={peopleFilters.sleepSchedule}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, sleepSchedule: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Sleep Schedule</option>
+                              <option value="early_bird">Early Bird</option>
+                              <option value="night_owl">Night Owl</option>
+                              <option value="flexible">Flexible</option>
+                            </select>
+
+                            <select
+                              value={peopleFilters.noiseTolerance}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, noiseTolerance: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Noise Level</option>
+                              <option value="quiet">Quiet</option>
+                              <option value="moderate">Moderate</option>
+                              <option value="loud_ok">Loud OK</option>
+                            </select>
+
+                            <select
+                              value={peopleFilters.cleanlinessLevel}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, cleanlinessLevel: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Cleanliness</option>
+                              <option value="spotless">Spotless</option>
+                              <option value="tidy">Tidy</option>
+                              <option value="relaxed">Relaxed</option>
+                              <option value="messy">Messy</option>
+                            </select>
+
+                            <select
+                              value={peopleFilters.smoking}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, smoking: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Smoking</option>
+                              <option value="never">No Smoking</option>
+                              <option value="outside_only">Outside Only</option>
+                              <option value="yes">Smoker</option>
+                            </select>
+
+                            <select
+                              value={peopleFilters.petsPreference}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, petsPreference: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Pets</option>
+                              <option value="no_pets">No Pets</option>
+                              <option value="cats_ok">Cats OK</option>
+                              <option value="dogs_ok">Dogs OK</option>
+                              <option value="all_pets_ok">All Pets OK</option>
+                              <option value="have_pets">Has Pets</option>
+                            </select>
+
+                            <select
+                              value={peopleFilters.temperaturePreference}
+                              onChange={(e) => setPeopleFilters(prev => ({ ...prev, temperaturePreference: e.target.value }))}
+                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            >
+                              <option value="">Temperature</option>
+                              <option value="cold">Cool</option>
+                              <option value="moderate">Moderate</option>
+                              <option value="warm">Warm</option>
+                            </select>
+                          </div>
+                        </div>
+
                         {/* Clear Filters */}
                         {Object.values(peopleFilters).some(v => v !== '') && (
                           <Button
@@ -642,6 +760,8 @@ export default function DiscoverPage() {
                             onClick={() => setPeopleFilters({
                               province: '', city: '', gender: '', ageMin: '', ageMax: '',
                               budgetMin: '', budgetMax: '', searchQuery: '',
+                              sleepSchedule: '', noiseTolerance: '', cleanlinessLevel: '',
+                              smoking: '', petsPreference: '', temperaturePreference: '',
                             })}
                           >
                             <X className="h-4 w-4 mr-1" />
