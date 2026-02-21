@@ -326,9 +326,9 @@ export function withApiHandler(
         })
       }
 
-      // Generic error
+      // Generic error — include message to aid debugging
       return errorResponse(
-        process.env.NODE_ENV === 'development' ? err.message : 'Internal server error',
+        err.message || 'Internal server error',
         500,
         requestId
       )

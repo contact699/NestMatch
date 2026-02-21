@@ -164,9 +164,8 @@ export default function DiscoverPage() {
     // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
     const profilesData = allProfilesData.filter((p: any) => {
       const hasName = !!p.name
-      const hasPhoto = !!p.profile_photo || (Array.isArray(p.photos) && p.photos.length > 0)
       const hasQuiz = quizTakenUserIds.has(p.user_id)
-      const isDecentProfile = hasName && hasPhoto && hasQuiz
+      const isDecentProfile = hasName && hasQuiz
 
       const isVerified = p.email_verified || p.phone_verified ||
         p.verification_level === 'verified' || p.verification_level === 'trusted'
