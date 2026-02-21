@@ -31,6 +31,27 @@ export const GET = withApiHandler(
     const status = searchParams.get('status')
 
     // Get groups where user is a member
+    // First, find group IDs where the user is a member
+    const { data: memberships, error: memberError } = await supabase
+      .from('co_renter_members')
+      .select('group_id, role')
+      .eq('user_id', userId!)
+      .eq('status', 'active')
+
+    if (memberError) throw memberError
+
+    const groupIds = (memberships || []).map((m: any) => m.group_id)
+
+    if (groupIds.length === 0) {
+      return apiResponse({ groups: [] }, 200, requestId)
+    }
+
+    // Build role lookup
+    const roleByGroupId = new Map(
+      (memberships || []).map((m: any) => [m.group_id, m.role])
+    )
+
+    // Fetch the groups with members
     let query = supabase
       .from('co_renter_groups')
       .select(`
@@ -45,17 +66,9 @@ export const GET = withApiHandler(
             name,
             profile_photo
           )
-        ),
-        invitations:co_renter_invitations(
-          id,
-          status,
-          invitee:profiles!co_renter_invitations_invitee_id_fkey(
-            user_id,
-            name,
-            profile_photo
-          )
         )
       `)
+      .in('id', groupIds)
 
     if (status) {
       query = query.eq('status', status)
@@ -67,21 +80,25 @@ export const GET = withApiHandler(
 
     if (error) throw error
 
-    // Filter to only groups where user is a member
-    const userGroups = (allGroups || []).filter((group: any) =>
-      group.members?.some((m: any) => m.user?.user_id === userId!)
-    )
+    // Fetch pending invitation counts separately
+    const { data: invitationCounts } = await supabase
+      .from('co_renter_invitations')
+      .select('group_id')
+      .in('group_id', groupIds)
+      .eq('status', 'pending')
 
-    // Add user's role to each group
-    const enrichedGroups = userGroups.map((group: any) => {
-      const userMember = group.members?.find((m: any) => m.user?.user_id === userId!)
-      return {
-        ...group,
-        user_role: userMember?.role || 'member',
-        member_count: group.members?.length || 0,
-        pending_invitations: group.invitations?.filter((i: any) => i.status === 'pending').length || 0,
-      }
-    })
+    const pendingByGroup = new Map<string, number>()
+    for (const inv of invitationCounts || []) {
+      pendingByGroup.set(inv.group_id, (pendingByGroup.get(inv.group_id) || 0) + 1)
+    }
+
+    // Enrich groups with role and counts
+    const enrichedGroups = (allGroups || []).map((group: any) => ({
+      ...group,
+      user_role: roleByGroupId.get(group.id) || 'member',
+      member_count: group.members?.length || 0,
+      pending_invitations: pendingByGroup.get(group.id) || 0,
+    }))
 
     return apiResponse({ groups: enrichedGroups }, 200, requestId)
   }

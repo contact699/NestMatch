@@ -65,9 +65,7 @@ export const PUT = withApiHandler(
     }
 
     // Build update data
-    const updateData: Record<string, any> = {
-      updated_at: new Date().toISOString(),
-    }
+    const updateData: Record<string, any> = {}
 
     if (budget_contribution !== undefined) {
       updateData.budget_contribution = budget_contribution

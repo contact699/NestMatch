@@ -141,14 +141,38 @@ export default function DiscoverPage() {
   const fetchProfiles = useCallback(async (userId: string) => {
     const supabase = createClient()
 
-    const { data: profilesData } = await supabase
+    // Fetch more profiles initially since we'll filter out incomplete ones
+    const { data: allProfilesData } = await supabase
       .from('profiles')
       .select('*')
       .neq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(30)
+      .limit(100)
 
-    if (!profilesData) return
+    if (!allProfilesData) return
+
+    // Check which users have completed the lifestyle quiz
+    const { data: quizUsers } = await supabase
+      .from('lifestyle_responses')
+      .select('user_id')
+      .in('user_id', allProfilesData.map((p: Profile) => p.user_id))
+
+    const quizTakenUserIds = new Set((quizUsers || []).map((q: { user_id: string }) => q.user_id))
+
+    // Filter to only quality profiles:
+    // Path A: decent profile (has name + has photo + has taken quiz)
+    // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
+    const profilesData = allProfilesData.filter((p: any) => {
+      const hasName = !!p.name
+      const hasPhoto = !!p.profile_photo || (Array.isArray(p.photos) && p.photos.length > 0)
+      const hasQuiz = quizTakenUserIds.has(p.user_id)
+      const isDecentProfile = hasName && hasPhoto && hasQuiz
+
+      const isVerified = p.email_verified || p.phone_verified ||
+        p.verification_level === 'verified' || p.verification_level === 'trusted'
+
+      return isDecentProfile || isVerified
+    }).slice(0, 30)
 
     // Fetch budget ranges from seeking profiles for filtering
     const { data: seekingProfilesData } = await supabase

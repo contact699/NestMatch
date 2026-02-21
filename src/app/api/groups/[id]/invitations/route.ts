@@ -189,13 +189,15 @@ export const PUT = withApiHandler(
 
     // Update invitation status
     const newStatus = response === 'accept' ? 'accepted' : 'declined'
-    await supabase
+    const { error: updateError } = await supabase
       .from('co_renter_invitations')
       .update({
         status: newStatus,
-        updated_at: new Date().toISOString(),
+        responded_at: new Date().toISOString(),
       })
       .eq('id', invitation_id)
+
+    if (updateError) throw updateError
 
     // If accepted, add as member
     if (response === 'accept') {
