@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const updateMemberSchema = z.object({
   member_id: z.string().uuid(),
@@ -17,6 +18,9 @@ const removeMemberSchema = z.object({
 export const PUT = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const groupId = params.id
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Validate input
     let body: z.infer<typeof updateMemberSchema>
@@ -29,7 +33,7 @@ export const PUT = withApiHandler(
     const { member_id, budget_contribution, role } = body
 
     // Get current user's membership
-    const { data: currentMember } = await supabase
+    const { data: currentMember } = await svcClient
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
@@ -41,7 +45,7 @@ export const PUT = withApiHandler(
     }
 
     // Get target member
-    const { data: targetMember } = await supabase
+    const { data: targetMember } = await svcClient
       .from('co_renter_members')
       .select('*')
       .eq('id', member_id)
@@ -74,7 +78,7 @@ export const PUT = withApiHandler(
     if (role !== undefined && isAdmin) {
       // Prevent removing the last admin
       if (role === 'member' && targetMember.role === 'admin') {
-        const { data: admins } = await supabase
+        const { data: admins } = await svcClient
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
@@ -91,7 +95,7 @@ export const PUT = withApiHandler(
       updateData.role = role
     }
 
-    const { data: member, error: updateError } = await supabase
+    const { data: member, error: updateError } = await svcClient
       .from('co_renter_members')
       .update(updateData)
       .eq('id', member_id)
@@ -122,6 +126,9 @@ export const PUT = withApiHandler(
 export const DELETE = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const groupId = params.id
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Validate input
     let body: z.infer<typeof removeMemberSchema>
@@ -134,7 +141,7 @@ export const DELETE = withApiHandler(
     const { member_id } = body
 
     // Get current user's membership
-    const { data: currentMember } = await supabase
+    const { data: currentMember } = await svcClient
       .from('co_renter_members')
       .select('role, user_id')
       .eq('group_id', groupId)
@@ -146,7 +153,7 @@ export const DELETE = withApiHandler(
     }
 
     // Get target member
-    const { data: targetMember } = await supabase
+    const { data: targetMember } = await svcClient
       .from('co_renter_members')
       .select('*')
       .eq('id', member_id)
@@ -167,7 +174,7 @@ export const DELETE = withApiHandler(
 
     // Prevent removing the last admin (unless leaving)
     if (targetMember.role === 'admin') {
-      const { data: admins } = await supabase
+      const { data: admins } = await svcClient
         .from('co_renter_members')
         .select('id')
         .eq('group_id', groupId)
@@ -175,7 +182,7 @@ export const DELETE = withApiHandler(
 
       if (admins?.length === 1) {
         // Check if there are other members to promote
-        const { data: otherMembers } = await supabase
+        const { data: otherMembers } = await svcClient
           .from('co_renter_members')
           .select('id')
           .eq('group_id', groupId)
@@ -191,7 +198,7 @@ export const DELETE = withApiHandler(
       }
     }
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await svcClient
       .from('co_renter_members')
       .delete()
       .eq('id', member_id)

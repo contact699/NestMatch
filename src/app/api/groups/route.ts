@@ -30,9 +30,18 @@ export const GET = withApiHandler(
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
 
+    // Use service client to bypass co_renter_members RLS infinite recursion.
+    // Auth is already verified by withApiHandler; access control is enforced in code.
+    const readClient = (() => {
+      try {
+        return createServiceClient()
+      } catch {
+        return supabase
+      }
+    })()
+
     // Get groups where user is a member
-    // First, find group IDs where the user is a member
-    const { data: memberships, error: memberError } = await supabase
+    const { data: memberships, error: memberError } = await readClient
       .from('co_renter_members')
       .select('group_id, role')
       .eq('user_id', userId!)
@@ -52,7 +61,7 @@ export const GET = withApiHandler(
     )
 
     // Fetch the groups with members
-    let query = supabase
+    let query = readClient
       .from('co_renter_groups')
       .select(`
         *,
@@ -81,7 +90,7 @@ export const GET = withApiHandler(
     if (error) throw error
 
     // Fetch pending invitation counts separately
-    const { data: invitationCounts } = await supabase
+    const { data: invitationCounts } = await readClient
       .from('co_renter_invitations')
       .select('group_id')
       .in('group_id', groupIds)

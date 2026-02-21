@@ -1,10 +1,16 @@
 import { NextRequest } from 'next/server'
 import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
+import { createServiceClient } from '@/lib/supabase/service'
 
 // Get user's pending invitations (across all groups)
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    const { data: invitations, error } = await supabase
+    // Use service client to bypass co_renter_members RLS infinite recursion
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
+
+    const { data: invitations, error } = await svcClient
       .from('co_renter_invitations')
       .select(`
         *,

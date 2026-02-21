@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const updateGroupSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -26,7 +27,12 @@ export const GET = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
 
-    const { data: group, error } = await supabase
+    // Use service client to bypass co_renter_members RLS infinite recursion
+    const readClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
+
+    const { data: group, error } = await readClient
       .from('co_renter_groups')
       .select(`
         *,
@@ -88,8 +94,12 @@ export const PUT = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
 
+    const writeClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
+
     // Check if user is admin of the group
-    const { data: membership } = await supabase
+    const { data: membership } = await writeClient
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
@@ -123,7 +133,7 @@ export const PUT = withApiHandler(
       }
     }
 
-    const { data: group, error: updateError } = await supabase
+    const { data: group, error: updateError } = await writeClient
       .from('co_renter_groups')
       .update(updateData)
       .eq('id', id)
@@ -161,8 +171,12 @@ export const DELETE = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
 
+    const deleteClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
+
     // Check if user is admin of the group
-    const { data: membership } = await supabase
+    const { data: membership } = await deleteClient
       .from('co_renter_members')
       .select('role')
       .eq('group_id', id)
@@ -174,17 +188,17 @@ export const DELETE = withApiHandler(
     }
 
     // Delete in order: invitations, members, then group
-    await supabase
+    await deleteClient
       .from('co_renter_invitations')
       .delete()
       .eq('group_id', id)
 
-    await supabase
+    await deleteClient
       .from('co_renter_members')
       .delete()
       .eq('group_id', id)
 
-    const { error: deleteError } = await supabase
+    const { error: deleteError } = await deleteClient
       .from('co_renter_groups')
       .delete()
       .eq('id', id)

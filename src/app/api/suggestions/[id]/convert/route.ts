@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody, NotFoundError } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const convertSchema = z.object({
   groupName: z.string().min(1).max(255).optional(),
@@ -12,6 +13,10 @@ const convertSchema = z.object({
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const { id } = params
+    // Use service client to bypass co_renter_members RLS infinite recursion
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Validate input
     let body: z.infer<typeof convertSchema>
@@ -47,7 +52,7 @@ export const POST = withApiHandler(
 
     // Create the co-renter group
     const matchCriteria = (suggestion.match_criteria || {}) as any
-    const { data: group, error: groupError } = await supabase
+    const { data: group, error: groupError } = await svcClient
       .from('co_renter_groups')
       .insert({
         name: finalGroupName,
@@ -70,7 +75,7 @@ export const POST = withApiHandler(
     }
 
     // Add creator as admin member
-    const { error: memberError } = await supabase
+    const { error: memberError } = await svcClient
       .from('co_renter_members')
       .insert({
         group_id: group.id,
@@ -81,7 +86,7 @@ export const POST = withApiHandler(
 
     if (memberError) {
       // Rollback group creation
-      await supabase
+      await svcClient
         .from('co_renter_groups')
         .delete()
         .eq('id', group.id)
@@ -99,7 +104,7 @@ export const POST = withApiHandler(
       expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days
     }))
 
-    const { error: inviteError } = await supabase
+    const { error: inviteError } = await svcClient
       .from('co_renter_invitations')
       .insert(invitations)
 

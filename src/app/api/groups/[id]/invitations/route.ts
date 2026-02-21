@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server'
 import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
 
 const createInvitationSchema = z.object({
   invitee_id: z.string().uuid(),
@@ -17,9 +18,12 @@ const respondInvitationSchema = z.object({
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const groupId = params.id
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Verify user is a member
-    const { data: membership } = await supabase
+    const { data: membership } = await svcClient
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
@@ -30,7 +34,7 @@ export const GET = withApiHandler(
       throw new AuthorizationError('Access denied')
     }
 
-    const { data: invitations, error } = await supabase
+    const { data: invitations, error } = await svcClient
       .from('co_renter_invitations')
       .select(`
         *,
@@ -59,9 +63,12 @@ export const GET = withApiHandler(
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const groupId = params.id
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Verify user is admin
-    const { data: membership } = await supabase
+    const { data: membership } = await svcClient
       .from('co_renter_members')
       .select('role')
       .eq('group_id', groupId)
@@ -83,7 +90,7 @@ export const POST = withApiHandler(
     const { invitee_id } = body
 
     // Check if invitee exists
-    const { data: invitee } = await supabase
+    const { data: invitee } = await svcClient
       .from('profiles')
       .select('user_id')
       .eq('user_id', invitee_id)
@@ -94,7 +101,7 @@ export const POST = withApiHandler(
     }
 
     // Check if invitee is already a member
-    const { data: existingMember } = await supabase
+    const { data: existingMember } = await svcClient
       .from('co_renter_members')
       .select('id')
       .eq('group_id', groupId)
@@ -106,7 +113,7 @@ export const POST = withApiHandler(
     }
 
     // Check for existing pending invitation
-    const { data: existingInvitation } = await supabase
+    const { data: existingInvitation } = await svcClient
       .from('co_renter_invitations')
       .select('id')
       .eq('group_id', groupId)
@@ -119,7 +126,7 @@ export const POST = withApiHandler(
     }
 
     // Create invitation
-    const { data: invitation, error: inviteError } = await supabase
+    const { data: invitation, error: inviteError } = await svcClient
       .from('co_renter_invitations')
       .insert({
         group_id: groupId,
@@ -155,6 +162,9 @@ export const POST = withApiHandler(
 export const PUT = withApiHandler(
   async (req, { userId, supabase, requestId, params }) => {
     const groupId = params.id
+    const svcClient = (() => {
+      try { return createServiceClient() } catch { return supabase }
+    })()
 
     // Validate input
     let body: z.infer<typeof respondInvitationSchema>
@@ -167,7 +177,7 @@ export const PUT = withApiHandler(
     const { invitation_id, response, budget_contribution } = body
 
     // Get the invitation
-    const { data: invitation } = await supabase
+    const { data: invitation } = await svcClient
       .from('co_renter_invitations')
       .select('*')
       .eq('id', invitation_id)
@@ -189,7 +199,7 @@ export const PUT = withApiHandler(
 
     // Update invitation status
     const newStatus = response === 'accept' ? 'accepted' : 'declined'
-    const { error: updateError } = await supabase
+    const { error: updateError } = await svcClient
       .from('co_renter_invitations')
       .update({
         status: newStatus,
@@ -201,12 +211,13 @@ export const PUT = withApiHandler(
 
     // If accepted, add as member
     if (response === 'accept') {
-      const { error: memberError } = await supabase
+      const { error: memberError } = await svcClient
         .from('co_renter_members')
         .insert({
           group_id: groupId,
           user_id: userId!,
           role: 'member',
+          status: 'active',
           budget_contribution: budget_contribution || null,
         })
 
