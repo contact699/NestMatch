@@ -48,7 +48,13 @@
       "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" add \"src/app/api/\" \"src/app/\\(app\\)/\" src/components/)",
       "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" commit -m \"$\\(cat <<''EOF''\nfeat: comprehensive 8-phase audit fix across security, type safety, performance, and UX\n\nPhase 1: Add atomic RPC functions \\(pay_expense_share, set_default_payment_method,\ncreate_expense_with_shares\\) to eliminate race conditions in financial operations.\n\nPhase 2: Fix root-cause type safety issue in HandlerContext by typing supabase as\nSupabaseClient<Database>, removing ~310 `as any` casts across 78+ files. Add\nRelationships arrays to all 40 database table types.\n\nPhase 3: Optimize N+1 conversation query from 3N+1 to 4 queries using batch lookups.\n\nPhase 4: Replace 93 console.* calls with structured logging \\(server: logger,\nclient: clientLogger\\). Add ESLint no-console rule.\n\nPhase 5: Add rate limiting to all 60 API route handlers via withApiHandler config.\n\nPhase 6: Fix ARIA accessibility in InviteModal, ListingCard, FAQAccordion,\nLoginForm, and SignupForm.\n\nPhase 7: Add sonner toast system, replace window.confirm\\(\\) with ConfirmModal in 7\npages, add error boundaries and loading skeletons.\n\nPhase 8: Add useDebounce and useFormDraft hooks, fix inconsistent error responses,\nadd service DELETE endpoint.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git -C \"C:\\\\Users\\\\computer\\\\Downloads\\\\nestmatch-app\" push)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(git pull:*)",
+      "Bash(for v in 002 003 004 005 006 007 008 009 010 011 012 013 014 015 016 017)",
+      "Bash(do npx supabase migration repair --status applied \"$v\")",
+      "Bash(done)",
+      "Bash(where:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
