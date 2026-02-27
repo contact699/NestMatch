@@ -12,6 +12,7 @@ const updateGroupSchema = z.object({
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   preferred_cities: z.array(z.string()).optional(),
   status: z.enum(['forming', 'searching', 'matched']).optional(),
+  is_public: z.boolean().optional(),
 }).refine(
   (data) => {
     if (data.combined_budget_min && data.combined_budget_max) {
@@ -124,7 +125,7 @@ export const PUT = withApiHandler(
 
     const allowedFields = [
       'name', 'description', 'combined_budget_min', 'combined_budget_max',
-      'target_move_date', 'preferred_cities', 'status'
+      'target_move_date', 'preferred_cities', 'status', 'is_public'
     ]
 
     for (const field of allowedFields) {

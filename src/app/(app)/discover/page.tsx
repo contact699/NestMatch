@@ -250,28 +250,15 @@ export default function DiscoverPage() {
   }, [])
 
   const fetchPublicGroups = useCallback(async () => {
-    const supabase = createClient()
-
-    const { data: groups } = await supabase
-      .from('co_renter_groups')
-      .select(`
-        *,
-        members:co_renter_members(
-          user:profiles(name, profile_photo, verification_level)
-        )
-      `)
-      .eq('is_public', true)
-      .eq('status', 'forming')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (groups) {
-      const enriched = groups.map((g: any) => ({
-        ...g,
-        member_count: g.members?.length || 0,
-      }))
-      setPublicGroups(enriched)
-      setCounts(prev => ({ ...prev, groups: enriched.length }))
+    try {
+      const response = await fetch('/api/groups/public')
+      if (response.ok) {
+        const data = await response.json()
+        setPublicGroups(data.groups || [])
+        setCounts(prev => ({ ...prev, groups: data.groups?.length || 0 }))
+      }
+    } catch (error) {
+      clientLogger.error('Error fetching public groups', error)
     }
   }, [])
 
@@ -316,6 +303,8 @@ export default function DiscoverPage() {
         } else {
           toast.success(`Generated ${data.generated} new suggestions!`)
         }
+      } else {
+        toast.error(data?.error || 'Failed to generate suggestions')
       }
     } catch (error) {
       clientLogger.error('Error refreshing suggestions', error)

@@ -6,7 +6,7 @@ import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ConfirmModal } from '@/components/ui/modal'
+import { ConfirmModal, Modal, ModalHeader, ModalTitle, ModalContent } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -543,6 +543,18 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         />
       )}
 
+      {/* Settings Modal */}
+      {showSettingsModal && group && (
+        <GroupSettingsModal
+          group={group}
+          onClose={() => setShowSettingsModal(false)}
+          onSuccess={() => {
+            setShowSettingsModal(false)
+            fetchGroup()
+          }}
+        />
+      )}
+
       <ConfirmModal
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
@@ -553,5 +565,197 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         variant="danger"
       />
     </div>
+  )
+}
+
+// Group Settings Modal Component
+function GroupSettingsModal({
+  group,
+  onClose,
+  onSuccess,
+}: {
+  group: Group
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [name, setName] = useState(group.name)
+  const [description, setDescription] = useState(group.description || '')
+  const [budgetMin, setBudgetMin] = useState(group.combined_budget_min?.toString() || '')
+  const [budgetMax, setBudgetMax] = useState(group.combined_budget_max?.toString() || '')
+  const [moveDate, setMoveDate] = useState(group.target_move_date || '')
+  const [cities, setCities] = useState(group.preferred_cities?.join(', ') || '')
+  const [isPublic, setIsPublic] = useState((group as any).is_public ?? true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch(`/api/groups/${group.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          combined_budget_min: budgetMin ? Number(budgetMin) : undefined,
+          combined_budget_max: budgetMax ? Number(budgetMax) : undefined,
+          target_move_date: moveDate || undefined,
+          preferred_cities: cities ? cities.split(',').map(c => c.trim()).filter(Boolean) : undefined,
+          is_public: isPublic,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update group')
+      }
+
+      toast.success('Group settings updated')
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal isOpen={true} onClose={onClose} size="lg">
+      <ModalHeader onClose={onClose}>
+        <ModalTitle>Group Settings</ModalTitle>
+      </ModalHeader>
+      <ModalContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Group Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Toronto Apartment Hunt 2026"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              maxLength={255}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What are you looking for? What's your ideal situation?"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              maxLength={2000}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Budget Min (CAD)
+              </label>
+              <input
+                type="number"
+                value={budgetMin}
+                onChange={(e) => setBudgetMin(e.target.value)}
+                placeholder="1000"
+                min="1"
+                max="99999"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Budget Max (CAD)
+              </label>
+              <input
+                type="number"
+                value={budgetMax}
+                onChange={(e) => setBudgetMax(e.target.value)}
+                placeholder="2500"
+                min="1"
+                max="99999"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Target Move Date
+            </label>
+            <input
+              type="date"
+              value={moveDate}
+              onChange={(e) => setMoveDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Preferred Cities
+            </label>
+            <input
+              type="text"
+              value={cities}
+              onChange={(e) => setCities(e.target.value)}
+              placeholder="Toronto, Vancouver, Montreal"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Separate cities with commas</p>
+          </div>
+
+          <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Make this group discoverable
+              </p>
+              <p className="text-xs text-gray-500">
+                Public groups appear in Discover so compatible users can request to join.
+              </p>
+            </div>
+          </label>
+
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1" isLoading={loading}>
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </ModalContent>
+    </Modal>
   )
 }
