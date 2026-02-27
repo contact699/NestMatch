@@ -177,9 +177,11 @@ export default function DiscoverPage() {
     // Path A: decent profile (has name + has photo + has taken quiz)
     // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
     const profilesData = allProfilesData.filter((p: any) => {
-      const hasName = !!p.name
+      const hasName = p.name && p.name.trim() !== ''
+      if (!hasName) return false
+
       const hasQuiz = quizTakenUserIds.has(p.user_id)
-      const isDecentProfile = hasName && hasQuiz
+      const isDecentProfile = hasQuiz
 
       const isVerified = p.email_verified || p.phone_verified ||
         p.verification_level === 'verified' || p.verification_level === 'trusted'
@@ -309,7 +311,11 @@ export default function DiscoverPage() {
         toast.error('Please wait before refreshing again')
       } else if (response.ok) {
         await fetchSuggestions()
-        toast.success('Suggestions refreshed')
+        if (data.generated === 0) {
+          toast.error(data.message || 'No suggestions could be generated right now.')
+        } else {
+          toast.success(`Generated ${data.generated} new suggestions!`)
+        }
       }
     } catch (error) {
       clientLogger.error('Error refreshing suggestions', error)

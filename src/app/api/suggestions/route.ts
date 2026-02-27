@@ -86,14 +86,21 @@ export const POST = withApiHandler(
     const groupSize = preferences?.preferred_group_size || 2
 
     // Generate new suggestions
-    const suggestions = await generateGroupSuggestions(userId, groupSize)
+    const result = await generateGroupSuggestions(userId, groupSize)
 
-    // Save to database
-    await saveGroupSuggestions(userId, suggestions)
+    // Save to database (only replaces old suggestions if new ones were generated)
+    await saveGroupSuggestions(userId, result.suggestions)
+
+    if (result.suggestions.length === 0) {
+      return apiResponse({
+        generated: 0,
+        message: result.reason || 'No suggestions could be generated at this time.',
+      }, 200, requestId)
+    }
 
     return apiResponse({
-      generated: suggestions.length,
-      message: `Generated ${suggestions.length} group suggestions`,
+      generated: result.suggestions.length,
+      message: `Generated ${result.suggestions.length} group suggestions`,
     }, 200, requestId)
   },
   { rateLimit: 'suggestionsGenerate' }

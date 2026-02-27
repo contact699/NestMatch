@@ -102,6 +102,8 @@ export default function RoommatesPage() {
       .from('profiles')
       .select('*')
       .neq('user_id', user.id)
+      .not('name', 'is', null)
+      .neq('name', '')
       .order('created_at', { ascending: false })
       .limit(50) as { data: Profile[] | null; error: any }
 

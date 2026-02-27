@@ -152,7 +152,7 @@ export function Navbar({ user }: NavbarProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user])
+  }, [user, pathname])
 
   const handleSignOut = async () => {
     const supabase = createClient()
