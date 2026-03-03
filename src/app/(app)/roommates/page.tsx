@@ -52,7 +52,7 @@ export default function RoommatesPage() {
   const [showFilters, setShowFilters] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Set up intersection observer for animations
+  // Set up intersection observer for animations on static elements only
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -79,7 +79,7 @@ export default function RoommatesPage() {
     })
 
     return () => observer.disconnect()
-  }, [profiles, loading])
+  }, [loading])
 
   useEffect(() => {
     fetchProfiles()
@@ -176,12 +176,6 @@ export default function RoommatesPage() {
     }
     return true
   })
-
-  // Stagger delay classes
-  const getDelayClass = (index: number) => {
-    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-600']
-    return delays[index % delays.length]
-  }
 
   if (!currentUserId && !loading) {
     return (
@@ -357,7 +351,7 @@ export default function RoommatesPage() {
           ))}
         </div>
       ) : filteredProfiles.length === 0 ? (
-        <div className="text-center py-12" data-animate>
+        <div className="text-center py-12">
           <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No roommates found</h3>
           <p className="text-gray-500 mb-4">
@@ -374,12 +368,12 @@ export default function RoommatesPage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4" data-animate>
+          <p className="text-sm text-gray-500 mb-4">
             {filteredProfiles.length} potential roommate{filteredProfiles.length !== 1 ? 's' : ''} found
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProfiles.map((profile, index) => (
-              <div key={profile.id} data-animate className={getDelayClass(index)}>
+              <div key={profile.id}>
                 <Card
                   variant="bordered"
                   animate
