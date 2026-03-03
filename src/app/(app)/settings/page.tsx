@@ -36,10 +36,15 @@ interface BlockedUser {
 export default function SettingsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
   const [isUnblocking, setIsUnblocking] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadSettings() {
@@ -53,6 +58,8 @@ export default function SettingsPage() {
         router.push('/login?redirect=/settings')
         return
       }
+
+      setUserEmail(user.email || null)
 
       // Load blocked users
       const response = await fetch('/api/blocked-users')
@@ -73,6 +80,60 @@ export default function SettingsPage() {
     await supabase.auth.signOut()
     router.push('/')
     router.refresh()
+  }
+
+  const handleChangePassword = async () => {
+    setPasswordError(null)
+
+    if (!passwordForm.current) {
+      setPasswordError('Current password is required')
+      return
+    }
+    if (passwordForm.new.length < 6) {
+      setPasswordError('New password must be at least 6 characters')
+      return
+    }
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+
+    setPasswordLoading(true)
+
+    try {
+      const supabase = createClient()
+
+      // Verify current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: userEmail!,
+        password: passwordForm.current,
+      })
+
+      if (signInError) {
+        setPasswordError('Current password is incorrect')
+        setPasswordLoading(false)
+        return
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordForm.new,
+      })
+
+      if (updateError) {
+        setPasswordError(updateError.message)
+        setPasswordLoading(false)
+        return
+      }
+
+      toast.success('Password updated successfully')
+      setPasswordForm({ current: '', new: '', confirm: '' })
+      setShowPasswordForm(false)
+    } catch {
+      setPasswordError('Something went wrong. Please try again.')
+    } finally {
+      setPasswordLoading(false)
+    }
   }
 
   const handleUnblock = async (userId: string) => {
@@ -170,7 +231,7 @@ export default function SettingsPage() {
             </Link>
 
             <Link href="/quiz">
-              <div className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
                   <Users className="h-5 w-5 text-gray-400" />
                   <div>
@@ -181,6 +242,92 @@ export default function SettingsPage() {
                 <ChevronRight className="h-5 w-5 text-gray-400" />
               </div>
             </Link>
+
+            <div>
+              <button
+                onClick={() => {
+                  setShowPasswordForm(!showPasswordForm)
+                  setPasswordError(null)
+                }}
+                className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors w-[calc(100%+3rem)]"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                  <div className="text-left">
+                    <p className="font-medium text-gray-900">Change Password</p>
+                    <p className="text-sm text-gray-500">Update your account password</p>
+                  </div>
+                </div>
+                <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${showPasswordForm ? 'rotate-90' : ''}`} />
+              </button>
+
+              {showPasswordForm && (
+                <div className="pb-4 space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Current Password
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.current}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Enter current password"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.new}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="At least 6 characters"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Confirm New Password
+                    </label>
+                    <input
+                      type="password"
+                      value={passwordForm.confirm}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                      placeholder="Re-enter new password"
+                    />
+                  </div>
+
+                  {passwordError && (
+                    <p className="text-sm text-red-600">{passwordError}</p>
+                  )}
+
+                  <div className="flex gap-3 pt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowPasswordForm(false)
+                        setPasswordForm({ current: '', new: '', confirm: '' })
+                        setPasswordError(null)
+                      }}
+                      disabled={passwordLoading}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleChangePassword}
+                      isLoading={passwordLoading}
+                    >
+                      Update Password
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 
