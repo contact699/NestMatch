@@ -86,6 +86,40 @@ export const POST = withApiHandler(
 
     if (insertError) throw insertError
 
+    // Notify group admin(s) about the join request
+    const { data: requesterProfile } = await svcClient
+      .from('profiles')
+      .select('name')
+      .eq('user_id', userId!)
+      .single()
+
+    const { data: groupInfo } = await svcClient
+      .from('co_renter_groups')
+      .select('name')
+      .eq('id', groupId)
+      .single()
+
+    const { data: admins } = await svcClient
+      .from('co_renter_members')
+      .select('user_id')
+      .eq('group_id', groupId)
+      .eq('role', 'admin')
+      .eq('status', 'active')
+
+    if (admins && admins.length > 0) {
+      const { createNotification } = await import('@/lib/notifications')
+      for (const admin of admins) {
+        await createNotification({
+          userId: admin.user_id,
+          type: 'join_request_received',
+          title: 'New join request',
+          body: `${requesterProfile?.name || 'Someone'} wants to join ${groupInfo?.name || 'your group'}`,
+          link: `/groups/${groupId}`,
+          metadata: { group_id: groupId, request_id: joinRequest.id, requester_id: userId },
+        })
+      }
+    }
+
     return apiResponse({ join_request: joinRequest }, 201, requestId)
   },
   { rateLimit: 'default' }
@@ -158,6 +192,53 @@ export const PUT = withApiHandler(
         })
 
       if (memberError) throw memberError
+    }
+
+    // Notify the requester about the decision
+    const { data: adminProfile } = await svcClient
+      .from('profiles')
+      .select('name')
+      .eq('user_id', userId!)
+      .single()
+
+    const { data: groupInfo } = await svcClient
+      .from('co_renter_groups')
+      .select('name')
+      .eq('id', groupId)
+      .single()
+
+    const { createNotification, createNotificationsForGroupMembers } = await import('@/lib/notifications')
+
+    const notifType = body.response === 'accepted' ? 'join_request_accepted' as const : 'join_request_declined' as const
+    const notifTitle = body.response === 'accepted' ? 'Join request accepted!' : 'Join request declined'
+    const notifBody = body.response === 'accepted'
+      ? `You've been accepted into ${groupInfo?.name || 'a group'}`
+      : `Your request to join ${groupInfo?.name || 'a group'} was declined`
+
+    await createNotification({
+      userId: joinRequest.user_id,
+      type: notifType,
+      title: notifTitle,
+      body: notifBody,
+      link: `/groups/${groupId}`,
+      metadata: { group_id: groupId, request_id: body.request_id },
+    })
+
+    // If accepted, also notify existing members about the new member
+    if (body.response === 'accepted') {
+      const { data: newMemberProfile } = await svcClient
+        .from('profiles')
+        .select('name')
+        .eq('user_id', joinRequest.user_id)
+        .single()
+
+      await createNotificationsForGroupMembers(groupId, joinRequest.user_id, {
+        type: 'member_joined',
+        title: 'New group member',
+        body: `${newMemberProfile?.name || 'Someone'} joined ${groupInfo?.name || 'your group'}`,
+        link: `/groups/${groupId}`,
+        metadata: { group_id: groupId, new_member_id: joinRequest.user_id },
+      })
     }
 
     return apiResponse({ success: true }, 200, requestId)

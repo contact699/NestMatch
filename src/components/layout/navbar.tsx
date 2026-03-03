@@ -27,6 +27,7 @@ import {
   LucideIcon,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
+import { NotificationBell } from '@/components/layout/notification-bell'
 
 interface NavLinkProps {
   href: string
@@ -214,6 +215,8 @@ export function Navbar({ user }: NavbarProps) {
           {/* Right side */}
           <div className="flex items-center gap-2">
             {user ? (
+              <>
+              <NotificationBell userId={user.id} />
               <div className="relative">
                 <button
                   onClick={() => setProfileMenuOpen(!profileMenuOpen)}
@@ -300,6 +303,7 @@ export function Navbar({ user }: NavbarProps) {
                   </>
                 )}
               </div>
+              </>
             ) : (
               <>
                 {/* Mobile sign in button - visible in header */}
