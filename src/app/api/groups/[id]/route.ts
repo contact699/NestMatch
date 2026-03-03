@@ -71,19 +71,65 @@ export const GET = withApiHandler(
       throw new NotFoundError('Group not found')
     }
 
-    // Verify user is a member
+    // Check if user is a member
     const isMember = group.members?.some((m: any) => m.user?.user_id === userId!)
+
     if (!isMember) {
-      throw new AuthorizationError('Access denied')
+      // Allow viewing public groups as a non-member
+      if (!group.is_public) {
+        throw new AuthorizationError('Access denied')
+      }
+
+      // Check if user already has a pending join request
+      const { data: joinRequest } = await (readClient as any)
+        .from('co_renter_join_requests')
+        .select('id, status')
+        .eq('group_id', id)
+        .eq('user_id', userId!)
+        .single()
+
+      return apiResponse({
+        group: {
+          ...group,
+          invitations: [], // Hide invitations from non-members
+          user_role: null,
+          is_admin: false,
+          is_member: false,
+          join_request_status: joinRequest?.status || null,
+        },
+      }, 200, requestId)
     }
 
     const userMember = group.members?.find((m: any) => m.user?.user_id === userId!)
+
+    // For members, also fetch pending join requests if admin
+    let pendingJoinRequests: any[] = []
+    if (userMember?.role === 'admin') {
+      const { data: joinRequests } = await (readClient as any)
+        .from('co_renter_join_requests')
+        .select(`
+          id,
+          message,
+          status,
+          created_at,
+          user:profiles!co_renter_join_requests_user_id_fkey(
+            user_id,
+            name,
+            profile_photo
+          )
+        `)
+        .eq('group_id', id)
+        .eq('status', 'pending')
+      pendingJoinRequests = joinRequests || []
+    }
 
     return apiResponse({
       group: {
         ...group,
         user_role: userMember?.role || 'member',
         is_admin: userMember?.role === 'admin',
+        is_member: true,
+        join_requests: pendingJoinRequests,
       },
     }, 200, requestId)
   },
