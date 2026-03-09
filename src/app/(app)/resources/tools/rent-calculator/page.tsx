@@ -60,7 +60,7 @@ export default function RentCalculatorPage() {
       const totalSqft = rooms.reduce((sum, r) => sum + r.sqft, 0)
       return rooms.map((r) => ({
         ...r,
-        rent: (r.sqft / totalSqft) * totalRent,
+        rent: totalSqft > 0 ? (r.sqft / totalSqft) * totalRent : totalRent / rooms.length,
       }))
     }
 
@@ -84,7 +84,7 @@ export default function RentCalculatorPage() {
     const totalValue = roomValues.reduce((sum, r) => sum + r.value, 0)
     return roomValues.map((r) => ({
       ...r,
-      rent: (r.value / totalValue) * totalRent,
+      rent: totalValue > 0 ? (r.value / totalValue) * totalRent : totalRent / roomValues.length,
     }))
   }
 
@@ -273,7 +273,7 @@ export default function RentCalculatorPage() {
                       ${(room as any).rent?.toFixed(0) || 0}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {(((room as any).rent || 0) / totalRent * 100).toFixed(0)}%
+                      {totalRent > 0 ? (((room as any).rent || 0) / totalRent * 100).toFixed(0) : 0}%
                     </p>
                   </div>
                 </div>

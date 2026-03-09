@@ -59,7 +59,8 @@ export default async function DashboardPage() {
     supabase
       .from('listings')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id),
+      .eq('user_id', user.id)
+      .eq('is_active', true),
     supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })

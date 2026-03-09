@@ -59,7 +59,7 @@ interface Listing {
   }
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
@@ -69,7 +69,7 @@ export default function SearchPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   const ITEMS_PER_PAGE = 24
-  const page = parseInt(searchParams.get('page') || '1')
+  const page = parseInt(searchParams.get('page') || '1') || 1
 
   // Get view mode from URL or default to 'list'
   const viewParam = searchParams.get('view')
@@ -343,5 +343,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>}>
+      <SearchPageContent />
+    </Suspense>
   )
 }

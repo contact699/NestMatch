@@ -36,7 +36,8 @@ export default function FAQPage() {
 
     const params = new URLSearchParams()
     if (searchQuery) params.set('q', searchQuery)
-    if (selectedCategory) params.set('category', selectedCategory)
+    const selectedSlug = selectedCategory ? categories.find(c => c.id === selectedCategory)?.slug : null
+    if (selectedSlug) params.set('category', selectedSlug)
     if (selectedProvince) params.set('province', selectedProvince)
 
     try {
@@ -50,7 +51,7 @@ export default function FAQPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [searchQuery, selectedCategory, selectedProvince])
+  }, [searchQuery, selectedCategory, selectedProvince, categories])
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -76,12 +77,13 @@ export default function FAQPage() {
   useEffect(() => {
     const params = new URLSearchParams()
     if (searchQuery) params.set('q', searchQuery)
-    if (selectedCategory) params.set('category', selectedCategory)
+    const categorySlug = selectedCategory ? categories.find(c => c.id === selectedCategory)?.slug : null
+    if (categorySlug) params.set('category', categorySlug)
     if (selectedProvince) params.set('province', selectedProvince)
 
     const newUrl = params.toString() ? `?${params.toString()}` : '/resources/faq'
     router.replace(newUrl, { scroll: false })
-  }, [searchQuery, selectedCategory, selectedProvince, router])
+  }, [searchQuery, selectedCategory, selectedProvince, router, categories])
 
   const clearFilters = () => {
     setSearchQuery('')
@@ -188,8 +190,7 @@ export default function FAQPage() {
               categories={categories}
               selected={selectedCategory}
               onSelect={(id) => {
-                const cat = categories.find((c) => c.id === id)
-                setSelectedCategory(cat?.slug || null)
+                setSelectedCategory(id)
               }}
             />
           </div>

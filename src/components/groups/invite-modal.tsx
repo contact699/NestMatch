@@ -75,7 +75,6 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
       toast.success(`Invitation sent to ${user.name}`)
       // Remove invited user from results
       setSearchResults((prev) => prev.filter((u) => u.user_id !== user.user_id))
-      onSuccess()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -211,9 +210,17 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
             </div>
           </div>
 
-          <Button variant="outline" className="w-full" onClick={onClose}>
-            Close
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onClose}>
+              Close
+            </Button>
+            <button
+              onClick={() => onSuccess()}
+              className="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+            >
+              Done
+            </button>
+          </div>
         </div>
       </ModalContent>
     </Modal>

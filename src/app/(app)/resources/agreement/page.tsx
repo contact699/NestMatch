@@ -371,9 +371,14 @@ export default function AgreementGeneratorPage() {
       case 5:
         fieldsToValidate = ['parkingIncluded', 'accessibilityWheelchair', 'accessibilityMobilityStorage', 'accessibilityServiceAnimal', 'careScheduledVisits', 'careQuietHoursMedical', 'careAccessibilityMods', 'helpExchangeEnabled']
         break
-      case 6:
+      case 6: {
         fieldsToValidate = ['noticeToLeave', 'disputeResolution', 'agreementDuration']
+        const duration = watch('agreementDuration')
+        if (duration === 'fixed_term') {
+          fieldsToValidate.push('fixedTermEndDate')
+        }
         break
+      }
       case 7:
         // Review step — no validation needed
         break

@@ -81,7 +81,7 @@ export const agreementSchema = z.object({
   noticeToLeave: z.number().min(1),
   disputeResolution: z.enum(['direct', 'written', 'mediation']),
   agreementDuration: z.enum(['month_to_month', 'fixed_term']),
-  fixedTermEndDate: z.string().optional(),
+  fixedTermEndDate: z.string().min(1, 'End date is required for fixed-term agreements').optional(),
 })
 
 export type AgreementFormData = z.infer<typeof agreementSchema>
