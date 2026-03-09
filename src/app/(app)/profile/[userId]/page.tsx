@@ -99,11 +99,11 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
       {/* Back button */}
       <div className="mb-6">
         <Link
-          href="/roommates"
+          href="/discover?tab=people"
           className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to roommates
+          Back to discover
         </Link>
       </div>
 

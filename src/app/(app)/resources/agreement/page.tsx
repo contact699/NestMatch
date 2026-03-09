@@ -28,6 +28,7 @@ import {
   StepLifestyle,
   StepResponsibilities,
   StepAccommodations,
+  StepTerms,
   StepReview,
   StepDownload,
 } from './steps'
@@ -38,8 +39,9 @@ const STEPS = [
   { id: 3, title: 'Lifestyle', icon: Moon, description: 'House rules' },
   { id: 4, title: 'Responsibilities', icon: Sparkles, description: 'Cleaning and supplies' },
   { id: 5, title: 'Accommodations', icon: Accessibility, description: 'Parking & accessibility' },
-  { id: 6, title: 'Review', icon: Check, description: 'Check details' },
-  { id: 7, title: 'Download', icon: Download, description: 'Get your agreement' },
+  { id: 6, title: 'Terms', icon: Scale, description: 'Agreement terms' },
+  { id: 7, title: 'Review', icon: Check, description: 'Check details' },
+  { id: 8, title: 'Download', icon: Download, description: 'Get your agreement' },
 ]
 
 const formatTime = (time: string | undefined) => {
@@ -372,6 +374,9 @@ export default function AgreementGeneratorPage() {
       case 6:
         fieldsToValidate = ['noticeToLeave', 'disputeResolution', 'agreementDuration']
         break
+      case 7:
+        // Review step — no validation needed
+        break
     }
 
     const isValid = await trigger(fieldsToValidate)
@@ -404,14 +409,25 @@ export default function AgreementGeneratorPage() {
       case 5:
         return <StepAccommodations register={register} watch={watch} setValue={setValue} errors={errors} />
       case 6:
-        return <StepReview watch={watch} />
+        return <StepTerms register={register} watch={watch} setValue={setValue} errors={errors} />
       case 7:
+        return <StepReview watch={watch} />
+      case 8:
         const formData = watch()
         const provinceName = {
           ON: 'Ontario',
           BC: 'British Columbia',
           QC: 'Quebec',
           AB: 'Alberta',
+          MB: 'Manitoba',
+          SK: 'Saskatchewan',
+          NB: 'New Brunswick',
+          NS: 'Nova Scotia',
+          PE: 'Prince Edward Island',
+          NL: 'Newfoundland and Labrador',
+          NT: 'Northwest Territories',
+          YT: 'Yukon',
+          NU: 'Nunavut',
         }[formData.province] || formData.province
 
         // Transform form data to PDF-compatible format
@@ -519,7 +535,7 @@ export default function AgreementGeneratorPage() {
           {renderStep()}
 
           {/* Navigation buttons */}
-          {currentStep < 7 && (
+          {currentStep < 8 && (
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
               <Button
                 type="button"
@@ -532,7 +548,7 @@ export default function AgreementGeneratorPage() {
               </Button>
 
               <Button type="button" onClick={nextStep}>
-                {currentStep === 6 ? (
+                {currentStep === 7 ? (
                   <>
                     Generate Agreement
                     <Download className="h-4 w-4 ml-2" />
@@ -547,9 +563,9 @@ export default function AgreementGeneratorPage() {
             </div>
           )}
 
-          {currentStep === 7 && (
+          {currentStep === 8 && (
             <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" onClick={() => setCurrentStep(6)}>
+              <Button type="button" variant="outline" onClick={() => setCurrentStep(7)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Edit Agreement
               </Button>

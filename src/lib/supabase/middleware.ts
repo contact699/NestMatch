@@ -67,7 +67,6 @@ export async function updateSession(request: NextRequest) {
     '/profile',
     '/discover',
     '/search',
-    '/roommates',
     '/quiz',
     '/verify',
 

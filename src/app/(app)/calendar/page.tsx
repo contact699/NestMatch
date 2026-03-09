@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useFetch } from '@/lib/hooks/use-fetch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { FetchError } from '@/components/ui/fetch-error'
@@ -36,7 +36,13 @@ export default function CalendarPage() {
     return new Date(now.getFullYear(), now.getMonth(), 1)
   })
 
-  const { data, isLoading, error, refetch } = useFetch<{ events: ChatEvent[] }>('/api/events')
+  const eventsUrl = useMemo(() => {
+    const m = currentMonth.getMonth() + 1
+    const y = currentMonth.getFullYear()
+    return `/api/events?month=${m}&year=${y}`
+  }, [currentMonth])
+
+  const { data, isLoading, error, refetch } = useFetch<{ events: ChatEvent[] }>(eventsUrl)
   const events = data?.events || []
 
   const prevMonth = () => {
