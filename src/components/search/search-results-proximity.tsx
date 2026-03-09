@@ -65,6 +65,9 @@ export function SearchResultsProximity({
     requestLocation,
   } = useGeolocation()
 
+  // Distance filter state
+  const [maxDistance, setMaxDistance] = useState<number | null>(null)
+
   // Address search state
   const [addressQuery, setAddressQuery] = useState('')
   const [addressLat, setAddressLat] = useState<number | null>(null)
@@ -150,6 +153,15 @@ export function SearchResultsProximity({
         return a.distance - b.distance
       })
   }, [listings, refLat, refLng, hasLocation])
+
+  // Filter by max distance
+  const filteredListings = useMemo(() => {
+    return sortedListings.filter(listing => {
+      if (maxDistance === null) return true
+      if (listing.distance === null || listing.distance === undefined) return false
+      return listing.distance <= maxDistance
+    })
+  }, [sortedListings, maxDistance])
 
   const getDelayClass = (index: number) => {
     const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400', 'delay-500', 'delay-600']
@@ -293,9 +305,27 @@ export function SearchResultsProximity({
         </div>
       )}
 
+      {/* Distance radius filter */}
+      <div className="flex items-center gap-3 mb-4">
+        <label className="text-sm font-medium text-gray-700">Max distance:</label>
+        <select
+          value={maxDistance ?? ''}
+          onChange={(e) => setMaxDistance(e.target.value ? Number(e.target.value) : null)}
+          className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Any distance</option>
+          <option value="1">1 km</option>
+          <option value="2">2 km</option>
+          <option value="5">5 km</option>
+          <option value="10">10 km</option>
+          <option value="25">25 km</option>
+          <option value="50">50 km</option>
+        </select>
+      </div>
+
       {/* Listings grid */}
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {sortedListings.map((listing, index) => (
+        {filteredListings.map((listing, index) => (
           <div key={listing.id} className={`relative ${getDelayClass(index)}`}>
             {/* Distance badge */}
             {listing.distance !== null && (
@@ -315,7 +345,7 @@ export function SearchResultsProximity({
       </div>
 
       {/* Note about listings without coordinates */}
-      {sortedListings.some((l) => l.distance === null) && (
+      {filteredListings.some((l) => l.distance === null) && (
         <p className="mt-6 text-sm text-gray-500 text-center">
           Some listings don't have precise location data and appear at the end.
         </p>

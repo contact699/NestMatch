@@ -149,6 +149,9 @@ export default function SearchPage() {
         if (parkingIncluded) params.set('parkingIncluded', parkingIncluded)
         if (q) params.set('q', q)
 
+        const sort = searchParams.get('sort')
+        if (sort) params.set('sort', sort)
+
         params.set('limit', String(ITEMS_PER_PAGE))
         params.set('offset', String((page - 1) * ITEMS_PER_PAGE))
 
@@ -288,11 +291,28 @@ export default function SearchPage() {
         <SearchFilters />
       </Card>
 
-      {/* Results count */}
+      {/* Results count and sort */}
       {!isLoading && !error && listings.length > 0 && (
-        <p className="text-sm text-gray-500 mb-4">
-          {totalCount} listing{totalCount !== 1 ? 's' : ''} found
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-gray-500">
+            {totalCount} listing{totalCount !== 1 ? 's' : ''} found
+          </p>
+          <select
+            value={searchParams.get('sort') || 'newest'}
+            onChange={(e) => {
+              const params = new URLSearchParams(searchParams.toString())
+              params.set('sort', e.target.value)
+              params.delete('page')
+              router.push(`/search?${params.toString()}`)
+            }}
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+          </select>
+        </div>
       )}
 
       {/* Results */}

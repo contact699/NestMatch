@@ -72,6 +72,8 @@ export const GET = withPublicHandler(
     // Use direct client for public queries
     const supabase = createDirectClient(supabaseUrl, supabaseAnonKey)
 
+    const sort = searchParams.get('sort') || 'newest'
+
     let query = supabase
       .from('listings')
       .select(`
@@ -84,7 +86,20 @@ export const GET = withPublicHandler(
           verification_level
         )
       `, { count: 'exact', head: false })
-      .order('created_at', { ascending: false })
+
+    switch (sort) {
+      case 'price_asc':
+        query = query.order('price', { ascending: true })
+        break
+      case 'price_desc':
+        query = query.order('price', { ascending: false })
+        break
+      case 'oldest':
+        query = query.order('created_at', { ascending: true })
+        break
+      default:
+        query = query.order('created_at', { ascending: false })
+    }
 
     // If fetching user's own listings, show all (active + inactive)
     if (userId) {
