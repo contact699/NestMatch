@@ -45,8 +45,6 @@ export default function SettingsPage() {
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
-  const [notifPrefs, setNotifPrefs] = useState({ emailNotifications: true, messageAlerts: true })
-
   useEffect(() => {
     async function loadSettings() {
       const supabase = createClient()
@@ -75,24 +73,6 @@ export default function SettingsPage() {
 
     loadSettings()
   }, [router])
-
-  useEffect(() => {
-    const saved = localStorage.getItem('nestmatch_notif_prefs')
-    if (saved) {
-      try {
-        setNotifPrefs(JSON.parse(saved))
-      } catch {
-        // ignore invalid JSON
-      }
-    }
-  }, [])
-
-  const updateNotifPref = (key: 'emailNotifications' | 'messageAlerts', value: boolean) => {
-    const updated = { ...notifPrefs, [key]: value }
-    setNotifPrefs(updated)
-    localStorage.setItem('nestmatch_notif_prefs', JSON.stringify(updated))
-    toast.success('Notification preference updated')
-  }
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -423,38 +403,19 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Notifications - Placeholder for future */}
+        {/* Notifications */}
         <Card variant="bordered">
-          <CardHeader className="py-4">
-            <CardTitle className="text-base">Notifications</CardTitle>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Bell className="h-5 w-5" />
+              Notifications
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <label className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">Email notifications</p>
-                  <p className="text-sm text-gray-500">Receive updates via email</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifPrefs.emailNotifications}
-                  onChange={(e) => updateNotifPref('emailNotifications', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </label>
-              <label className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">New message alerts</p>
-                  <p className="text-sm text-gray-500">Get notified of new messages</p>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={notifPrefs.messageAlerts}
-                  onChange={(e) => updateNotifPref('messageAlerts', e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-              </label>
-            </div>
+            <p className="text-sm text-gray-600">
+              Email notifications are sent for new messages, group invitations, and join requests.
+              Notification preferences will be customizable in a future update.
+            </p>
           </CardContent>
         </Card>
 

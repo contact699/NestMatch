@@ -186,6 +186,15 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
     if (!userMember) return
 
+    // Check if user is the only admin
+    if (group.is_admin) {
+      const adminCount = group.members.filter(m => m.role === 'admin').length
+      if (adminCount <= 1 && group.members.length > 1) {
+        toast.error('You are the only admin. Please promote another member to admin before leaving.')
+        return
+      }
+    }
+
     setConfirmModal({
       open: true,
       title: 'Leave Group',

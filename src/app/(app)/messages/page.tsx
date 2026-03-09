@@ -93,7 +93,7 @@ export default function MessagesPage() {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/login?redirect=/messages?to=' + toUserId)
+        router.push('/login?redirect=' + encodeURIComponent('/messages?to=' + toUserId))
         return
       }
 
@@ -138,34 +138,34 @@ export default function MessagesPage() {
       }
 
       setIsLoading(false)
-
-      // Set up real-time subscription for new messages
-      const channel = supabase
-        .channel('messages-inbox')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-          },
-          async () => {
-            // Refresh conversations on new message
-            const refreshResponse = await fetch('/api/conversations')
-            const refreshData = await refreshResponse.json()
-            if (refreshResponse.ok) {
-              setConversations(refreshData.conversations)
-            }
-          }
-        )
-        .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
 
     loadConversations()
+
+    // Set up real-time subscription separately so cleanup works
+    const supabase = createClient()
+    const channel = supabase
+      .channel('messages-inbox')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+        },
+        async () => {
+          const refreshResponse = await fetch('/api/conversations')
+          const refreshData = await refreshResponse.json()
+          if (refreshResponse.ok) {
+            setConversations(refreshData.conversations)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [router])
 
   const filteredConversations = conversations.filter((conv) => {

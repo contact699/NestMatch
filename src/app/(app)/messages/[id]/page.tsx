@@ -112,6 +112,7 @@ export default function ChatPage() {
   const [otherUserTyping, setOtherUserTyping] = useState(false)
   const typingTimeoutRef = useRef<NodeJS.Timeout>(undefined)
   const typingDebounceRef = useRef<NodeJS.Timeout>(undefined)
+  const typingChannelRef = useRef<any>(null)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
@@ -143,12 +144,10 @@ export default function ChatPage() {
   }, [messages])
 
   const sendTypingEvent = useCallback(() => {
-    if (!conversationId || !currentUserId) return
-    // Debounce: only send once every 2 seconds
+    if (!typingChannelRef.current) return
     if (typingDebounceRef.current) return
 
-    const supabase = createClient()
-    supabase.channel(`typing:${conversationId}`).send({
+    typingChannelRef.current.send({
       type: 'broadcast',
       event: 'typing',
       payload: { userId: currentUserId },
@@ -157,7 +156,7 @@ export default function ChatPage() {
     typingDebounceRef.current = setTimeout(() => {
       typingDebounceRef.current = undefined
     }, 2000)
-  }, [conversationId, currentUserId])
+  }, [currentUserId])
 
   useEffect(() => {
     if (!conversationId || !currentUserId) return
@@ -173,7 +172,10 @@ export default function ChatPage() {
       })
       .subscribe()
 
+    typingChannelRef.current = channel
+
     return () => {
+      typingChannelRef.current = null
       supabase.removeChannel(channel)
       clearTimeout(typingTimeoutRef.current)
     }

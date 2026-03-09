@@ -199,9 +199,9 @@ export default function EditListingPage() {
   const toggleAmenity = (amenity: string) => {
     const current = formData.amenities || []
     if (current.includes(amenity)) {
-      setValue('amenities', current.filter((a) => a !== amenity))
+      setValue('amenities', current.filter((a) => a !== amenity), { shouldDirty: true })
     } else {
-      setValue('amenities', [...current, amenity])
+      setValue('amenities', [...current, amenity], { shouldDirty: true })
     }
   }
 
@@ -360,7 +360,7 @@ export default function EditListingPage() {
                 <select
                   {...register('province', {
                     onChange: () => {
-                      setValue('city', '')
+                      setValue('city', '', { shouldDirty: true })
                     },
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -500,7 +500,7 @@ export default function EditListingPage() {
               </label>
               <ImageUploader
                 images={formData.photos || []}
-                onChange={(images) => setValue('photos', images)}
+                onChange={(images) => setValue('photos', images, { shouldDirty: true })}
                 maxImages={10}
               />
             </div>
@@ -531,7 +531,7 @@ export default function EditListingPage() {
                   </label>
                   <input
                     type="number"
-                    {...register('roommate_age_min', { valueAsNumber: true })}
+                    {...register('roommate_age_min', { setValueAs: (v: string) => v === '' || v === undefined ? undefined : Number(v) })}
                     placeholder="18"
                     min={18}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -543,7 +543,7 @@ export default function EditListingPage() {
                   </label>
                   <input
                     type="number"
-                    {...register('roommate_age_max', { valueAsNumber: true })}
+                    {...register('roommate_age_max', { setValueAs: (v: string) => v === '' || v === undefined ? undefined : Number(v) })}
                     placeholder="65"
                     max={120}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -682,9 +682,9 @@ export default function EditListingPage() {
                             onChange={(e) => {
                               const current = formData.help_tasks || []
                               if (e.target.checked) {
-                                setValue('help_tasks', [...current, task.value])
+                                setValue('help_tasks', [...current, task.value], { shouldDirty: true })
                               } else {
-                                setValue('help_tasks', current.filter((t) => t !== task.value))
+                                setValue('help_tasks', current.filter((t) => t !== task.value), { shouldDirty: true })
                               }
                             }}
                             className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"

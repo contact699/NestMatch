@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 import { createClient } from '@/lib/supabase/client'
@@ -98,10 +99,18 @@ interface PublicGroup {
 }
 
 export default function DiscoverPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('suggestions')
+  const discoverSearchParams = useSearchParams()
+  const router = useRouter()
+  const initialTab = discoverSearchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<TabId>(
+    initialTab === 'people' || initialTab === 'groups'
+      ? initialTab
+      : 'suggestions'
+  )
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
 
   // Suggestions state
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -315,6 +324,8 @@ export default function DiscoverPage() {
   }
 
   const handleInterest = async (suggestionId: string) => {
+    if (processingIds.has(suggestionId)) return
+    setProcessingIds(prev => new Set(prev).add(suggestionId))
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/convert`, {
         method: 'POST',
@@ -327,17 +338,25 @@ export default function DiscoverPage() {
         // Remove from suggestions and redirect to group
         setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
         toast.success('Group created from suggestion!')
-        window.location.href = `/groups/${data.groupId}`
+        router.push(`/groups/${data.groupId}`)
       } else {
         toast.error('Failed to create group from suggestion')
       }
     } catch (error) {
       clientLogger.error('Error converting suggestion', error)
       toast.error('Failed to create group from suggestion')
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(suggestionId)
+        return next
+      })
     }
   }
 
   const handleDismiss = async (suggestionId: string) => {
+    if (processingIds.has(suggestionId)) return
+    setProcessingIds(prev => new Set(prev).add(suggestionId))
     try {
       await fetch(`/api/suggestions/${suggestionId}/interact`, {
         method: 'POST',
@@ -351,6 +370,12 @@ export default function DiscoverPage() {
     } catch (error) {
       clientLogger.error('Error dismissing suggestion', error)
       toast.error('Failed to dismiss suggestion')
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(suggestionId)
+        return next
+      })
     }
   }
 

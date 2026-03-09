@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 
 export function AuthListener() {
   const router = useRouter()
+  const refreshTimeoutRef = useRef<NodeJS.Timeout>(undefined)
 
   useEffect(() => {
     const supabase = createClient()
@@ -17,13 +18,17 @@ export function AuthListener() {
           router.refresh()
         }
         if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
-          router.refresh()
+          clearTimeout(refreshTimeoutRef.current)
+          refreshTimeoutRef.current = setTimeout(() => {
+            router.refresh()
+          }, 1000)
         }
       }
     )
 
     return () => {
       subscription.unsubscribe()
+      clearTimeout(refreshTimeoutRef.current)
     }
   }, [router])
 
