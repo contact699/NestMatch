@@ -77,7 +77,8 @@ interface Group {
   combined_budget_max: number | null
   target_move_date: string | null
   preferred_cities: string[] | null
-  status: string
+  status: 'forming' | 'searching' | 'matched'
+  is_public: boolean
   created_at: string
   members: GroupMember[]
   invitations: Invitation[]
@@ -788,7 +789,8 @@ function GroupSettingsModal({
   const [budgetMax, setBudgetMax] = useState(group.combined_budget_max?.toString() || '')
   const [moveDate, setMoveDate] = useState(group.target_move_date || '')
   const [cities, setCities] = useState(group.preferred_cities?.join(', ') || '')
-  const [isPublic, setIsPublic] = useState((group as any).is_public ?? true)
+  const [isPublic, setIsPublic] = useState(group.is_public ?? true)
+  const [groupStatus, setGroupStatus] = useState(group.status || 'forming')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -809,6 +811,7 @@ function GroupSettingsModal({
           target_move_date: moveDate || undefined,
           preferred_cities: cities ? cities.split(',').map(c => c.trim()).filter(Boolean) : undefined,
           is_public: isPublic,
+          status: groupStatus,
         }),
       })
 
@@ -919,6 +922,23 @@ function GroupSettingsModal({
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <p className="text-xs text-gray-500 mt-1">Separate cities with commas</p>
+          </div>
+
+          {/* Group Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Group Status
+            </label>
+            <select
+              value={groupStatus}
+              onChange={(e) => setGroupStatus(e.target.value as 'forming' | 'searching' | 'matched')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="forming">Forming — Looking for members</option>
+              <option value="searching">Searching — Looking for a place</option>
+              <option value="matched">Matched — Found a place!</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">Let others know what stage your group is at</p>
           </div>
 
           <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">

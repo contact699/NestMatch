@@ -25,6 +25,7 @@ import {
 import Link from 'next/link'
 import { listingSchema, ListingFormData } from './types'
 import { useFormDraft } from '@/lib/hooks/use-form-draft'
+import { useUnsavedChanges } from '@/lib/hooks/use-unsaved-changes'
 import {
   StepType,
   StepLocation,
@@ -77,12 +78,14 @@ export default function NewListingPage() {
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
     trigger,
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
     defaultValues: draft as ListingFormData,
   })
+
+  useUnsavedChanges(isDirty)
 
   // Persist form values to draft on change (using subscription to avoid re-render loops)
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)

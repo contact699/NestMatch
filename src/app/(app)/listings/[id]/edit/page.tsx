@@ -23,6 +23,7 @@ import {
   HandHeart,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useUnsavedChanges } from '@/lib/hooks/use-unsaved-changes'
 
 const listingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']),
@@ -74,12 +75,14 @@ export default function EditListingPage() {
     watch,
     setValue,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
   })
 
   const formData = watch()
+
+  useUnsavedChanges(isDirty)
 
   useEffect(() => {
     async function loadListing() {
