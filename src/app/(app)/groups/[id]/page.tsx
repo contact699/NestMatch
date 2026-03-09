@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -97,6 +98,16 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [joinMessage, setJoinMessage] = useState('')
   const [joiningLoading, setJoiningLoading] = useState(false)
   const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     fetchGroup()
@@ -169,7 +180,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     if (!group) return
 
     const userMember = group.members.find(
-      (m) => m.role === group.user_role
+      (m) => m.user.user_id === currentUserId
     )
 
     if (!userMember) return
