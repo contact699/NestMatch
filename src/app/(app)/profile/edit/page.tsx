@@ -52,9 +52,24 @@ export default function ProfileEditPage() {
 
   const selectedProvince = watch('province')
   const selectedHousehold = watch('household_situation')
+  const watchedCity = watch('city')
+
+  // Track custom city text when "Other" is selected
+  const [customCity, setCustomCity] = useState('')
+  // Track the previous province to detect changes
+  const prevProvinceRef = useRef<string | undefined>(undefined)
 
   // Get cities for selected province
   const availableCities = selectedProvince ? CITIES_BY_PROVINCE[selectedProvince] || [] : []
+
+  // Reset city when province changes (but not on initial load)
+  useEffect(() => {
+    if (prevProvinceRef.current !== undefined && prevProvinceRef.current !== selectedProvince) {
+      setValue('city', '')
+      setCustomCity('')
+    }
+    prevProvinceRef.current = selectedProvince
+  }, [selectedProvince, setValue])
 
   useEffect(() => {
     async function loadProfile() {
@@ -75,6 +90,14 @@ export default function ProfileEditPage() {
         .single() as { data: any }
 
       if (profile) {
+        const profileProvince = profile.province || ''
+        const profileCity = profile.city || ''
+        const citiesForProvince = profileProvince ? CITIES_BY_PROVINCE[profileProvince] || [] : []
+        const cityInList = citiesForProvince.includes(profileCity)
+
+        // If the saved city is not in the known cities list (and is not empty), use "__other__"
+        const cityValue = profileCity && !cityInList ? '__other__' : profileCity
+
         reset({
           name: profile.name || '',
           bio: profile.bio || '',
@@ -83,11 +106,20 @@ export default function ProfileEditPage() {
           occupation: profile.occupation || '',
           phone: profile.phone || '',
           languages: profile.languages || [],
-          city: profile.city || '',
-          province: profile.province || '',
+          city: cityValue,
+          province: profileProvince,
           household_situation: profile.household_situation,
           number_of_children: profile.number_of_children,
         })
+
+        // If it was a custom city, store the actual city name for the text input
+        if (profileCity && !cityInList) {
+          setCustomCity(profileCity)
+        }
+
+        // Initialize the previous province ref so the first province change is detected correctly
+        prevProvinceRef.current = profileProvince
+
         setProfilePhoto(profile.profile_photo)
       }
 
@@ -172,6 +204,9 @@ export default function ProfileEditPage() {
       return
     }
 
+    // Resolve the city value: if "__other__" was selected, use the custom city text
+    const resolvedCity = data.city === '__other__' ? customCity : data.city
+
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -182,7 +217,7 @@ export default function ProfileEditPage() {
         occupation: data.occupation || null,
         phone: data.phone || null,
         languages: data.languages || [],
-        city: data.city || null,
+        city: resolvedCity || null,
         province: data.province || null,
         profile_photo: profilePhoto,
         household_situation: data.household_situation || null,
@@ -340,17 +375,26 @@ export default function ProfileEditPage() {
                         {city}
                       </option>
                     ))}
+                    {selectedProvince && (
+                      <option value="__other__">Other (type below)</option>
+                    )}
                   </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Or type a custom city below
-                  </p>
                 </div>
               </div>
-              <Input
-                {...register('city')}
-                label="Or enter your city"
-                placeholder="Enter your city if not in the list"
-              />
+              {watchedCity === '__other__' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Enter your city
+                  </label>
+                  <input
+                    type="text"
+                    value={customCity}
+                    placeholder="Enter your city"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onChange={(e) => setCustomCity(e.target.value)}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Household Situation */}

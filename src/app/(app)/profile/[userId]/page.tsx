@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -53,12 +53,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
   // Redirect to own profile page if viewing self
   if (currentUser?.id === userId) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <p className="text-center text-gray-600">Redirecting to your profile...</p>
-        <meta httpEquiv="refresh" content="0;url=/profile" />
-      </div>
-    )
+    redirect('/profile')
   }
 
   // Fetch the profile
