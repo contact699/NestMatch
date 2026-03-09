@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface QuizQuestion {
   id: string
@@ -239,6 +240,7 @@ export default function QuizPage() {
       return
     }
 
+    toast.success('Quiz answers saved!')
     router.push('/profile')
     router.refresh()
   }

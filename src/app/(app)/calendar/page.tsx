@@ -1,9 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useFetch } from '@/lib/hooks/use-fetch'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { FetchError } from '@/components/ui/fetch-error'
+import { toast } from 'sonner'
 import {
   Calendar as CalendarIcon,
   Clock,
@@ -14,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   HelpCircle,
+  X,
 } from 'lucide-react'
 
 interface ChatEvent {
@@ -78,6 +81,39 @@ export default function CalendarPage() {
         return <HelpCircle className="h-3 w-3 text-yellow-500" />
     }
   }
+
+  const [selectedEvent, setSelectedEvent] = useState<ChatEvent | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null)
+
+  const handleEventAction = useCallback(
+    async (event: ChatEvent, status: 'accepted' | 'declined' | 'cancelled') => {
+      try {
+        const res = await fetch(`/api/conversations/${event.conversation_id}/events`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event_id: event.id, status }),
+        })
+        if (!res.ok) throw new Error('Failed to update event')
+        toast.success(`Event ${status}`)
+        setSelectedEvent(null)
+        refetch()
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'Failed to update event')
+      }
+    },
+    [refetch]
+  )
+
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSelectedEvent(null)
+    }
+    if (selectedEvent) {
+      document.addEventListener('keydown', handleKeyDown)
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [selectedEvent])
 
   const daysInMonth = getDaysInMonth(currentMonth)
   const firstDay = getFirstDayOfMonth(currentMonth)
@@ -157,14 +193,16 @@ export default function CalendarPage() {
                     </span>
                     <div className="mt-1 space-y-0.5">
                       {dayEvents.slice(0, 2).map((event) => (
-                        <div
+                        <button
                           key={event.id}
-                          className="flex items-center gap-1 px-1 py-0.5 bg-blue-50 rounded text-xs truncate"
+                          type="button"
+                          className="flex items-center gap-1 px-1 py-0.5 bg-blue-50 hover:bg-blue-100 rounded text-xs truncate w-full text-left transition-colors cursor-pointer"
                           title={`${event.title} at ${event.start_time}`}
+                          onClick={() => setSelectedEvent(event)}
                         >
                           {getStatusIcon(event.status)}
                           <span className="truncate">{event.title}</span>
-                        </div>
+                        </button>
                       ))}
                       {dayEvents.length > 2 && (
                         <p className="text-xs text-gray-400 px-1">
@@ -216,9 +254,25 @@ export default function CalendarPage() {
                             </span>
                           )}
                         </div>
+                        {event.status === 'proposed' && (
+                          <div className="flex gap-2 mt-2">
+                            <Button size="sm" onClick={() => handleEventAction(event, 'accepted')}>
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEventAction(event, 'declined')}
+                            >
+                              <XCircle className="h-3 w-3 mr-1" />
+                              Decline
+                            </Button>
+                          </div>
+                        )}
                       </div>
                       <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
+                        className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${
                           event.status === 'accepted'
                             ? 'bg-green-100 text-green-700'
                             : event.status === 'declined'
@@ -237,6 +291,105 @@ export default function CalendarPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Event detail modal */}
+      {selectedEvent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedEvent(null)
+          }}
+        >
+          <div
+            ref={modalRef}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in-95 duration-200"
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedEvent(null)}
+              className="absolute top-4 right-4 p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5 text-gray-400" />
+            </button>
+
+            <div className="pr-8">
+              <div className="flex items-center gap-2 mb-1">
+                {getStatusIcon(selectedEvent.status)}
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full ${
+                    selectedEvent.status === 'accepted'
+                      ? 'bg-green-100 text-green-700'
+                      : selectedEvent.status === 'declined'
+                        ? 'bg-red-100 text-red-700'
+                        : selectedEvent.status === 'cancelled'
+                          ? 'bg-gray-100 text-gray-500'
+                          : 'bg-yellow-100 text-yellow-700'
+                  }`}
+                >
+                  {selectedEvent.status}
+                </span>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                {selectedEvent.title}
+              </h2>
+            </div>
+
+            {selectedEvent.description && (
+              <p className="text-sm text-gray-600 mb-4">{selectedEvent.description}</p>
+            )}
+
+            <div className="space-y-2 text-sm text-gray-600">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span>
+                  {new Date(selectedEvent.event_date + 'T00:00:00').toLocaleDateString('en-CA', {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                <span>
+                  {selectedEvent.start_time}
+                  {selectedEvent.end_time && ` - ${selectedEvent.end_time}`}
+                </span>
+              </div>
+              {selectedEvent.location && (
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                  <span>{selectedEvent.location}</span>
+                </div>
+              )}
+            </div>
+
+            {selectedEvent.status === 'proposed' && (
+              <div className="flex gap-2 mt-5 pt-4 border-t border-gray-100">
+                <Button
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => handleEventAction(selectedEvent, 'accepted')}
+                >
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Accept
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleEventAction(selectedEvent, 'declined')}
+                >
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Decline
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )

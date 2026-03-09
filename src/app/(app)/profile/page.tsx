@@ -275,13 +275,11 @@ export default async function ProfilePage() {
             <Card variant="feature" data-animate className="delay-300">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Lifestyle Preferences</CardTitle>
-                {!lifestyleResponses && (
-                  <Link href="/quiz">
-                    <Button size="sm" variant="outline">
-                      Take Quiz
-                    </Button>
-                  </Link>
-                )}
+                <Link href="/quiz">
+                  <Button size="sm" variant={lifestyleResponses ? 'outline' : 'primary'}>
+                    {lifestyleResponses ? 'Update Quiz Answers' : 'Take Quiz'}
+                  </Button>
+                </Link>
               </CardHeader>
               <CardContent>
                 {lifestyleResponses ? (
@@ -358,7 +356,7 @@ export default async function ProfilePage() {
                       roommates for you.
                     </p>
                     <Link href="/quiz">
-                      <Button variant="glow">Take the Quiz</Button>
+                      <Button variant="glow">Take the Lifestyle Quiz</Button>
                     </Link>
                   </div>
                 )}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   Phone,
@@ -49,6 +50,9 @@ export default function VerifyPage() {
   const [isSendingCode, setIsSendingCode] = useState(false)
   const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [phoneError, setPhoneError] = useState<string | null>(null)
+
+  // Resend verification email state
+  const [resendingEmail, setResendingEmail] = useState(false)
 
   // ID verification state
   const [isInitiatingId, setIsInitiatingId] = useState(false)
@@ -171,6 +175,29 @@ export default function VerifyPage() {
     }
   }
 
+  const handleResendVerificationEmail = async () => {
+    setResendingEmail(true)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user?.email) throw new Error('No email found')
+
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      })
+      if (error) throw error
+      toast.success('Verification email sent! Check your inbox.')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to resend email')
+    } finally {
+      setResendingEmail(false)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -246,6 +273,27 @@ export default function VerifyPage() {
                     ? 'Your email address has been verified'
                     : 'Check your inbox for a verification email'}
                 </p>
+                {!status?.profile.email_verified && (
+                  <Button
+                    onClick={handleResendVerificationEmail}
+                    disabled={resendingEmail}
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                  >
+                    {resendingEmail ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2" />
+                        Resend verification email
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
