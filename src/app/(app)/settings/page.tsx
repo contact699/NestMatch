@@ -108,8 +108,20 @@ export default function SettingsPage() {
       setPasswordError('Current password is required')
       return
     }
-    if (passwordForm.new.length < 6) {
-      setPasswordError('New password must be at least 6 characters')
+    if (passwordForm.new.length < 8) {
+      setPasswordError('New password must be at least 8 characters')
+      return
+    }
+    if (!/[A-Z]/.test(passwordForm.new)) {
+      setPasswordError('Password must contain at least one uppercase letter')
+      return
+    }
+    if (!/[a-z]/.test(passwordForm.new)) {
+      setPasswordError('Password must contain at least one lowercase letter')
+      return
+    }
+    if (!/[0-9]/.test(passwordForm.new)) {
+      setPasswordError('Password must contain at least one number')
       return
     }
     if (passwordForm.new !== passwordForm.confirm) {
@@ -311,7 +323,7 @@ export default function SettingsPage() {
                       value={passwordForm.new}
                       onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="At least 6 characters"
+                      placeholder="At least 8 characters, uppercase, lowercase, number"
                     />
                   </div>
                   <div>
