@@ -72,13 +72,6 @@ export const GET = withPublicHandler(
       throw error
     }
 
-    // Increment view count (fire and forget)
-    supabase
-      .from('listings')
-      .update({ views_count: ((listing as any).views_count || 0) + 1 })
-      .eq('id', id)
-      .then(() => {})
-
     return apiResponse({ listing }, 200, requestId)
   }
 )

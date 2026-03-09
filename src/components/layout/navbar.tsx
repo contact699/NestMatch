@@ -352,7 +352,7 @@ export function Navbar({ user }: NavbarProps) {
       <div
         className={cn(
           'md:hidden border-t border-gray-200 bg-white overflow-hidden transition-all duration-300 ease-out',
-          mobileMenuOpen ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+          mobileMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
         )}
       >
         <div className="px-2 py-3 space-y-1">
@@ -370,6 +370,55 @@ export function Navbar({ user }: NavbarProps) {
                   badge={badge}
                 />
               ))}
+              <hr className="my-2" />
+              <NavLink
+                href="/profile"
+                label="Profile"
+                icon={User}
+                isActive={pathname.startsWith('/profile')}
+                onClick={closeMobileMenu}
+                mobile
+              />
+              <NavLink
+                href="/groups"
+                label="Co-Renter Groups"
+                icon={Users}
+                isActive={pathname.startsWith('/groups')}
+                onClick={closeMobileMenu}
+                mobile
+              />
+              <NavLink
+                href="/calendar"
+                label="Calendar"
+                icon={Calendar}
+                isActive={pathname.startsWith('/calendar')}
+                onClick={closeMobileMenu}
+                mobile
+              />
+              <NavLink
+                href="/resources"
+                label="Resources"
+                icon={BookOpen}
+                isActive={pathname.startsWith('/resources')}
+                onClick={closeMobileMenu}
+                mobile
+              />
+              <NavLink
+                href="/settings"
+                label="Settings"
+                icon={Settings}
+                isActive={pathname.startsWith('/settings')}
+                onClick={closeMobileMenu}
+                mobile
+              />
+              <hr className="my-2" />
+              <button
+                onClick={() => { handleSignOut(); closeMobileMenu(); }}
+                className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-600 hover:bg-gray-100 rounded-lg w-full transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                Sign out
+              </button>
             </>
           ) : (
             <>
