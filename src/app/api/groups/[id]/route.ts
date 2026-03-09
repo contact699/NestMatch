@@ -234,9 +234,15 @@ export const DELETE = withApiHandler(
       throw new AuthorizationError('Only admins can delete the group')
     }
 
-    // Delete in order: invitations, members, then group
+    // Delete in order: invitations, join requests, members, then group
     await deleteClient
       .from('co_renter_invitations')
+      .delete()
+      .eq('group_id', id)
+
+    // Delete join requests
+    await (deleteClient as any)
+      .from('co_renter_join_requests')
       .delete()
       .eq('group_id', id)
 

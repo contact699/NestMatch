@@ -2,6 +2,10 @@ import { NextRequest } from 'next/server'
 import { withApiHandler, apiResponse } from '@/lib/api/with-handler'
 import { createServiceClient } from '@/lib/supabase/service'
 
+function sanitizeForPostgrest(input: string): string {
+  return input.replace(/[,%.*()\\]/g, '')
+}
+
 // Search users by name or city
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
@@ -17,7 +21,11 @@ export const GET = withApiHandler(
     })()
 
     // Search profiles by name or city using ilike
-    const pattern = `%${query}%`
+    const safeQuery = sanitizeForPostgrest(query)
+    if (safeQuery.length < 2) {
+      return apiResponse({ users: [] }, 200, requestId)
+    }
+    const pattern = `%${safeQuery}%`
 
     const { data: users, error } = await svcClient
       .from('profiles')

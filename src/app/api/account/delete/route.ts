@@ -3,10 +3,13 @@ import { createServiceClient } from '@/lib/supabase/service'
 
 export const DELETE = withApiHandler(
   async (_req, { userId, supabase, requestId }) => {
-    // Use service client (with fallback) to bypass RLS and access admin API
-    const serviceClient = (() => {
-      try { return createServiceClient() } catch { return supabase }
-    })()
+    // Service client is REQUIRED for account deletion (admin.deleteUser)
+    let serviceClient
+    try {
+      serviceClient = createServiceClient()
+    } catch {
+      throw new Error('Account deletion is temporarily unavailable. Please contact support.')
+    }
 
     // 1. Deactivate all user's listings
     const { error: listingsError } = await serviceClient

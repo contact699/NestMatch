@@ -5,6 +5,10 @@ import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib
 import { ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
 
+function sanitizeForPostgrest(input: string): string {
+  return input.replace(/[,%.*()\\]/g, '')
+}
+
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -148,10 +152,12 @@ export const GET = withPublicHandler(
       query = query.eq('parking_included', true)
     }
     if (q) {
-      // Search in title, description, city, and province
-      query = query.or(
-        `title.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,province.ilike.%${q}%`
-      )
+      const safeQ = sanitizeForPostgrest(q)
+      if (safeQ.length > 0) {
+        query = query.or(
+          `title.ilike.%${safeQ}%,description.ilike.%${safeQ}%,city.ilike.%${safeQ}%,province.ilike.%${safeQ}%`
+        )
+      }
     }
 
     query = query.range(offset, offset + limit - 1)

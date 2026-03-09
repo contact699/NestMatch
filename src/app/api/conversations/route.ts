@@ -167,8 +167,9 @@ export const POST = withApiHandler(
     const { data: blocked } = await supabase
       .from('blocked_users')
       .select('id')
-      .or(`user_id.eq.${userId!},user_id.eq.${participant_id}`)
-      .or(`blocked_user_id.eq.${userId!},blocked_user_id.eq.${participant_id}`)
+      .or(
+        `and(user_id.eq.${userId!},blocked_user_id.eq.${participant_id}),and(user_id.eq.${participant_id},blocked_user_id.eq.${userId!})`
+      )
       .limit(1)
 
     if (blocked && blocked.length > 0) {

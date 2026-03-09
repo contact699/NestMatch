@@ -49,7 +49,7 @@ export function SignupForm() {
 
     const supabase = createClient()
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -62,6 +62,13 @@ export function SignupForm() {
 
     if (error) {
       setError(error.message)
+      setIsLoading(false)
+      return
+    }
+
+    // Supabase returns empty identities for existing emails (to prevent enumeration)
+    if (signUpData.user && signUpData.user.identities?.length === 0) {
+      setError('An account with this email already exists. Please sign in instead.')
       setIsLoading(false)
       return
     }
