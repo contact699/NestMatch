@@ -83,7 +83,7 @@ export const GET = withPublicHandler(
           profile_photo,
           verification_level
         )
-      `)
+      `, { count: 'exact', head: false })
       .order('created_at', { ascending: false })
 
     // If fetching user's own listings, show all (active + inactive)
@@ -141,11 +141,11 @@ export const GET = withPublicHandler(
 
     query = query.range(offset, offset + limit - 1)
 
-    const { data: listings, error } = await query
+    const { data: listings, count, error } = await query
 
     if (error) throw error
 
-    return apiResponse({ listings: listings || [] }, 200, requestId)
+    return apiResponse({ listings: listings || [], total: count || 0 }, 200, requestId)
   },
   { rateLimit: 'search' }
 )

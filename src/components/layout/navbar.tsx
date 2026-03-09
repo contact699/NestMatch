@@ -206,7 +206,7 @@ export function Navbar({ user }: NavbarProps) {
                 href={href}
                 label={label}
                 icon={icon}
-                isActive={pathname === href}
+                isActive={href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)}
                 badge={badge}
               />
             ))}
@@ -365,7 +365,7 @@ export function Navbar({ user }: NavbarProps) {
                   href={href}
                   label={label}
                   icon={icon}
-                  isActive={pathname === href}
+                  isActive={href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href)}
                   onClick={closeMobileMenu}
                   mobile
                   badge={badge}

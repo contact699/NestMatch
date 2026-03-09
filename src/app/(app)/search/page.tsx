@@ -63,9 +63,13 @@ export default function SearchPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  const ITEMS_PER_PAGE = 24
+  const page = parseInt(searchParams.get('page') || '1')
 
   // Get view mode from URL or default to 'list'
   const viewParam = searchParams.get('view')
@@ -145,6 +149,9 @@ export default function SearchPage() {
         if (parkingIncluded) params.set('parkingIncluded', parkingIncluded)
         if (q) params.set('q', q)
 
+        params.set('limit', String(ITEMS_PER_PAGE))
+        params.set('offset', String((page - 1) * ITEMS_PER_PAGE))
+
         const queryString = params.toString()
         const url = queryString ? `/api/listings?${queryString}` : '/api/listings'
 
@@ -156,6 +163,7 @@ export default function SearchPage() {
 
         const data = await response.json()
         setListings(data.listings || [])
+        setTotalCount(data.total || 0)
       } catch (err) {
         clientLogger.error('Error fetching listings', err)
         setError('Failed to load listings. Please try again.')
@@ -166,6 +174,17 @@ export default function SearchPage() {
 
     fetchListings()
   }, [searchParams])
+
+  const goToPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (newPage <= 1) {
+      params.delete('page')
+    } else {
+      params.set('page', String(newPage))
+    }
+    const newUrl = params.toString() ? `/search?${params.toString()}` : '/search'
+    router.push(newUrl, { scroll: true })
+  }
 
   // Render the appropriate view
   const renderResults = () => {
@@ -272,12 +291,37 @@ export default function SearchPage() {
       {/* Results count */}
       {!isLoading && !error && listings.length > 0 && (
         <p className="text-sm text-gray-500 mb-4">
-          {listings.length} listing{listings.length !== 1 ? 's' : ''} found
+          {totalCount} listing{totalCount !== 1 ? 's' : ''} found
         </p>
       )}
 
       {/* Results */}
       {renderResults()}
+
+      {/* Pagination */}
+      {!isLoading && !error && totalCount > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => goToPage(page - 1)}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {Math.ceil(totalCount / ITEMS_PER_PAGE)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page * ITEMS_PER_PAGE >= totalCount}
+            onClick={() => goToPage(page + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
