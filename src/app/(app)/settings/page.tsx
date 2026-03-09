@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [notifPrefs, setNotifPrefs] = useState({ emailNotifications: true, messageAlerts: true })
 
   useEffect(() => {
     async function loadSettings() {
@@ -74,6 +75,24 @@ export default function SettingsPage() {
 
     loadSettings()
   }, [router])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('nestmatch_notif_prefs')
+    if (saved) {
+      try {
+        setNotifPrefs(JSON.parse(saved))
+      } catch {
+        // ignore invalid JSON
+      }
+    }
+  }, [])
+
+  const updateNotifPref = (key: 'emailNotifications' | 'messageAlerts', value: boolean) => {
+    const updated = { ...notifPrefs, [key]: value }
+    setNotifPrefs(updated)
+    localStorage.setItem('nestmatch_notif_prefs', JSON.stringify(updated))
+    toast.success('Notification preference updated')
+  }
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -156,20 +175,28 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true)
 
-    // Note: Account deletion would typically involve:
-    // 1. Soft delete or anonymize user data
-    // 2. Cancel any active listings
-    // 3. Close conversations
-    // 4. Delete auth user
+    try {
+      const response = await fetch('/api/account/delete', {
+        method: 'DELETE',
+      })
 
-    // For MVP, we'll just show a message
-    // In production, implement proper account deletion
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
 
-    setTimeout(() => {
+      // Sign out locally after successful deletion
+      const supabase = createClient()
+      await supabase.auth.signOut()
+
+      toast.success('Your account has been deleted.')
+      router.push('/')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account')
+    } finally {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
-      toast.info('Account deletion is not yet implemented. Please contact support.')
-    }, 1000)
+    }
   }
 
   if (isLoading) {
@@ -398,7 +425,8 @@ export default function SettingsPage() {
                 </div>
                 <input
                   type="checkbox"
-                  defaultChecked
+                  checked={notifPrefs.emailNotifications}
+                  onChange={(e) => updateNotifPref('emailNotifications', e.target.checked)}
                   className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
               </label>
@@ -409,7 +437,8 @@ export default function SettingsPage() {
                 </div>
                 <input
                   type="checkbox"
-                  defaultChecked
+                  checked={notifPrefs.messageAlerts}
+                  onChange={(e) => updateNotifPref('messageAlerts', e.target.checked)}
                   className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                 />
               </label>
