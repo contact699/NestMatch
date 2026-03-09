@@ -616,7 +616,7 @@ export default function ChatPage() {
     let currentDate = ''
 
     messages.forEach((message) => {
-      const messageDate = new Date(message.created_at).toLocaleDateString()
+      const messageDate = new Date(message.created_at).toISOString().split('T')[0]
       if (messageDate !== currentDate) {
         currentDate = messageDate
         groups.push({ date: messageDate, messages: [message] })
@@ -712,24 +712,28 @@ export default function ChatPage() {
                   aria-hidden="true"
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <Link
-                    href={`/profile/${conversation.other_profile?.user_id}`}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setShowMenu(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    View Profile
-                  </Link>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowReportModal(true)
-                    }}
-                  >
-                    <Flag className="h-4 w-4" />
-                    Report User
-                  </button>
+                  {conversation.other_profile?.user_id && (
+                    <Link
+                      href={`/profile/${conversation.other_profile.user_id}`}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <Users className="h-4 w-4" />
+                      View Profile
+                    </Link>
+                  )}
+                  {conversation.other_profile?.user_id && (
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowReportModal(true)
+                      }}
+                    >
+                      <Flag className="h-4 w-4" />
+                      Report User
+                    </button>
+                  )}
                   <button
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full"
                     onClick={() => {
@@ -833,7 +837,7 @@ export default function ChatPage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex-1 h-px bg-gray-200" />
                   <span className="text-xs text-gray-400 font-medium">
-                    {new Date(group.date).toLocaleDateString('en-CA', {
+                    {new Date(group.date + 'T00:00:00').toLocaleDateString('en-CA', {
                       weekday: 'long',
                       month: 'short',
                       day: 'numeric',
@@ -1100,12 +1104,14 @@ export default function ChatPage() {
       </div>
 
       {/* Report Modal */}
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        reportedUserId={conversation.other_profile?.user_id}
-        reportedName={conversation.other_profile?.name || 'User'}
-      />
+      {conversation.other_profile?.user_id && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportedUserId={conversation.other_profile.user_id}
+          reportedName={conversation.other_profile.name || 'User'}
+        />
+      )}
 
       {/* Block Confirmation Modal */}
       <ConfirmModal

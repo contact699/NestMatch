@@ -62,10 +62,11 @@ const ordinal = (n: number) => {
 function generateClausesFromFormData(data: AgreementFormData): { title: string; content: string }[] {
   const clauses: { title: string; content: string }[] = []
   const roommates = data.roommateNames.filter(Boolean)
+  const perPerson = roommates.length > 0 ? Math.round(data.totalRent / roommates.length) : data.totalRent
 
   // Financial Terms
   const rentContent = data.rentSplitMethod === 'equal'
-    ? `Total Monthly Rent: $${data.totalRent.toLocaleString()}. Rent will be split equally among all roommates ($${Math.round(data.totalRent / roommates.length).toLocaleString()} per person). Payment is due on the ${ordinal(data.rentDueDate)} of each month via ${data.paymentMethod.replace('_', ' ')}.`
+    ? `Total Monthly Rent: $${data.totalRent.toLocaleString()}. Rent will be split equally among all roommates ($${perPerson.toLocaleString()} per person). Payment is due on the ${ordinal(data.rentDueDate)} of each month via ${data.paymentMethod.replace('_', ' ')}.`
     : `Total Monthly Rent: $${data.totalRent.toLocaleString()}. Rent splits: ${data.rentSplits.map(split => `${split.name}: $${split.amount.toLocaleString()}`).join(', ')}. Payment is due on the ${ordinal(data.rentDueDate)} of each month via ${data.paymentMethod.replace('_', ' ')}.`
 
   clauses.push({

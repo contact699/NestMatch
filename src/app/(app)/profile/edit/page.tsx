@@ -71,6 +71,13 @@ export default function ProfileEditPage() {
     prevProvinceRef.current = selectedProvince
   }, [selectedProvince, setValue])
 
+  // Clear number_of_children when household situation no longer supports children
+  useEffect(() => {
+    if (selectedHousehold !== 'single_parent' && selectedHousehold !== 'couple_with_children') {
+      setValue('number_of_children', null)
+    }
+  }, [selectedHousehold, setValue])
+
   useEffect(() => {
     async function loadProfile() {
       const supabase = createClient()
