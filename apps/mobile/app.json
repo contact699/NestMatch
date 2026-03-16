@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "NestMatch",
+    "slug": "nestmatch",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "nestmatch",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3b82f6"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nestmatch.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "NestMatch needs camera access to take photos for your profile and listings.",
+        "NSPhotoLibraryUsageDescription": "NestMatch needs photo library access to upload photos for your profile and listings.",
+        "NSLocationWhenInUseUsageDescription": "NestMatch uses your location to find nearby listings and roommates."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3b82f6"
+      },
+      "package": "com.nestmatch.app",
+      "edgeToEdgeEnabled": true,
+      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "ACCESS_FINE_LOCATION"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ]
+  }
+}
