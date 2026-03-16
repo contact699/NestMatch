@@ -12,6 +12,7 @@ const updateGroupSchema = z.object({
   target_move_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   preferred_cities: z.array(z.string()).optional(),
   status: z.enum(['forming', 'searching', 'matched']).optional(),
+  is_public: z.boolean().optional(),
 }).refine(
   (data) => {
     if (data.combined_budget_min && data.combined_budget_max) {
@@ -70,19 +71,65 @@ export const GET = withApiHandler(
       throw new NotFoundError('Group not found')
     }
 
-    // Verify user is a member
+    // Check if user is a member
     const isMember = group.members?.some((m: any) => m.user?.user_id === userId!)
+
     if (!isMember) {
-      throw new AuthorizationError('Access denied')
+      // Allow viewing public groups as a non-member
+      if (!group.is_public) {
+        throw new AuthorizationError('Access denied')
+      }
+
+      // Check if user already has a pending join request
+      const { data: joinRequest } = await (readClient as any)
+        .from('co_renter_join_requests')
+        .select('id, status')
+        .eq('group_id', id)
+        .eq('user_id', userId!)
+        .single()
+
+      return apiResponse({
+        group: {
+          ...group,
+          invitations: [], // Hide invitations from non-members
+          user_role: null,
+          is_admin: false,
+          is_member: false,
+          join_request_status: joinRequest?.status || null,
+        },
+      }, 200, requestId)
     }
 
     const userMember = group.members?.find((m: any) => m.user?.user_id === userId!)
+
+    // For members, also fetch pending join requests if admin
+    let pendingJoinRequests: any[] = []
+    if (userMember?.role === 'admin') {
+      const { data: joinRequests } = await (readClient as any)
+        .from('co_renter_join_requests')
+        .select(`
+          id,
+          message,
+          status,
+          created_at,
+          user:profiles!co_renter_join_requests_user_id_fkey(
+            user_id,
+            name,
+            profile_photo
+          )
+        `)
+        .eq('group_id', id)
+        .eq('status', 'pending')
+      pendingJoinRequests = joinRequests || []
+    }
 
     return apiResponse({
       group: {
         ...group,
         user_role: userMember?.role || 'member',
         is_admin: userMember?.role === 'admin',
+        is_member: true,
+        join_requests: pendingJoinRequests,
       },
     }, 200, requestId)
   },
@@ -124,7 +171,7 @@ export const PUT = withApiHandler(
 
     const allowedFields = [
       'name', 'description', 'combined_budget_min', 'combined_budget_max',
-      'target_move_date', 'preferred_cities', 'status'
+      'target_move_date', 'preferred_cities', 'status', 'is_public'
     ]
 
     for (const field of allowedFields) {
@@ -187,9 +234,15 @@ export const DELETE = withApiHandler(
       throw new AuthorizationError('Only admins can delete the group')
     }
 
-    // Delete in order: invitations, members, then group
+    // Delete in order: invitations, join requests, members, then group
     await deleteClient
       .from('co_renter_invitations')
+      .delete()
+      .eq('group_id', id)
+
+    // Delete join requests
+    await (deleteClient as any)
+      .from('co_renter_join_requests')
       .delete()
       .eq('group_id', id)
 

@@ -59,7 +59,8 @@ export default async function DashboardPage() {
     supabase
       .from('listings')
       .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id),
+      .eq('user_id', user.id)
+      .eq('is_active', true),
     supabase
       .from('messages')
       .select('*', { count: 'exact', head: true })
@@ -270,7 +271,7 @@ export default async function DashboardPage() {
                     </CardContent>
                   </Card>
                 </Link>
-                <Link href="/roommates" data-animate className="delay-700">
+                <Link href="/discover?tab=people" data-animate className="delay-700">
                   <Card variant="feature" animate className="h-full">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">

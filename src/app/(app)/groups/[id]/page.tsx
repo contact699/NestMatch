@@ -2,11 +2,12 @@
 
 import { useState, useEffect, use } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ConfirmModal } from '@/components/ui/modal'
+import { ConfirmModal, Modal, ModalHeader, ModalTitle, ModalContent } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -25,6 +26,9 @@ import {
   Search,
   Clock,
   X,
+  CheckCircle,
+  XCircle,
+  Send,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -53,6 +57,18 @@ interface Invitation {
   }
 }
 
+interface JoinRequest {
+  id: string
+  message: string | null
+  status: string
+  created_at: string
+  user: {
+    user_id: string
+    name: string
+    profile_photo: string | null
+  }
+}
+
 interface Group {
   id: string
   name: string
@@ -61,12 +77,16 @@ interface Group {
   combined_budget_max: number | null
   target_move_date: string | null
   preferred_cities: string[] | null
-  status: string
+  status: 'forming' | 'searching' | 'matched'
+  is_public: boolean
   created_at: string
   members: GroupMember[]
   invitations: Invitation[]
-  user_role: string
+  user_role: string | null
   is_admin: boolean
+  is_member: boolean
+  join_request_status: string | null
+  join_requests?: JoinRequest[]
 }
 
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -76,7 +96,19 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [joinMessage, setJoinMessage] = useState('')
+  const [joiningLoading, setJoiningLoading] = useState(false)
   const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id)
+      }
+    })
+  }, [])
 
   useEffect(() => {
     fetchGroup()
@@ -100,14 +132,68 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  const handleRequestJoin = async () => {
+    setJoiningLoading(true)
+    try {
+      const res = await fetch(`/api/groups/${id}/join-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: joinMessage.trim() || undefined }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        toast.success('Join request sent! The group admin will review it.')
+        fetchGroup()
+      } else {
+        toast.error(data.error || 'Failed to send join request')
+      }
+    } catch (error) {
+      clientLogger.error('Error requesting to join', error)
+      toast.error('Failed to send join request')
+    } finally {
+      setJoiningLoading(false)
+    }
+  }
+
+  const handleRespondToJoinRequest = async (requestId: string, response: 'accepted' | 'declined') => {
+    try {
+      const res = await fetch(`/api/groups/${id}/join-requests`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId, response }),
+      })
+
+      if (res.ok) {
+        toast.success(response === 'accepted' ? 'Member added to group!' : 'Request declined')
+        fetchGroup()
+      } else {
+        toast.error('Failed to respond to request')
+      }
+    } catch (error) {
+      clientLogger.error('Error responding to join request', error)
+      toast.error('Failed to respond to request')
+    }
+  }
+
   const handleLeaveGroup = () => {
     if (!group) return
 
     const userMember = group.members.find(
-      (m) => m.role === group.user_role
+      (m) => m.user.user_id === currentUserId
     )
 
     if (!userMember) return
+
+    // Check if user is the only admin
+    if (group.is_admin) {
+      const adminCount = group.members.filter(m => m.role === 'admin').length
+      if (adminCount <= 1 && group.members.length > 1) {
+        toast.error('You are the only admin. Please promote another member to admin before leaving.')
+        return
+      }
+    }
 
     setConfirmModal({
       open: true,
@@ -247,24 +333,35 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     return null
   }
 
+  const isMember = group.is_member !== false
   const totalBudget = group.members.reduce(
     (sum, m) => sum + (m.budget_contribution || 0),
     0
   )
-  const pendingInvitations = group.invitations.filter(
+  const pendingInvitations = (group.invitations || []).filter(
     (i) => i.status === 'pending'
   )
+  const pendingJoinRequests = group.join_requests || []
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back Button */}
       <Link
-        href="/groups"
+        href={isMember ? '/groups' : '/discover'}
         className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
       >
         <ArrowLeft className="h-4 w-4" />
-        Back to Groups
+        {isMember ? 'Back to Groups' : 'Back to Discover'}
       </Link>
+
+      {/* Non-member banner */}
+      {!isMember && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <p className="text-sm text-blue-800">
+            You are viewing a public group. Request to join to become a member.
+          </p>
+        </div>
+      )}
 
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
@@ -278,27 +375,29 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          {group.is_admin && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInviteModal(true)}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettingsModal(true)}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </>
-          )}
-        </div>
+        {isMember && (
+          <div className="flex items-center gap-2">
+            {group.is_admin && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowInviteModal(true)}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowSettingsModal(true)}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -350,7 +449,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           <Card variant="bordered">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Members</CardTitle>
-              {group.is_admin && (
+              {isMember && group.is_admin && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -391,7 +490,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                             <Crown className="h-4 w-4 text-yellow-500" />
                           )}
                         </div>
-                        {member.budget_contribution && (
+                        {isMember && member.budget_contribution && (
                           <p className="text-sm text-gray-500">
                             Budget: {formatPrice(member.budget_contribution)}
                           </p>
@@ -399,7 +498,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                       </div>
                     </div>
 
-                    {group.is_admin && member.role !== 'admin' && (
+                    {isMember && group.is_admin && member.role !== 'admin' && (
                       <div className="flex items-center gap-2">
                         <Button
                           size="sm"
@@ -422,8 +521,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                 ))}
               </div>
 
-              {/* Pending Invitations */}
-              {pendingInvitations.length > 0 && (
+              {/* Pending Invitations (members only) */}
+              {isMember && pendingInvitations.length > 0 && (
                 <div className="mt-6 pt-6 border-t border-gray-200">
                   <h4 className="text-sm font-medium text-gray-900 mb-3">
                     Pending Invitations
@@ -443,6 +542,71 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
                         <span className="text-xs text-gray-500">
                           Invited {formatDate(invitation.created_at)}
                         </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pending Join Requests (admin only) */}
+              {isMember && group.is_admin && pendingJoinRequests.length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">
+                    Join Requests ({pendingJoinRequests.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {pendingJoinRequests.map((request) => (
+                      <div
+                        key={request.id}
+                        className="flex items-center justify-between p-3 bg-purple-50 rounded-lg"
+                      >
+                        <div className="flex items-center gap-3">
+                          {request.user.profile_photo ? (
+                            <img
+                              src={request.user.profile_photo}
+                              alt={request.user.name}
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                              <span className="text-xs font-medium text-purple-600">
+                                {request.user.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <Link
+                              href={`/profile/${request.user.user_id}`}
+                              className="font-medium text-gray-900 hover:text-blue-600"
+                            >
+                              {request.user.name}
+                            </Link>
+                            {request.message && (
+                              <p className="text-sm text-gray-500">{request.message}</p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                              Requested {formatDate(request.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => handleRespondToJoinRequest(request.id, 'accepted')}
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleRespondToJoinRequest(request.id, 'declined')}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -494,40 +658,90 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
             </Card>
           )}
 
-          {/* Quick Actions */}
-          <Card variant="bordered">
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href={`/search?group=${group.id}`} className="block">
-                <Button className="w-full" variant="outline">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search Listings
-                </Button>
-              </Link>
+          {/* Request to Join (non-members only) */}
+          {!isMember && (
+            <Card variant="bordered">
+              <CardHeader>
+                <CardTitle className="text-lg">Join This Group</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {group.join_request_status === 'pending' ? (
+                  <div className="text-center py-2">
+                    <Clock className="h-8 w-8 text-yellow-500 mx-auto mb-2" />
+                    <p className="font-medium text-gray-900">Request Pending</p>
+                    <p className="text-sm text-gray-500">
+                      Your join request is awaiting admin approval.
+                    </p>
+                  </div>
+                ) : group.join_request_status === 'declined' ? (
+                  <div className="text-center py-2">
+                    <XCircle className="h-8 w-8 text-red-400 mx-auto mb-2" />
+                    <p className="font-medium text-gray-900">Request Declined</p>
+                    <p className="text-sm text-gray-500">
+                      Your request to join was declined.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <textarea
+                      value={joinMessage}
+                      onChange={(e) => setJoinMessage(e.target.value)}
+                      placeholder="Introduce yourself (optional)..."
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-sm"
+                      maxLength={500}
+                    />
+                    <Button
+                      className="w-full"
+                      onClick={handleRequestJoin}
+                      disabled={joiningLoading}
+                      isLoading={joiningLoading}
+                    >
+                      <Send className="h-4 w-4 mr-2" />
+                      Request to Join
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-              <Button
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                variant="outline"
-                onClick={handleLeaveGroup}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Leave Group
-              </Button>
+          {/* Quick Actions (members only) */}
+          {isMember && (
+            <Card variant="bordered">
+              <CardHeader>
+                <CardTitle className="text-lg">Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Link href={`/search?group=${group.id}`} className="block">
+                  <Button className="w-full" variant="outline">
+                    <Search className="h-4 w-4 mr-2" />
+                    Search Listings
+                  </Button>
+                </Link>
 
-              {group.is_admin && (
                 <Button
                   className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
                   variant="outline"
-                  onClick={handleDeleteGroup}
+                  onClick={handleLeaveGroup}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Group
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Leave Group
                 </Button>
-              )}
-            </CardContent>
-          </Card>
+
+                {group.is_admin && (
+                  <Button
+                    className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                    variant="outline"
+                    onClick={handleDeleteGroup}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Group
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -543,6 +757,18 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         />
       )}
 
+      {/* Settings Modal */}
+      {showSettingsModal && group && (
+        <GroupSettingsModal
+          group={group}
+          onClose={() => setShowSettingsModal(false)}
+          onSuccess={() => {
+            setShowSettingsModal(false)
+            fetchGroup()
+          }}
+        />
+      )}
+
       <ConfirmModal
         isOpen={confirmModal.open}
         onClose={() => setConfirmModal(prev => ({ ...prev, open: false }))}
@@ -553,5 +779,216 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         variant="danger"
       />
     </div>
+  )
+}
+
+// Group Settings Modal Component
+function GroupSettingsModal({
+  group,
+  onClose,
+  onSuccess,
+}: {
+  group: Group
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [name, setName] = useState(group.name)
+  const [description, setDescription] = useState(group.description || '')
+  const [budgetMin, setBudgetMin] = useState(group.combined_budget_min?.toString() || '')
+  const [budgetMax, setBudgetMax] = useState(group.combined_budget_max?.toString() || '')
+  const [moveDate, setMoveDate] = useState(group.target_move_date || '')
+  const [cities, setCities] = useState(group.preferred_cities?.join(', ') || '')
+  const [isPublic, setIsPublic] = useState(group.is_public ?? true)
+  const [groupStatus, setGroupStatus] = useState(group.status || 'forming')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch(`/api/groups/${group.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          combined_budget_min: budgetMin ? Number(budgetMin) : undefined,
+          combined_budget_max: budgetMax ? Number(budgetMax) : undefined,
+          target_move_date: moveDate || undefined,
+          preferred_cities: cities ? cities.split(',').map(c => c.trim()).filter(Boolean) : undefined,
+          is_public: isPublic,
+          status: groupStatus,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to update group')
+      }
+
+      toast.success('Group settings updated')
+      onSuccess()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal isOpen={true} onClose={onClose} size="lg">
+      <ModalHeader onClose={onClose}>
+        <ModalTitle>Group Settings</ModalTitle>
+      </ModalHeader>
+      <ModalContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Group Name *
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., Toronto Apartment Hunt 2026"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              maxLength={255}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="What are you looking for? What's your ideal situation?"
+              rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              maxLength={2000}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Budget Min (CAD)
+              </label>
+              <input
+                type="number"
+                value={budgetMin}
+                onChange={(e) => setBudgetMin(e.target.value)}
+                placeholder="1000"
+                min="1"
+                max="99999"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Budget Max (CAD)
+              </label>
+              <input
+                type="number"
+                value={budgetMax}
+                onChange={(e) => setBudgetMax(e.target.value)}
+                placeholder="2500"
+                min="1"
+                max="99999"
+                step="1"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Target Move Date
+            </label>
+            <input
+              type="date"
+              value={moveDate}
+              onChange={(e) => setMoveDate(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Preferred Cities
+            </label>
+            <input
+              type="text"
+              value={cities}
+              onChange={(e) => setCities(e.target.value)}
+              placeholder="Toronto, Vancouver, Montreal"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">Separate cities with commas</p>
+          </div>
+
+          {/* Group Status */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Group Status
+            </label>
+            <select
+              value={groupStatus}
+              onChange={(e) => setGroupStatus(e.target.value as 'forming' | 'searching' | 'matched')}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="forming">Forming — Looking for members</option>
+              <option value="searching">Searching — Looking for a place</option>
+              <option value="matched">Matched — Found a place!</option>
+            </select>
+            <p className="text-sm text-gray-500 mt-1">Let others know what stage your group is at</p>
+          </div>
+
+          <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={isPublic}
+              onChange={(e) => setIsPublic(e.target.checked)}
+              className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                Make this group discoverable
+              </p>
+              <p className="text-xs text-gray-500">
+                Public groups appear in Discover so compatible users can request to join.
+              </p>
+            </div>
+          </label>
+
+          {error && (
+            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              className="flex-1"
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" className="flex-1" isLoading={loading}>
+              Save Changes
+            </Button>
+          </div>
+        </form>
+      </ModalContent>
+    </Modal>
   )
 }

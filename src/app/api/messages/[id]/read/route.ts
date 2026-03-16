@@ -37,7 +37,7 @@ export const PUT = withApiHandler(
     // Mark as read
     const { error } = await supabase
       .from('messages')
-      .update({ read_at: new Date().toISOString() })
+      .update({ read_at: new Date().toISOString(), status: 'read' })
       .eq('id', messageId)
 
     if (error) throw error

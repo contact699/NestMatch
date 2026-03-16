@@ -75,6 +75,8 @@ export default function ExpensesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [roommates, setRoommates] = useState<{ user_id: string; name: string }[]>([])
+  const [selectedRoommates, setSelectedRoommates] = useState<string[]>([])
 
   // Form state
   const [title, setTitle] = useState('')
@@ -87,7 +89,34 @@ export default function ExpensesPage() {
     async function getUser() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setCurrentUserId(user.id)
+      if (user) {
+        setCurrentUserId(user.id)
+
+        // Fetch roommates from user's groups
+        const { data: memberships } = await supabase
+          .from('co_renter_members')
+          .select('group_id')
+          .eq('user_id', user.id)
+
+        if (memberships && memberships.length > 0) {
+          const groupIds = memberships.map(m => m.group_id)
+          const { data: members } = await supabase
+            .from('co_renter_members')
+            .select('user:profiles(user_id, name)')
+            .in('group_id', groupIds)
+            .neq('user_id', user.id)
+
+          if (members) {
+            const uniqueMembers = new Map<string, { user_id: string; name: string }>()
+            members.forEach((m: any) => {
+              if (m.user && !uniqueMembers.has(m.user.user_id)) {
+                uniqueMembers.set(m.user.user_id, m.user)
+              }
+            })
+            setRoommates(Array.from(uniqueMembers.values()))
+          }
+        }
+      }
     }
     getUser()
   }, [])
@@ -130,7 +159,10 @@ export default function ExpensesPage() {
           description: description.trim() || undefined,
           due_date: dueDate || undefined,
           split_type: 'equal',
-          shares: [{ user_id: currentUserId }],
+          shares: [
+            { user_id: currentUserId },
+            ...selectedRoommates.map(id => ({ user_id: id })),
+          ],
         }),
       })
 
@@ -144,6 +176,7 @@ export default function ExpensesPage() {
       toast.success('Expense created successfully')
       setShowCreateModal(false)
       resetForm()
+      setSelectedRoommates([])
       refetch()
     } catch {
       toast.error('Failed to create expense')
@@ -480,6 +513,31 @@ export default function ExpensesPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
             </div>
+
+            {roommates.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Split with</label>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {roommates.map(rm => (
+                    <label key={rm.user_id} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedRoommates.includes(rm.user_id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedRoommates(prev => [...prev, rm.user_id])
+                          } else {
+                            setSelectedRoommates(prev => prev.filter(id => id !== rm.user_id))
+                          }
+                        }}
+                        className="rounded border-gray-300"
+                      />
+                      {rm.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </ModalContent>
         <ModalFooter>

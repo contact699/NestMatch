@@ -19,6 +19,15 @@ import {
 import { PROVINCES } from '@/components/resources'
 import { AgreementFormData } from '../types'
 
+function ordinal(n: number): string {
+  if (n >= 11 && n <= 13) return n + 'th'
+  const lastDigit = n % 10
+  if (lastDigit === 1) return n + 'st'
+  if (lastDigit === 2) return n + 'nd'
+  if (lastDigit === 3) return n + 'rd'
+  return n + 'th'
+}
+
 interface StepReviewProps {
   watch: UseFormWatch<AgreementFormData>
 }
@@ -66,7 +75,7 @@ export function StepReview({ watch }: StepReviewProps) {
       items: [
         { label: 'Total Rent', value: formatCurrency(formData.totalRent) },
         { label: 'Split Method', value: formData.rentSplitMethod === 'equal' ? 'Equal' : 'Custom' },
-        { label: 'Due Date', value: `${formData.rentDueDate || 1}${['st', 'nd', 'rd'][((formData.rentDueDate || 1) - 1) % 10] || 'th'} of each month` },
+        { label: 'Due Date', value: `${ordinal(formData.rentDueDate || 1)} of each month` },
         { label: 'Payment Method', value: formData.paymentMethod?.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'E-Transfer' },
         { label: 'Security Deposit', value: formData.securityDeposit ? formatCurrency(formData.securityDeposit) : 'None' },
         { label: 'Utilities', value: formData.utilitiesIncluded ? 'Included in rent' : `Split ${formData.utilitiesSplit || 'equally'}` },

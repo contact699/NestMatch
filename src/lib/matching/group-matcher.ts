@@ -212,12 +212,17 @@ function* generateCombinations<T>(arr: T[], size: number): Generator<T[]> {
  * Generate group suggestions for a target user
  * Optimized: Limits combinations, calculates trust locally, batches compatibility
  */
+export interface GenerationResult {
+  suggestions: SuggestedGroup[]
+  reason?: string
+}
+
 export async function generateGroupSuggestions(
   targetUserId: string,
   groupSize: number = 2,
   maxSuggestions: number = 10,
   config: MatchingConfig = DEFAULT_MATCHING_CONFIG
-): Promise<SuggestedGroup[]> {
+): Promise<GenerationResult> {
   const supabase = await createClient()
 
   // Get user's matching preferences
@@ -245,7 +250,11 @@ export async function generateGroupSuggestions(
     .single()
 
   if (!targetProfile || !targetSeeking) {
-    return []
+    const missing = []
+    if (!targetProfile) missing.push('profile')
+    if (!targetSeeking) missing.push('seeking preferences')
+    logger.warn('Suggestion generation skipped: missing user data', { targetUserId, missing })
+    return { suggestions: [], reason: `Please complete your ${missing.join(' and ')} to get suggestions.` }
   }
 
   const targetCandidate: MatchingCandidate = {
@@ -263,7 +272,8 @@ export async function generateGroupSuggestions(
   )
 
   if (candidates.length === 0) {
-    return []
+    logger.warn('Suggestion generation: no candidates found', { targetUserId })
+    return { suggestions: [], reason: 'Not enough users with active seeking profiles to generate matches yet. Check back soon!' }
   }
 
   // First pass: Filter combinations by practical score (no DB calls)
@@ -299,7 +309,8 @@ export async function generateGroupSuggestions(
   }
 
   if (passingCombinations.length === 0) {
-    return []
+    logger.warn('Suggestion generation: no practical matches found', { targetUserId, candidatesCount: candidates.length, combinationsChecked })
+    return { suggestions: [], reason: 'No compatible matches found right now — try updating your budget range, preferred cities, or move-in date to broaden your options.' }
   }
 
   // Second pass: Single batch RPC call for ALL compatibility scores
@@ -315,6 +326,9 @@ export async function generateGroupSuggestions(
 
   // Create lookup map for compatibility scores by index
   const compatibilityByIndex = new Map<number, number>()
+  if (batchError) {
+    logger.error('Batch compatibility RPC failed', batchError instanceof Error ? batchError : new Error(String(batchError)))
+  }
   if (batchResults && !batchError) {
     for (const row of batchResults as any[]) {
       compatibilityByIndex.set(row.group_index, row.compatibility_score)
@@ -353,7 +367,7 @@ export async function generateGroupSuggestions(
 
   // Sort by combined score (descending) and return top suggestions
   suggestions.sort((a, b) => b.combinedScore - a.combinedScore)
-  return suggestions.slice(0, maxSuggestions)
+  return { suggestions: suggestions.slice(0, maxSuggestions) }
 }
 
 /**
@@ -364,6 +378,11 @@ export async function saveGroupSuggestions(
   targetUserId: string,
   suggestions: SuggestedGroup[]
 ): Promise<void> {
+  // Don't delete old suggestions if we have nothing to replace them with
+  if (suggestions.length === 0) {
+    return
+  }
+
   // Use service role to bypass RLS - inserts are not allowed for regular users
   const supabase = createServiceClient()
 
@@ -386,9 +405,7 @@ export async function saveGroupSuggestions(
     status: 'active' as const,
   }))
 
-  if (records.length > 0) {
-    await supabase.from('group_suggestions').insert(records as any)
-  }
+  await supabase.from('group_suggestions').insert(records as any)
 }
 
 /**

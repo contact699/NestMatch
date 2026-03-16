@@ -59,13 +59,17 @@ interface Listing {
   }
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const [listings, setListings] = useState<Listing[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+
+  const ITEMS_PER_PAGE = 24
+  const page = parseInt(searchParams.get('page') || '1') || 1
 
   // Get view mode from URL or default to 'list'
   const viewParam = searchParams.get('view')
@@ -145,6 +149,12 @@ export default function SearchPage() {
         if (parkingIncluded) params.set('parkingIncluded', parkingIncluded)
         if (q) params.set('q', q)
 
+        const sort = searchParams.get('sort')
+        if (sort) params.set('sort', sort)
+
+        params.set('limit', String(ITEMS_PER_PAGE))
+        params.set('offset', String((page - 1) * ITEMS_PER_PAGE))
+
         const queryString = params.toString()
         const url = queryString ? `/api/listings?${queryString}` : '/api/listings'
 
@@ -156,6 +166,7 @@ export default function SearchPage() {
 
         const data = await response.json()
         setListings(data.listings || [])
+        setTotalCount(data.total || 0)
       } catch (err) {
         clientLogger.error('Error fetching listings', err)
         setError('Failed to load listings. Please try again.')
@@ -166,6 +177,17 @@ export default function SearchPage() {
 
     fetchListings()
   }, [searchParams])
+
+  const goToPage = (newPage: number) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (newPage <= 1) {
+      params.delete('page')
+    } else {
+      params.set('page', String(newPage))
+    }
+    const newUrl = params.toString() ? `/search?${params.toString()}` : '/search'
+    router.push(newUrl, { scroll: true })
+  }
 
   // Render the appropriate view
   const renderResults = () => {
@@ -269,15 +291,65 @@ export default function SearchPage() {
         <SearchFilters />
       </Card>
 
-      {/* Results count */}
+      {/* Results count and sort */}
       {!isLoading && !error && listings.length > 0 && (
-        <p className="text-sm text-gray-500 mb-4">
-          {listings.length} listing{listings.length !== 1 ? 's' : ''} found
-        </p>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-sm text-gray-500">
+            {totalCount} listing{totalCount !== 1 ? 's' : ''} found
+          </p>
+          <select
+            value={searchParams.get('sort') || 'newest'}
+            onChange={(e) => {
+              const params = new URLSearchParams(searchParams.toString())
+              params.set('sort', e.target.value)
+              params.delete('page')
+              router.push(`/search?${params.toString()}`)
+            }}
+            className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="price_asc">Price: low to high</option>
+            <option value="price_desc">Price: high to low</option>
+          </select>
+        </div>
       )}
 
       {/* Results */}
       {renderResults()}
+
+      {/* Pagination */}
+      {!isLoading && !error && totalCount > ITEMS_PER_PAGE && (
+        <div className="flex items-center justify-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page <= 1}
+            onClick={() => goToPage(page - 1)}
+          >
+            Previous
+          </Button>
+          <span className="text-sm text-gray-600">
+            Page {page} of {Math.ceil(totalCount / ITEMS_PER_PAGE)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={page * ITEMS_PER_PAGE >= totalCount}
+            onClick={() => goToPage(page + 1)}
+          >
+            Next
+          </Button>
+        </div>
+      )}
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-blue-600" /></div>}>
+      <SearchPageContent />
+    </Suspense>
   )
 }

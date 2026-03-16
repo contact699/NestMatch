@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
+import { AuthListener } from '@/components/providers/auth-listener'
 
 export default async function AppLayout({
   children,
@@ -13,6 +14,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <AuthListener />
       <Navbar user={user} />
       <main className="relative z-0">{children}</main>
     </div>

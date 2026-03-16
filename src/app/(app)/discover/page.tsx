@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 import { createClient } from '@/lib/supabase/client'
@@ -98,10 +99,18 @@ interface PublicGroup {
 }
 
 export default function DiscoverPage() {
-  const [activeTab, setActiveTab] = useState<TabId>('suggestions')
+  const discoverSearchParams = useSearchParams()
+  const router = useRouter()
+  const initialTab = discoverSearchParams.get('tab')
+  const [activeTab, setActiveTab] = useState<TabId>(
+    initialTab === 'people' || initialTab === 'groups'
+      ? initialTab
+      : 'suggestions'
+  )
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set())
 
   // Suggestions state
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -177,9 +186,11 @@ export default function DiscoverPage() {
     // Path A: decent profile (has name + has photo + has taken quiz)
     // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
     const profilesData = allProfilesData.filter((p: any) => {
-      const hasName = !!p.name
+      const hasName = p.name && p.name.trim() !== ''
+      if (!hasName) return false
+
       const hasQuiz = quizTakenUserIds.has(p.user_id)
-      const isDecentProfile = hasName && hasQuiz
+      const isDecentProfile = hasQuiz
 
       const isVerified = p.email_verified || p.phone_verified ||
         p.verification_level === 'verified' || p.verification_level === 'trusted'
@@ -248,28 +259,15 @@ export default function DiscoverPage() {
   }, [])
 
   const fetchPublicGroups = useCallback(async () => {
-    const supabase = createClient()
-
-    const { data: groups } = await supabase
-      .from('co_renter_groups')
-      .select(`
-        *,
-        members:co_renter_members(
-          user:profiles(name, profile_photo, verification_level)
-        )
-      `)
-      .eq('is_public', true)
-      .eq('status', 'forming')
-      .order('created_at', { ascending: false })
-      .limit(20)
-
-    if (groups) {
-      const enriched = groups.map((g: any) => ({
-        ...g,
-        member_count: g.members?.length || 0,
-      }))
-      setPublicGroups(enriched)
-      setCounts(prev => ({ ...prev, groups: enriched.length }))
+    try {
+      const response = await fetch('/api/groups/public')
+      if (response.ok) {
+        const data = await response.json()
+        setPublicGroups(data.groups || [])
+        setCounts(prev => ({ ...prev, groups: data.groups?.length || 0 }))
+      }
+    } catch (error) {
+      clientLogger.error('Error fetching public groups', error)
     }
   }, [])
 
@@ -309,7 +307,13 @@ export default function DiscoverPage() {
         toast.error('Please wait before refreshing again')
       } else if (response.ok) {
         await fetchSuggestions()
-        toast.success('Suggestions refreshed')
+        if (data.generated === 0) {
+          toast.error(data.message || 'No suggestions could be generated right now.')
+        } else {
+          toast.success(`Generated ${data.generated} new suggestions!`)
+        }
+      } else {
+        toast.error(data?.error || 'Failed to generate suggestions')
       }
     } catch (error) {
       clientLogger.error('Error refreshing suggestions', error)
@@ -320,6 +324,8 @@ export default function DiscoverPage() {
   }
 
   const handleInterest = async (suggestionId: string) => {
+    if (processingIds.has(suggestionId)) return
+    setProcessingIds(prev => new Set(prev).add(suggestionId))
     try {
       const response = await fetch(`/api/suggestions/${suggestionId}/convert`, {
         method: 'POST',
@@ -332,17 +338,25 @@ export default function DiscoverPage() {
         // Remove from suggestions and redirect to group
         setSuggestions(prev => prev.filter(s => s.id !== suggestionId))
         toast.success('Group created from suggestion!')
-        window.location.href = `/groups/${data.groupId}`
+        router.push(`/groups/${data.groupId}`)
       } else {
         toast.error('Failed to create group from suggestion')
       }
     } catch (error) {
       clientLogger.error('Error converting suggestion', error)
       toast.error('Failed to create group from suggestion')
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(suggestionId)
+        return next
+      })
     }
   }
 
   const handleDismiss = async (suggestionId: string) => {
+    if (processingIds.has(suggestionId)) return
+    setProcessingIds(prev => new Set(prev).add(suggestionId))
     try {
       await fetch(`/api/suggestions/${suggestionId}/interact`, {
         method: 'POST',
@@ -356,6 +370,12 @@ export default function DiscoverPage() {
     } catch (error) {
       clientLogger.error('Error dismissing suggestion', error)
       toast.error('Failed to dismiss suggestion')
+    } finally {
+      setProcessingIds(prev => {
+        const next = new Set(prev)
+        next.delete(suggestionId)
+        return next
+      })
     }
   }
 

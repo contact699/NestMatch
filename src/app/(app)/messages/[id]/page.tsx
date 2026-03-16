@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
@@ -71,6 +71,8 @@ const EMOJI_CATEGORIES: Record<string, string[]> = {
   'Objects': ['🏠', '🔑', '📦', '🛋️', '🚿', '🍳', '🧹', '💰', '📅', '📍', '🎉', '🎂', '🎁', '📸', '🎵'],
 }
 
+const MESSAGES_PER_PAGE = 50
+
 export default function ChatPage() {
   const router = useRouter()
   const params = useParams()
@@ -91,6 +93,8 @@ export default function ChatPage() {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showGifPicker, setShowGifPicker] = useState(false)
   const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [hasMoreMessages, setHasMoreMessages] = useState(true)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [eventForm, setEventForm] = useState({
     title: '',
     event_date: '',
@@ -105,7 +109,14 @@ export default function ChatPage() {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false)
   const [otherUserOnline, setOtherUserOnline] = useState(false)
 
+  const [otherUserTyping, setOtherUserTyping] = useState(false)
+  const typingTimeoutRef = useRef<NodeJS.Timeout>(undefined)
+  const typingDebounceRef = useRef<NodeJS.Timeout>(undefined)
+  const typingChannelRef = useRef<any>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const skipScrollToBottomRef = useRef(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -125,8 +136,50 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
+    if (skipScrollToBottomRef.current) {
+      skipScrollToBottomRef.current = false
+      return
+    }
     scrollToBottom()
   }, [messages])
+
+  const sendTypingEvent = useCallback(() => {
+    if (!typingChannelRef.current) return
+    if (typingDebounceRef.current) return
+
+    typingChannelRef.current.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { userId: currentUserId },
+    })
+
+    typingDebounceRef.current = setTimeout(() => {
+      typingDebounceRef.current = undefined
+    }, 2000)
+  }, [currentUserId])
+
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`typing:${conversationId}`)
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId !== currentUserId) {
+          setOtherUserTyping(true)
+          clearTimeout(typingTimeoutRef.current)
+          typingTimeoutRef.current = setTimeout(() => setOtherUserTyping(false), 3000)
+        }
+      })
+      .subscribe()
+
+    typingChannelRef.current = channel
+
+    return () => {
+      typingChannelRef.current = null
+      supabase.removeChannel(channel)
+      clearTimeout(typingTimeoutRef.current)
+    }
+  }, [conversationId, currentUserId])
 
   useEffect(() => {
     let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null
@@ -169,11 +222,13 @@ export default function ChatPage() {
       }
 
       // Load messages
-      const msgResponse = await fetch(`/api/conversations/${conversationId}/messages`)
+      const msgResponse = await fetch(`/api/conversations/${conversationId}/messages?limit=${MESSAGES_PER_PAGE}`)
       const msgData = await msgResponse.json()
 
       if (msgResponse.ok) {
-        setMessages((prev) => mergeMessages(prev, msgData.messages || []))
+        const fetchedMessages = msgData.messages || []
+        setMessages((prev) => mergeMessages(prev, fetchedMessages))
+        setHasMoreMessages(fetchedMessages.length >= MESSAGES_PER_PAGE)
       }
 
       setIsLoading(false)
@@ -212,6 +267,47 @@ export default function ChatPage() {
       }
     }
   }, [conversationId, router])
+
+  const loadOlderMessages = useCallback(async () => {
+    if (isLoadingMore || !hasMoreMessages || messages.length === 0) return
+
+    setIsLoadingMore(true)
+
+    try {
+      const oldestMessage = messages[0]
+      const container = messagesContainerRef.current
+      const previousScrollHeight = container?.scrollHeight || 0
+
+      const res = await fetch(
+        `/api/conversations/${conversationId}/messages?before=${oldestMessage.id}&limit=${MESSAGES_PER_PAGE}`
+      )
+      const data = await res.json()
+
+      if (res.ok) {
+        const olderMessages: Message[] = data.messages || []
+        if (olderMessages.length < MESSAGES_PER_PAGE) {
+          setHasMoreMessages(false)
+        }
+
+        if (olderMessages.length > 0) {
+          skipScrollToBottomRef.current = true
+          setMessages((prev) => mergeMessages(olderMessages, prev))
+
+          // Preserve scroll position after prepending older messages
+          requestAnimationFrame(() => {
+            if (container) {
+              const newScrollHeight = container.scrollHeight
+              container.scrollTop = newScrollHeight - previousScrollHeight
+            }
+          })
+        }
+      }
+    } catch (err) {
+      clientLogger.error('Failed to load older messages', err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [isLoadingMore, hasMoreMessages, messages, conversationId])
 
   const handleSend = async () => {
     if (!newMessage.trim() || isSending) return
@@ -520,7 +616,7 @@ export default function ChatPage() {
     let currentDate = ''
 
     messages.forEach((message) => {
-      const messageDate = new Date(message.created_at).toLocaleDateString()
+      const messageDate = new Date(message.created_at).toISOString().split('T')[0]
       if (messageDate !== currentDate) {
         currentDate = messageDate
         groups.push({ date: messageDate, messages: [message] })
@@ -616,24 +712,28 @@ export default function ChatPage() {
                   aria-hidden="true"
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <Link
-                    href={`/profile/${conversation.other_profile?.user_id}`}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setShowMenu(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    View Profile
-                  </Link>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowReportModal(true)
-                    }}
-                  >
-                    <Flag className="h-4 w-4" />
-                    Report User
-                  </button>
+                  {conversation.other_profile?.user_id && (
+                    <Link
+                      href={`/profile/${conversation.other_profile.user_id}`}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <Users className="h-4 w-4" />
+                      View Profile
+                    </Link>
+                  )}
+                  {conversation.other_profile?.user_id && (
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowReportModal(true)
+                      }}
+                    >
+                      <Flag className="h-4 w-4" />
+                      Report User
+                    </button>
+                  )}
                   <button
                     className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full"
                     onClick={() => {
@@ -711,8 +811,19 @@ export default function ChatPage() {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-6">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-4 pb-6">
         <div className="max-w-3xl mx-auto space-y-6">
+          {hasMoreMessages && messages.length > 0 && (
+            <div className="flex justify-center py-3">
+              <button
+                onClick={loadOlderMessages}
+                disabled={isLoadingMore}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-50"
+              >
+                {isLoadingMore ? 'Loading...' : 'Load older messages'}
+              </button>
+            </div>
+          )}
           {messages.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-gray-500">
@@ -726,7 +837,7 @@ export default function ChatPage() {
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex-1 h-px bg-gray-200" />
                   <span className="text-xs text-gray-400 font-medium">
-                    {new Date(group.date).toLocaleDateString('en-CA', {
+                    {new Date(group.date + 'T00:00:00').toLocaleDateString('en-CA', {
                       weekday: 'long',
                       month: 'short',
                       day: 'numeric',
@@ -891,6 +1002,20 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Typing indicator */}
+      {otherUserTyping && (
+        <div className="flex-shrink-0 bg-white border-t border-gray-100 px-4 py-1.5">
+          <div className="max-w-3xl mx-auto flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <span>typing...</span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] px-4 pt-3 pb-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)' }}>
         <div className="max-w-3xl mx-auto flex items-end gap-2 sm:gap-3">
@@ -952,6 +1077,7 @@ export default function ChatPage() {
               const target = e.target as HTMLTextAreaElement
               target.style.height = 'auto'
               target.style.height = Math.min(target.scrollHeight, 128) + 'px'
+              sendTypingEvent()
             }}
             onFocus={() => {
               // Scroll to bottom when keyboard opens on mobile
@@ -978,12 +1104,14 @@ export default function ChatPage() {
       </div>
 
       {/* Report Modal */}
-      <ReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        reportedUserId={conversation.other_profile?.user_id}
-        reportedName={conversation.other_profile?.name || 'User'}
-      />
+      {conversation.other_profile?.user_id && (
+        <ReportModal
+          isOpen={showReportModal}
+          onClose={() => setShowReportModal(false)}
+          reportedUserId={conversation.other_profile.user_id}
+          reportedName={conversation.other_profile.name || 'User'}
+        />
+      )}
 
       {/* Block Confirmation Modal */}
       <ConfirmModal

@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { ImageUploader } from '@/components/ui/image-uploader'
-import { CANADIAN_PROVINCES, MAJOR_CITIES, AMENITIES } from '@/lib/utils'
+import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, AMENITIES, BATHROOM_TYPES, BATHROOM_SIZES, HELP_TASKS } from '@/lib/utils'
 import {
   ArrowLeft,
   Loader2,
@@ -19,8 +19,11 @@ import {
   Trash2,
   AlertCircle,
   DollarSign,
+  Bath,
+  HandHeart,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useUnsavedChanges } from '@/lib/hooks/use-unsaved-changes'
 
 const listingSchema = z.object({
   type: z.enum(['room', 'shared_room', 'entire_place']),
@@ -36,11 +39,20 @@ const listingSchema = z.object({
   postal_code: z.string().optional().nullable(),
   photos: z.array(z.string()),
   amenities: z.array(z.string()),
+  bathroom_type: z.enum(['ensuite', 'private', 'shared']),
+  bathroom_size: z.enum(['full', 'three_quarter', 'half']).nullable().optional(),
   roommate_gender_preference: z.enum(['male', 'female', 'any']).optional().nullable(),
   roommate_age_min: z.number().min(18).optional().nullable(),
   roommate_age_max: z.number().max(120).optional().nullable(),
+  pets_allowed: z.boolean(),
+  smoking_allowed: z.boolean(),
+  parking_included: z.boolean(),
   newcomer_friendly: z.boolean(),
   no_credit_history_ok: z.boolean(),
+  ideal_for_students: z.boolean(),
+  help_needed: z.boolean(),
+  help_tasks: z.array(z.string()).optional(),
+  help_details: z.string().max(500).optional().nullable(),
   is_active: z.boolean(),
 })
 
@@ -63,12 +75,14 @@ export default function EditListingPage() {
     watch,
     setValue,
     reset,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ListingFormData>({
     resolver: zodResolver(listingSchema),
   })
 
   const formData = watch()
+
+  useUnsavedChanges(isDirty)
 
   useEffect(() => {
     async function loadListing() {
@@ -113,11 +127,20 @@ export default function EditListingPage() {
         postal_code: listing.postal_code,
         photos: listing.photos || [],
         amenities: listing.amenities || [],
+        bathroom_type: listing.bathroom_type || 'shared',
+        bathroom_size: listing.bathroom_size || null,
         roommate_gender_preference: listing.roommate_gender_preference,
         roommate_age_min: listing.roommate_age_min,
         roommate_age_max: listing.roommate_age_max,
+        pets_allowed: listing.pets_allowed ?? false,
+        smoking_allowed: listing.smoking_allowed ?? false,
+        parking_included: listing.parking_included ?? false,
         newcomer_friendly: listing.newcomer_friendly,
         no_credit_history_ok: listing.no_credit_history_ok,
+        ideal_for_students: listing.ideal_for_students ?? false,
+        help_needed: listing.help_needed ?? false,
+        help_tasks: listing.help_tasks || [],
+        help_details: listing.help_details || null,
         is_active: listing.is_active,
       })
 
@@ -176,9 +199,9 @@ export default function EditListingPage() {
   const toggleAmenity = (amenity: string) => {
     const current = formData.amenities || []
     if (current.includes(amenity)) {
-      setValue('amenities', current.filter((a) => a !== amenity))
+      setValue('amenities', current.filter((a) => a !== amenity), { shouldDirty: true })
     } else {
-      setValue('amenities', [...current, amenity])
+      setValue('amenities', [...current, amenity], { shouldDirty: true })
     }
   }
 
@@ -332,27 +355,14 @@ export default function EditListingPage() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
-                </label>
-                <select
-                  {...register('city')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select a city</option>
-                  {MAJOR_CITIES.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Province
                 </label>
                 <select
-                  {...register('province')}
+                  {...register('province', {
+                    onChange: () => {
+                      setValue('city', '', { shouldDirty: true })
+                    },
+                  })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="">Select a province</option>
@@ -362,6 +372,30 @@ export default function EditListingPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  City
+                </label>
+                <select
+                  {...register('city')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  disabled={!formData.province}
+                >
+                  <option value="">{formData.province ? 'Select a city' : 'Select province first'}</option>
+                  {(formData.province ? CITIES_BY_PROVINCE[formData.province] || [] : []).map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+                {errors.city && (
+                  <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
+                )}
+                <p className="mt-1 text-xs text-gray-500">
+                  City not listed? Select the closest city in your province.
+                </p>
               </div>
             </div>
 
@@ -406,6 +440,59 @@ export default function EditListingPage() {
               </div>
             </div>
 
+            {/* Bathroom */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Bath className="h-4 w-4" />
+                Bathroom
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Bathroom Type
+                </label>
+                <div className="space-y-2">
+                  {BATHROOM_TYPES.map((type) => (
+                    <label
+                      key={type.value}
+                      className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+                    >
+                      <input
+                        type="radio"
+                        {...register('bathroom_type')}
+                        value={type.value}
+                        className="mt-0.5 border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-900">{type.label}</span>
+                        <p className="text-xs text-gray-500">{type.description}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+                {errors.bathroom_type && (
+                  <p className="mt-1 text-sm text-red-600">{errors.bathroom_type.message}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Bathroom Size (optional)
+                </label>
+                <select
+                  {...register('bathroom_size', { setValueAs: (v) => v === '' ? null : v })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Not specified</option>
+                  {BATHROOM_SIZES.map((size) => (
+                    <option key={size.value} value={size.value}>
+                      {size.label} - {size.description}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             {/* Photos */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -413,7 +500,7 @@ export default function EditListingPage() {
               </label>
               <ImageUploader
                 images={formData.photos || []}
-                onChange={(images) => setValue('photos', images)}
+                onChange={(images) => setValue('photos', images, { shouldDirty: true })}
                 maxImages={10}
               />
             </div>
@@ -444,7 +531,7 @@ export default function EditListingPage() {
                   </label>
                   <input
                     type="number"
-                    {...register('roommate_age_min', { valueAsNumber: true })}
+                    {...register('roommate_age_min', { setValueAs: (v: string) => v === '' || v === undefined ? undefined : Number(v) })}
                     placeholder="18"
                     min={18}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -456,32 +543,171 @@ export default function EditListingPage() {
                   </label>
                   <input
                     type="number"
-                    {...register('roommate_age_max', { valueAsNumber: true })}
+                    {...register('roommate_age_max', { setValueAs: (v: string) => v === '' || v === undefined ? undefined : Number(v) })}
                     placeholder="65"
                     max={120}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   />
                 </div>
               </div>
+            </div>
 
-              <div className="flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    {...register('newcomer_friendly')}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Newcomer Friendly</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    {...register('no_credit_history_ok')}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">No Credit History OK</span>
-                </label>
+            {/* Property Features / Lifestyle */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Property Features
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('pets_allowed')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Pets Allowed</p>
+                  <p className="text-sm text-gray-500">Tenants can bring pets (dogs, cats, etc.)</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('smoking_allowed')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Smoking Allowed</p>
+                  <p className="text-sm text-gray-500">Smoking is permitted on the premises</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('parking_included')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Parking Included</p>
+                  <p className="text-sm text-gray-500">A parking spot is available for tenants</p>
+                </div>
+              </label>
+            </div>
+
+            {/* Special Accommodations */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Special Accommodations
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('newcomer_friendly')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Newcomer Friendly</p>
+                  <p className="text-sm text-gray-500">Open to newcomers, international students, and those new to Canada</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('no_credit_history_ok')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">No Credit History OK</p>
+                  <p className="text-sm text-gray-500">Open to tenants without Canadian credit history</p>
+                </div>
+              </label>
+
+              <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('ideal_for_students')}
+                  className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Ideal for Students</p>
+                  <p className="text-sm text-gray-500">Best suited for students - close to campus, flexible terms, or student-only preference</p>
+                </div>
+              </label>
+            </div>
+
+            {/* Help Exchange */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <HandHeart className="h-4 w-4" />
+                Help Exchange Program
               </div>
+              <p className="text-sm text-gray-500">
+                Offer reduced rent in exchange for help around the house. Great for seniors or those needing assistance.
+              </p>
+
+              <label className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <input
+                  type="checkbox"
+                  {...register('help_needed')}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-900">Looking for help with household tasks</span>
+                  <p className="text-xs text-gray-500">Rent may be reduced in exchange for assistance</p>
+                </div>
+              </label>
+
+              {formData.help_needed && (
+                <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      What kind of help do you need?
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      {HELP_TASKS.map((task) => (
+                        <label
+                          key={task.value}
+                          className={`flex items-center gap-2 p-2 border rounded-lg cursor-pointer transition-colors ${
+                            (formData.help_tasks || []).includes(task.value)
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={(formData.help_tasks || []).includes(task.value)}
+                            onChange={(e) => {
+                              const current = formData.help_tasks || []
+                              if (e.target.checked) {
+                                setValue('help_tasks', [...current, task.value], { shouldDirty: true })
+                              } else {
+                                setValue('help_tasks', current.filter((t) => t !== task.value), { shouldDirty: true })
+                              }
+                            }}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span className="text-sm text-gray-700">{task.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Additional details (optional)
+                    </label>
+                    <textarea
+                      {...register('help_details')}
+                      rows={3}
+                      placeholder="Describe the help you need, expected hours per week, rent reduction offered, etc."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Actions */}

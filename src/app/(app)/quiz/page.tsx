@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { ArrowLeft, ArrowRight, Check, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface QuizQuestion {
   id: string
@@ -203,6 +204,17 @@ export default function QuizPage() {
     setIsSaving(true)
     setError(null)
 
+    // Validate all questions have been answered
+    const unansweredQuestions = quizQuestions.filter(q => !answers[q.id])
+    if (unansweredQuestions.length > 0) {
+      setError(`Please answer all questions. You have ${unansweredQuestions.length} unanswered.`)
+      // Navigate to the first unanswered question
+      const firstUnanswered = quizQuestions.findIndex(q => !answers[q.id])
+      setCurrentStep(firstUnanswered)
+      setIsSaving(false)
+      return
+    }
+
     const supabase = createClient()
     const {
       data: { user },
@@ -228,6 +240,7 @@ export default function QuizPage() {
       return
     }
 
+    toast.success('Quiz answers saved!')
     router.push('/profile')
     router.refresh()
   }
@@ -255,6 +268,26 @@ export default function QuizPage() {
             className="h-full bg-blue-600 rounded-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
+        </div>
+        {/* Progress dots showing answered/unanswered questions */}
+        <div className="flex justify-center gap-1.5 mt-3">
+          {quizQuestions.map((q, index) => (
+            <button
+              key={q.id}
+              onClick={() => setCurrentStep(index)}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-200 ${
+                index === currentStep
+                  ? 'ring-2 ring-blue-600 ring-offset-1'
+                  : ''
+              } ${
+                answers[q.id]
+                  ? 'bg-blue-600'
+                  : 'bg-gray-300'
+              }`}
+              title={`Question ${index + 1}${answers[q.id] ? ' (answered)' : ' (unanswered)'}`}
+              aria-label={`Go to question ${index + 1}${answers[q.id] ? ' (answered)' : ' (unanswered)'}`}
+            />
+          ))}
         </div>
       </div>
 

@@ -32,6 +32,7 @@ import {
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
+import { ListingGallery } from '@/components/listings/listing-gallery'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 
 interface ListingPageProps {
@@ -135,17 +136,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Photos */}
             <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden animate-scale-in" data-animate="scale">
-              {listing.photos && listing.photos.length > 0 ? (
-                <img
-                  src={listing.photos[0]}
-                  alt={listing.title}
-                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Home className="h-16 w-16 text-gray-300" />
-                </div>
-              )}
+              <ListingGallery photos={listing.photos || []} title={listing.title} />
 
               {/* Badges */}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2">
@@ -192,12 +183,6 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 )}
               </div>
 
-              {/* Photo gallery indicator */}
-              {listing.photos && listing.photos.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white text-sm px-3 py-1 rounded-full">
-                  1 / {listing.photos.length}
-                </div>
-              )}
             </div>
 
             {/* Title and basic info */}

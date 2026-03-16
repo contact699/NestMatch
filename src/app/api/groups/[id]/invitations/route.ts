@@ -146,6 +146,29 @@ export const POST = withApiHandler(
 
     if (inviteError) throw inviteError
 
+    // Notify the invitee
+    const { data: groupInfo } = await svcClient
+      .from('co_renter_groups')
+      .select('name')
+      .eq('id', groupId)
+      .single()
+
+    const { data: inviterProfile } = await svcClient
+      .from('profiles')
+      .select('name')
+      .eq('user_id', userId!)
+      .single()
+
+    const { createNotification } = await import('@/lib/notifications')
+    await createNotification({
+      userId: invitee_id,
+      type: 'invitation_received',
+      title: 'Group invitation',
+      body: `${inviterProfile?.name || 'Someone'} invited you to join ${groupInfo?.name || 'a group'}`,
+      link: `/groups/${groupId}`,
+      metadata: { group_id: groupId, invitation_id: invitation.id, inviter_id: userId },
+    })
+
     return apiResponse({ invitation }, 201, requestId)
   },
   {
@@ -222,6 +245,28 @@ export const PUT = withApiHandler(
         })
 
       if (memberError) throw memberError
+
+      // Notify group members about the new member
+      const { data: groupInfo } = await svcClient
+        .from('co_renter_groups')
+        .select('name')
+        .eq('id', groupId)
+        .single()
+
+      const { data: newMemberProfile } = await svcClient
+        .from('profiles')
+        .select('name')
+        .eq('user_id', userId!)
+        .single()
+
+      const { createNotificationsForGroupMembers } = await import('@/lib/notifications')
+      await createNotificationsForGroupMembers(groupId, userId!, {
+        type: 'member_joined',
+        title: 'New group member',
+        body: `${newMemberProfile?.name || 'Someone'} joined ${groupInfo?.name || 'your group'}`,
+        link: `/groups/${groupId}`,
+        metadata: { group_id: groupId, new_member_id: userId },
+      })
     }
 
     return apiResponse({

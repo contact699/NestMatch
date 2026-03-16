@@ -23,11 +23,20 @@ const updateListingSchema = z.object({
   lng: z.number().optional().nullable(),
   photos: z.array(z.string()).optional(),
   amenities: z.array(z.string()).optional(),
+  bathroom_type: z.enum(['ensuite', 'private', 'shared']).optional(),
+  bathroom_size: z.enum(['full', 'three_quarter', 'half']).nullable().optional(),
   roommate_gender_preference: z.enum(['male', 'female', 'any']).optional().nullable(),
   roommate_age_min: z.number().min(18).optional().nullable(),
   roommate_age_max: z.number().max(120).optional().nullable(),
+  pets_allowed: z.boolean().optional(),
+  smoking_allowed: z.boolean().optional(),
+  parking_included: z.boolean().optional(),
   newcomer_friendly: z.boolean().optional(),
   no_credit_history_ok: z.boolean().optional(),
+  ideal_for_students: z.boolean().optional(),
+  help_needed: z.boolean().optional(),
+  help_tasks: z.array(z.string()).optional(),
+  help_details: z.string().max(500).optional().nullable(),
   is_active: z.boolean().optional(),
 })
 
@@ -62,13 +71,6 @@ export const GET = withPublicHandler(
       }
       throw error
     }
-
-    // Increment view count (fire and forget)
-    supabase
-      .from('listings')
-      .update({ views_count: ((listing as any).views_count || 0) + 1 })
-      .eq('id', id)
-      .then(() => {})
 
     return apiResponse({ listing }, 200, requestId)
   }
