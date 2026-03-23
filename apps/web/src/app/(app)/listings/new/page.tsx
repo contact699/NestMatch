@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+// Card components removed - using sidebar layout instead
 import { toast } from 'sonner'
 import {
   ArrowLeft,
@@ -21,6 +21,7 @@ import {
   Check,
   AlertCircle,
   X,
+  ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
 import { listingSchema, ListingFormData } from './types'
@@ -36,7 +37,7 @@ import {
 } from './steps'
 
 const STEPS = [
-  { id: 1, title: 'Type', icon: Home },
+  { id: 1, title: 'Type & Location', icon: Home },
   { id: 2, title: 'Location', icon: MapPin },
   { id: 3, title: 'Details', icon: DollarSign },
   { id: 4, title: 'Amenities', icon: Calendar },
@@ -215,79 +216,80 @@ export default function NewListingPage() {
     }
   }
 
+  const progressPercent = Math.round((currentStep / STEPS.length) * 100)
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to dashboard
-        </Link>
-      </div>
-
-      <Card variant="bordered">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>Create a Listing</CardTitle>
-              <CardDescription>
-                Create a listing to find compatible roommates
-              </CardDescription>
-            </div>
-            <Link
-              href="/dashboard"
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              aria-label="Cancel and return to dashboard"
-            >
-              <X className="h-5 w-5" />
-            </Link>
-          </div>
-        </CardHeader>
-
-        {/* Progress indicator */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center justify-between">
-            {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div
-                  className={`
-                    flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                    ${
-                      currentStep > step.id
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : currentStep === step.id
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-gray-200 text-gray-400'
-                    }
-                  `}
-                >
-                  {currentStep > step.id ? (
-                    <Check className="h-5 w-5" />
-                  ) : (
-                    <step.icon className="h-5 w-5" />
-                  )}
-                </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`w-8 h-0.5 mx-1 ${
-                      currentStep > step.id ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-600 mt-2">
-            Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].title}
+    <div className="min-h-screen flex">
+      {/* Left panel - Dark navy sidebar */}
+      <div className="hidden lg:flex lg:w-[340px] bg-primary text-white flex-col justify-between p-10 flex-shrink-0">
+        <div>
+          <Link href="/dashboard" className="text-white/70 hover:text-white text-sm font-medium transition-colors">
+            NestMatch
+          </Link>
+          <h1 className="text-4xl font-display font-bold mt-12 leading-tight italic">
+            Let&apos;s build<br />your listing.
+          </h1>
+          <p className="text-white/60 mt-6 text-sm leading-relaxed">
+            Our curated matchmaking starts with the basics. Tell us where your sanctuary is located.
           </p>
         </div>
 
-        <CardContent>
+        {/* Verified Listings badge */}
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
+            <ShieldCheck className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold">Verified Listings</p>
+            <p className="text-xs text-white/50">We verify 100% of hosts for safety.</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Right panel - Form content */}
+      <div className="flex-1 flex flex-col">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-6 py-4 lg:px-10">
+          <div className="lg:hidden">
+            <Link href="/dashboard" className="text-on-surface-variant hover:text-on-surface text-sm font-medium transition-colors">
+              NestMatch
+            </Link>
+          </div>
+          <div className="flex-1" />
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
+          >
+            Exit
+            <X className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {/* Form area */}
+        <div className="flex-1 px-6 lg:px-10 pb-8 max-w-2xl mx-auto w-full">
+          {/* Step indicator */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-semibold text-secondary uppercase tracking-wider">
+                STEP {currentStep} OF {STEPS.length}
+              </p>
+              <p className="text-sm text-on-surface-variant">{progressPercent}% Complete</p>
+            </div>
+            <h2 className="text-2xl font-display font-bold text-on-surface mb-3">
+              {STEPS[currentStep - 1].title}
+            </h2>
+            {/* Progress bar */}
+            <div className="h-1 bg-surface-container-low rounded-full overflow-hidden">
+              <div
+                className="h-full bg-secondary rounded-full transition-all duration-500"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit(onSubmit, onError)}>
             {error && (
-              <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+              <div className="mb-6 p-4 bg-error-container rounded-xl flex items-center gap-2 text-error">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
                 {error}
               </div>
@@ -296,24 +298,23 @@ export default function NewListingPage() {
             {renderStep()}
 
             {/* Navigation buttons */}
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              <Button
+            <div className="flex justify-between mt-8 pt-6 ghost-border-t">
+              <button
                 type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
+                onClick={currentStep === 1 ? () => router.push('/dashboard') : prevStep}
+                className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
+                <ArrowLeft className="h-4 w-4" />
+                {currentStep === 1 ? 'Cancel' : 'Back'}
+              </button>
 
               {currentStep < STEPS.length ? (
-                <Button type="button" onClick={nextStep}>
-                  Next
+                <Button type="button" onClick={nextStep} size="lg">
+                  Continue
                   <ArrowRight className="h-4 w-4 ml-2" />
                 </Button>
               ) : (
-                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting} size="lg">
                   {isSubmitting ? (
                     <>
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -329,8 +330,8 @@ export default function NewListingPage() {
               )}
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   )
 }

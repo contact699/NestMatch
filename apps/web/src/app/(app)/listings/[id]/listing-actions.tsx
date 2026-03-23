@@ -10,6 +10,7 @@ import {
   Share2,
   Flag,
   Loader2,
+  Send,
 } from 'lucide-react'
 
 interface ListingActionsProps {
@@ -167,12 +168,26 @@ export function ListingActions({
         Contact Host
       </Button>
 
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={handleContact}
+        disabled={isContacting}
+      >
+        {isContacting ? (
+          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+        ) : (
+          <Send className="h-4 w-4 mr-2" />
+        )}
+        Message Host
+      </Button>
+
       <div className="grid grid-cols-3 gap-2">
         <Button
           variant="outline"
           onClick={handleSave}
           disabled={isSaving}
-          className={isSaved ? 'text-red-600 border-red-200 hover:bg-red-50' : ''}
+          className={isSaved ? 'text-red-500 ghost-border hover:bg-red-50' : ''}
         >
           {isSaving ? (
             <Loader2 className="h-4 w-4 animate-spin" />

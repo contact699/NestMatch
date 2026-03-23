@@ -25,7 +25,7 @@ const tabs: Tab[] = [
 
 export function ViewModeTabs({ activeMode, onModeChange, disabled }: ViewModeTabsProps) {
   return (
-    <div className="inline-flex items-center bg-gray-100 rounded-lg p-1">
+    <div className="inline-flex items-center bg-surface-container-low rounded-xl p-1">
       {tabs.map((tab) => {
         const Icon = tab.icon
         const isActive = activeMode === tab.id
@@ -36,10 +36,10 @@ export function ViewModeTabs({ activeMode, onModeChange, disabled }: ViewModeTab
             onClick={() => onModeChange(tab.id)}
             disabled={disabled}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md transition-all duration-200',
+              'flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200',
               isActive
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900',
+                ? 'bg-surface-container-lowest text-primary shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >

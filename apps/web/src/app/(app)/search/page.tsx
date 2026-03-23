@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { clientLogger } from '@/lib/client-logger'
 import { useSearchParams, useRouter } from 'next/navigation'
@@ -11,7 +11,7 @@ import { ViewModeTabs, ViewMode } from '@/components/search/view-mode-tabs'
 import { SearchResultsList } from '@/components/search/search-results-list'
 import { SearchResultsProximity } from '@/components/search/search-results-proximity'
 import { useSavedListings } from '@/lib/hooks/use-saved-listings'
-import { Home, Loader2 } from 'lucide-react'
+import { Home, Loader2, Map as MapIcon } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 
 // Lazy load the map component to reduce initial bundle size
@@ -19,10 +19,10 @@ const SearchResultsMap = dynamic(
   () => import('@/components/search/search-results-map').then((mod) => mod.SearchResultsMap),
   {
     loading: () => (
-      <div className="flex items-center justify-center h-[500px] bg-gray-100 rounded-lg animate-pulse">
+      <div className="flex items-center justify-center h-[500px] bg-surface-container-low rounded-xl animate-pulse">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">Loading map...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-secondary mx-auto mb-2" />
+          <p className="text-sm text-on-surface-variant">Loading map...</p>
         </div>
       </div>
     ),
@@ -66,6 +66,7 @@ export default function SearchPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [showMap, setShowMap] = useState(false)
 
   // Get view mode from URL or default to 'list'
   const viewParam = searchParams.get('view')
@@ -167,18 +168,21 @@ export default function SearchPage() {
     fetchListings()
   }, [searchParams])
 
+  // Derive city for display
+  const searchCity = searchParams.get('city')
+
   // Render the appropriate view
   const renderResults = () => {
     if (isLoading) {
       return (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
-              <div className="h-48 bg-gray-200" />
+            <div key={i} className="bg-surface-container-lowest rounded-2xl ghost-border overflow-hidden animate-pulse">
+              <div className="h-48 bg-surface-container" />
               <div className="p-4 space-y-3">
-                <div className="h-4 bg-gray-200 rounded w-3/4" />
-                <div className="h-4 bg-gray-200 rounded w-1/2" />
-                <div className="h-4 bg-gray-200 rounded w-1/4" />
+                <div className="h-4 bg-surface-container rounded w-3/4" />
+                <div className="h-4 bg-surface-container rounded w-1/2" />
+                <div className="h-4 bg-surface-container rounded w-1/4" />
               </div>
             </div>
           ))}
@@ -189,9 +193,9 @@ export default function SearchPage() {
     if (error) {
       return (
         <div className="text-center py-12">
-          <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Error loading listings</h3>
-          <p className="text-gray-500 mb-4">{error}</p>
+          <Home className="h-12 w-12 text-on-surface-variant/30 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-on-surface mb-2">Error loading listings</h3>
+          <p className="text-on-surface-variant mb-4">{error}</p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             Try again
           </Button>
@@ -202,9 +206,9 @@ export default function SearchPage() {
     if (listings.length === 0) {
       return (
         <div className="text-center py-12">
-          <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No listings found</h3>
-          <p className="text-gray-500 mb-4">
+          <Home className="h-12 w-12 text-on-surface-variant/30 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-on-surface mb-2">No listings found</h3>
+          <p className="text-on-surface-variant mb-4">
             Try adjusting your filters or search in a different area.
           </p>
           <Button variant="outline" onClick={() => router.push('/search')}>
@@ -236,13 +240,32 @@ export default function SearchPage() {
         )
       default:
         return (
-          <SearchResultsList
-            listings={listings}
-            currentUserId={currentUserId}
-            savedIds={savedIds}
-            onSave={save}
-            onUnsave={unsave}
-          />
+          <div className="flex gap-6">
+            {/* Results grid */}
+            <div className="flex-1">
+              <SearchResultsList
+                listings={listings}
+                currentUserId={currentUserId}
+                savedIds={savedIds}
+                onSave={save}
+                onUnsave={unsave}
+              />
+            </div>
+
+            {/* Expandable map panel */}
+            {showMap && (
+              <div className="hidden lg:block w-[400px] flex-shrink-0">
+                <div className="sticky top-24 h-[calc(100vh-120px)] rounded-2xl overflow-hidden">
+                  <SearchResultsMap
+                    listings={listings}
+                    savedIds={savedIds}
+                    onSave={save}
+                    onUnsave={unsave}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         )
     }
   }
@@ -252,29 +275,41 @@ export default function SearchPage() {
       {/* Search Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-1">Find a room</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-display font-bold text-on-surface mb-1">
+            {!isLoading && !error && listings.length > 0
+              ? `${listings.length} Results${searchCity ? ` in ${searchCity}` : ''}`
+              : 'Find a room'}
+          </h1>
+          <p className="text-on-surface-variant">
             Browse verified listings across Canada
           </p>
         </div>
-        <ViewModeTabs
-          activeMode={viewMode}
-          onModeChange={handleViewModeChange}
-          disabled={isLoading}
-        />
+        <div className="flex items-center gap-3">
+          <ViewModeTabs
+            activeMode={viewMode}
+            onModeChange={handleViewModeChange}
+            disabled={isLoading}
+          />
+          {viewMode === 'list' && (
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                showMap
+                  ? 'bg-secondary text-on-secondary'
+                  : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface'
+              }`}
+            >
+              <MapIcon className="h-4 w-4" />
+              {showMap ? 'Hide Map' : 'Expand Map'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Search & Filters */}
       <Card variant="glass" className="p-4 mb-8">
         <SearchFilters />
       </Card>
-
-      {/* Results count */}
-      {!isLoading && !error && listings.length > 0 && (
-        <p className="text-sm text-gray-500 mb-4">
-          {listings.length} listing{listings.length !== 1 ? 's' : ''} found
-        </p>
-      )}
 
       {/* Results */}
       {renderResults()}

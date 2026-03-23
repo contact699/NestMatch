@@ -816,6 +816,10 @@ body {
   border: 1px solid rgba(196, 198, 207, 0.15);
 }
 
+.ghost-border-t {
+  border-top: 1px solid rgba(196, 198, 207, 0.15);
+}
+
 /* Noise texture overlay */
 .noise-overlay::after {
   content: '';

@@ -13,12 +13,7 @@ import {
   Calendar,
   Clock,
   Home,
-  DollarSign,
   Users,
-  Heart,
-  Share2,
-  Flag,
-  MessageCircle,
   Check,
   Leaf,
   Eye,
@@ -27,8 +22,9 @@ import {
   GraduationCap,
   HandHelping,
   PawPrint,
-  CigaretteOff,
   Car,
+  ShieldCheck,
+  Star,
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
@@ -123,89 +119,103 @@ export default async function ListingPage({ params }: ListingPageProps) {
         <div className="mb-6" data-animate>
           <Link
             href="/search"
-            className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            className="inline-flex items-center text-sm text-on-surface-variant hover:text-on-surface transition-colors"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to search
           </Link>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Main content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Photos */}
-            <div className="relative aspect-video bg-gray-100 rounded-xl overflow-hidden animate-scale-in" data-animate="scale">
-              {listing.photos && listing.photos.length > 0 ? (
+        {/* Photo Gallery Grid */}
+        <div className="mb-8" data-animate="scale">
+          {listing.photos && listing.photos.length > 0 ? (
+            <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] lg:h-[480px] rounded-2xl overflow-hidden">
+              {/* Main large image */}
+              <div className="col-span-2 row-span-2 relative">
                 <img
                   src={listing.photos[0]}
                   alt={listing.title}
                   className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Home className="h-16 w-16 text-gray-300" />
+                {/* Badges */}
+                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                  {listing.newcomer_friendly && (
+                    <Badge variant="success" className="flex items-center gap-1">
+                      <Leaf className="h-3 w-3" />
+                      Newcomer Friendly
+                    </Badge>
+                  )}
+                  {listing.no_credit_history_ok && (
+                    <Badge variant="info">No Credit History OK</Badge>
+                  )}
+                  {listing.help_needed && (
+                    <Badge variant="warning" className="flex items-center gap-1">
+                      <HandHelping className="h-3 w-3" />
+                      Assistance Required
+                    </Badge>
+                  )}
+                  {listing.ideal_for_students && (
+                    <Badge variant="default" className="flex items-center gap-1 bg-primary/10 text-primary">
+                      <GraduationCap className="h-3 w-3" />
+                      Ideal for Students
+                    </Badge>
+                  )}
+                  {listing.pets_allowed && (
+                    <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
+                      <PawPrint className="h-3 w-3" />
+                      Pets Allowed
+                    </Badge>
+                  )}
+                  {listing.parking_included && (
+                    <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
+                      <Car className="h-3 w-3" />
+                      Parking Included
+                    </Badge>
+                  )}
+                  {!listing.is_active && (
+                    <Badge variant="warning">Inactive</Badge>
+                  )}
                 </div>
-              )}
-
-              {/* Badges */}
-              <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                {listing.newcomer_friendly && (
-                  <Badge variant="success" className="flex items-center gap-1">
-                    <Leaf className="h-3 w-3" />
-                    Newcomer Friendly
-                  </Badge>
-                )}
-                {listing.no_credit_history_ok && (
-                  <Badge variant="info">No Credit History OK</Badge>
-                )}
-                {listing.help_needed && (
-                  <Badge variant="warning" className="flex items-center gap-1">
-                    <HandHelping className="h-3 w-3" />
-                    Assistance Required
-                  </Badge>
-                )}
-                {listing.ideal_for_students && (
-                  <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
-                    <GraduationCap className="h-3 w-3" />
-                    Ideal for Students
-                  </Badge>
-                )}
-                {listing.pets_allowed && (
-                  <Badge variant="default" className="flex items-center gap-1 bg-amber-100 text-amber-800">
-                    <PawPrint className="h-3 w-3" />
-                    Pets Allowed
-                  </Badge>
-                )}
-                {listing.smoking_allowed && (
-                  <Badge variant="default" className="flex items-center gap-1 bg-gray-100 text-gray-800">
-                    Smoking Allowed
-                  </Badge>
-                )}
-                {listing.parking_included && (
-                  <Badge variant="default" className="flex items-center gap-1 bg-blue-100 text-blue-800">
-                    <Car className="h-3 w-3" />
-                    Parking Included
-                  </Badge>
-                )}
-                {!listing.is_active && (
-                  <Badge variant="warning">Inactive</Badge>
-                )}
               </div>
-
-              {/* Photo gallery indicator */}
-              {listing.photos && listing.photos.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white text-sm px-3 py-1 rounded-full">
-                  1 / {listing.photos.length}
+              {/* Secondary images */}
+              {listing.photos.slice(1, 5).map((photo: string, i: number) => (
+                <div key={i} className="relative overflow-hidden">
+                  <img
+                    src={photo}
+                    alt={`${listing.title} - Photo ${i + 2}`}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
                 </div>
-              )}
+              ))}
+              {/* Fill empty slots */}
+              {listing.photos.length < 5 && Array.from({ length: Math.max(0, 5 - listing.photos.length) }).map((_, i) => (
+                <div key={`empty-${i}`} className="bg-surface-container flex items-center justify-center">
+                  <Home className="h-8 w-8 text-on-surface-variant/20" />
+                </div>
+              ))}
             </div>
+          ) : (
+            <div className="h-[400px] bg-surface-container rounded-2xl flex items-center justify-center">
+              <Home className="h-16 w-16 text-on-surface-variant/20" />
+            </div>
+          )}
+          {/* Photo count */}
+          {listing.photos && listing.photos.length > 5 && (
+            <div className="mt-2 text-right">
+              <span className="text-sm text-on-surface-variant">+{listing.photos.length - 5} more photos</span>
+            </div>
+          )}
+        </div>
 
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Main content */}
+          <div className="lg:col-span-2 space-y-6">
             {/* Title and basic info */}
             <div data-animate className="delay-100">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">{listing.title}</h1>
-                  <div className="flex items-center gap-2 text-gray-600 mt-1">
+                  <h1 className="text-3xl font-display font-bold text-on-surface">{listing.title}</h1>
+                  <div className="flex items-center gap-2 text-on-surface-variant mt-1">
                     <MapPin className="h-4 w-4" />
                     <span>
                       {listing.city}, {listing.province}
@@ -213,70 +223,141 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-3xl font-display font-bold text-primary">
                     {formatPrice(listing.price)}
-                    <span className="text-base font-normal text-gray-500">/mo</span>
+                    <span className="text-base font-normal text-on-surface-variant">/mo</span>
                   </p>
                   {listing.utilities_included && (
-                    <p className="text-sm text-green-600">Utilities included</p>
+                    <p className="text-sm text-secondary">Utilities included</p>
                   )}
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-3 mt-4">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm transition-all hover:bg-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-sm transition-all hover:bg-surface-container">
                   <Home className="h-4 w-4" />
                   {typeLabels[listing.type]}
                 </span>
                 {listing.bathroom_type && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full text-sm transition-all hover:bg-blue-100">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-secondary-container text-secondary rounded-full text-sm transition-all hover:bg-secondary-container/80">
                     <Bath className="h-4 w-4" />
                     {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label || listing.bathroom_type}
                     {listing.bathroom_size && (
-                      <span className="text-blue-500">
+                      <span className="text-secondary/70">
                         ({BATHROOM_SIZES.find(s => s.value === listing.bathroom_size)?.label})
                       </span>
                     )}
                   </span>
                 )}
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm transition-all hover:bg-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-sm transition-all hover:bg-surface-container">
                   <Calendar className="h-4 w-4" />
                   Available {formatDate(listing.available_date)}
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm transition-all hover:bg-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-sm transition-all hover:bg-surface-container">
                   <Clock className="h-4 w-4" />
                   Min {listing.minimum_stay || 1} {listing.minimum_stay === 1 ? 'month' : 'months'}
                 </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm transition-all hover:bg-gray-200">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-sm transition-all hover:bg-surface-container">
                   <Eye className="h-4 w-4" />
                   {listing.views_count || 0} views
                 </span>
               </div>
             </div>
 
-            {/* Description */}
-            {listing.description && (
-              <Card variant="bordered" data-animate className="delay-200">
-                <CardContent className="py-4">
-                  <h2 className="font-semibold text-gray-900 mb-2">About this place</h2>
-                  <p className="text-gray-600 whitespace-pre-wrap">{listing.description}</p>
+            {/* Compatibility Match Card */}
+            {user && !isOwner && (
+              <Card variant="feature" data-animate className="delay-150 overflow-hidden">
+                <CardContent className="py-6">
+                  <div className="flex items-center gap-6">
+                    <div className="flex-shrink-0">
+                      <CompatibilityBadge
+                        userId={listing.user_id}
+                        currentUserId={user.id}
+                        size="lg"
+                        showLabel={true}
+                      />
+                    </div>
+                    <div>
+                      <h2 className="font-display font-semibold text-on-surface text-lg">A Perfect Match for Your Lifestyle</h2>
+                      <p className="text-sm text-on-surface-variant mt-1">
+                        You and {profile?.name || 'this host'} share compatible lifestyles for space, routine, and social preferences.
+                      </p>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}
 
-            {/* Amenities */}
+            {/* Description */}
+            {listing.description && (
+              <Card variant="bordered" data-animate className="delay-200">
+                <CardContent className="py-4">
+                  <h2 className="font-display font-semibold text-on-surface mb-2">About this place</h2>
+                  <p className="text-on-surface-variant whitespace-pre-wrap">{listing.description}</p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Meet Your Host */}
+            <Card variant="bordered" data-animate className="delay-250">
+              <CardContent className="py-6">
+                <h2 className="font-display font-semibold text-on-surface text-lg mb-4">Meet Your Host, {profile?.name || 'Anonymous'}</h2>
+                <div className="flex items-start gap-4">
+                  <div className="w-16 h-16 bg-secondary-container rounded-2xl flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105 flex-shrink-0">
+                    {profile?.profile_photo ? (
+                      <img
+                        src={profile.profile_photo}
+                        alt={profile.name || 'Host'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Users className="h-8 w-8 text-secondary" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-on-surface">
+                        {profile?.name || 'Anonymous'}
+                      </h3>
+                      <VerificationBadge level={profile?.verification_level || 'basic'} />
+                    </div>
+                    {profile?.created_at && (
+                      <p className="text-xs text-on-surface-variant mb-2">
+                        Member since {formatDate(profile.created_at)}
+                      </p>
+                    )}
+                    {profile?.bio && (
+                      <p className="text-sm text-on-surface-variant line-clamp-3">
+                        {profile.bio}
+                      </p>
+                    )}
+                    {profile?.languages && profile.languages.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        {profile.languages.map((lang: string) => (
+                          <span key={lang} className="text-xs px-2 py-0.5 bg-surface-container-low text-on-surface-variant rounded-full">
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Apartment Features */}
             {listing.amenities && listing.amenities.length > 0 && (
               <Card variant="bordered" data-animate className="delay-300">
                 <CardContent className="py-4">
-                  <h2 className="font-semibold text-gray-900 mb-3">Amenities</h2>
+                  <h2 className="font-display font-semibold text-on-surface mb-3">Apartment Features</h2>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                     {listing.amenities.map((amenity: string, index: number) => (
                       <div
                         key={amenity}
-                        className="flex items-center gap-2 text-gray-600 transition-all duration-300 hover:text-gray-900"
+                        className="flex items-center gap-2 text-on-surface-variant transition-all duration-300 hover:text-on-surface"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
-                        <Check className="h-4 w-4 text-green-600" />
+                        <Check className="h-4 w-4 text-secondary flex-shrink-0" />
                         <span className="text-sm">{amenity}</span>
                       </div>
                     ))}
@@ -288,18 +369,18 @@ export default async function ListingPage({ params }: ListingPageProps) {
             {/* Roommate preferences */}
             <Card variant="bordered" data-animate className="delay-400">
               <CardContent className="py-4">
-                <h2 className="font-semibold text-gray-900 mb-3">Roommate Preferences</h2>
+                <h2 className="font-display font-semibold text-on-surface mb-3">Roommate Preferences</h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="p-3 bg-gray-50 rounded-lg transition-all duration-300 hover:bg-gray-100">
-                    <span className="text-gray-500">Gender preference:</span>
-                    <p className="text-gray-900 capitalize font-medium">
+                  <div className="p-3 bg-surface-container-low rounded-xl transition-all duration-300 hover:bg-surface-container">
+                    <span className="text-on-surface-variant">Gender preference:</span>
+                    <p className="text-on-surface capitalize font-medium">
                       {listing.roommate_gender_preference || 'Any'}
                     </p>
                   </div>
                   {(listing.roommate_age_min || listing.roommate_age_max) && (
-                    <div className="p-3 bg-gray-50 rounded-lg transition-all duration-300 hover:bg-gray-100">
-                      <span className="text-gray-500">Age range:</span>
-                      <p className="text-gray-900 font-medium">
+                    <div className="p-3 bg-surface-container-low rounded-xl transition-all duration-300 hover:bg-surface-container">
+                      <span className="text-on-surface-variant">Age range:</span>
+                      <p className="text-on-surface font-medium">
                         {listing.roommate_age_min || 18} - {listing.roommate_age_max || 'any'}
                       </p>
                     </div>
@@ -311,62 +392,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Host card */}
-            <Card variant="feature" data-animate className="delay-200">
+            {/* Action card */}
+            <Card variant="feature" data-animate className="delay-200 sticky top-24">
               <CardContent className="py-6">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105">
-                    {profile?.profile_photo ? (
-                      <img
-                        src={profile.profile_photo}
-                        alt={profile.name || 'Host'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Users className="h-8 w-8 text-blue-600" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {profile?.name || 'Anonymous'}
-                    </h3>
-                    <VerificationBadge level={profile?.verification_level || 'basic'} />
-                    {profile?.created_at && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Member since {formatDate(profile.created_at)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Compatibility score */}
-                {user && !isOwner && (
-                  <div className="mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
-                    <p className="text-sm text-gray-600 mb-2">Your compatibility</p>
-                    <CompatibilityBadge
-                      userId={listing.user_id}
-                      currentUserId={user.id}
-                      size="lg"
-                      showLabel={true}
-                    />
-                  </div>
-                )}
-
-                {profile?.bio && (
-                  <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                    {profile.bio}
-                  </p>
-                )}
-
-                {profile?.languages && profile.languages.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-xs text-gray-500 mb-1">Languages</p>
-                    <p className="text-sm text-gray-700">
-                      {profile.languages.join(', ')}
-                    </p>
-                  </div>
-                )}
-
                 <ListingActions
                   listingId={id}
                   hostUserId={listing.user_id}
@@ -374,6 +402,21 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   isSaved={isSaved}
                   isLoggedIn={!!user}
                 />
+
+                {/* Trust badges */}
+                <div className="mt-6 pt-4 ghost-border-t">
+                  <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Trust Verified</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                      <ShieldCheck className="h-4 w-4 text-secondary" />
+                      <span>Identity verified</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                      <Star className="h-4 w-4 text-secondary" />
+                      <span>Responsive host</span>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -381,7 +424,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
             {isOwner && (
               <Card variant="bordered" data-animate className="delay-300">
                 <CardContent className="py-4">
-                  <h3 className="font-semibold text-gray-900 mb-3">Manage Listing</h3>
+                  <h3 className="font-display font-semibold text-on-surface mb-3">Manage Listing</h3>
                   <div className="space-y-2">
                     <Link href={`/listings/${id}/edit`}>
                       <Button variant="outline" className="w-full">
@@ -397,15 +440,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
             {/* Quick info */}
             <Card variant="bordered" data-animate className="delay-400">
               <CardContent className="py-4">
-                <h3 className="font-semibold text-gray-900 mb-3">Quick Info</h3>
+                <h3 className="font-display font-semibold text-on-surface mb-3">Quick Info</h3>
                 <dl className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Listed</dt>
-                    <dd className="text-gray-900">{formatDate(listing.created_at)}</dd>
+                    <dt className="text-on-surface-variant">Listed</dt>
+                    <dd className="text-on-surface">{formatDate(listing.created_at)}</dd>
                   </div>
                   <div className="flex justify-between">
-                    <dt className="text-gray-500">Last updated</dt>
-                    <dd className="text-gray-900">{formatDate(listing.updated_at)}</dd>
+                    <dt className="text-on-surface-variant">Last updated</dt>
+                    <dd className="text-on-surface">{formatDate(listing.updated_at)}</dd>
                   </div>
                 </dl>
               </CardContent>

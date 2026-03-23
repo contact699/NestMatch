@@ -3,6 +3,7 @@
 import { UseFormWatch, UseFormSetValue } from 'react-hook-form'
 import { AMENITIES } from '@/lib/utils'
 import { ListingFormData } from '../types'
+import { Check } from 'lucide-react'
 
 interface StepAmenitiesProps {
   watch: UseFormWatch<ListingFormData>
@@ -22,35 +23,49 @@ export function StepAmenities({ watch, setValue }: StepAmenitiesProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-lg font-medium text-gray-900">
+    <div className="space-y-6">
+      <h3 className="text-lg font-display font-semibold text-on-surface">
         What amenities are available?
       </h3>
-      <p className="text-sm text-gray-500">Select all that apply</p>
+      <p className="text-sm text-on-surface-variant">Select all that apply</p>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-        {AMENITIES.map((amenity) => (
-          <label
-            key={amenity}
-            className={`
-              flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-all
-              ${
-                formData.amenities?.includes(amenity)
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }
-            `}
-          >
-            <input
-              type="checkbox"
-              checked={formData.amenities?.includes(amenity)}
-              onChange={() => toggleAmenity(amenity)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-700">{amenity}</span>
-          </label>
-        ))}
+        {AMENITIES.map((amenity) => {
+          const isSelected = formData.amenities?.includes(amenity)
+          return (
+            <label
+              key={amenity}
+              className={`
+                flex items-center gap-2 p-3 rounded-xl cursor-pointer transition-all
+                ${
+                  isSelected
+                    ? 'bg-secondary-container ghost-border ring-2 ring-secondary'
+                    : 'ghost-border hover:bg-surface-container-low'
+                }
+              `}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() => toggleAmenity(amenity)}
+                className="sr-only"
+              />
+              <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${
+                isSelected ? 'bg-secondary text-white' : 'ghost-border'
+              }`}>
+                {isSelected && <Check className="h-3 w-3" />}
+              </div>
+              <span className="text-sm text-on-surface">{amenity}</span>
+            </label>
+          )
+        })}
       </div>
+
+      {formData.amenities && formData.amenities.length > 0 && (
+        <p className="text-sm text-on-surface-variant">
+          {formData.amenities.length} amenit{formData.amenities.length === 1 ? 'y' : 'ies'} selected
+        </p>
+      )}
     </div>
   )
 }

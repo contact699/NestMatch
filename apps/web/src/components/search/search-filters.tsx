@@ -15,6 +15,7 @@ import {
   PawPrint,
   CigaretteOff,
   Car,
+  RotateCcw,
 } from 'lucide-react'
 
 export function SearchFilters() {
@@ -75,17 +76,25 @@ export function SearchFilters() {
     setFilters((prev) => ({ ...prev, [field]: value }))
   }
 
+  const handleReset = () => {
+    setFilters({
+      q: '', city: '', province: '', minPrice: '', maxPrice: '', type: '', bathroomType: '',
+      newcomerFriendly: false, noCreditOk: false, idealForStudents: false,
+      assistanceRequired: false, petsAllowed: false, noSmoking: false, parkingIncluded: false,
+    })
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Search bar */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant" />
         <input
           type="text"
           value={filters.q}
           onChange={(e) => handleChange('q', e.target.value)}
           placeholder="Search by keyword (optional)..."
-          className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all"
+          className="w-full pl-10 pr-4 py-3 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest backdrop-blur-sm transition-all text-on-surface placeholder:text-on-surface-variant"
         />
       </div>
 
@@ -101,7 +110,7 @@ export function SearchFilters() {
               handleChange('city', '')
             }
           }}
-          className="w-full px-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+          className="w-full px-4 py-2 ghost-border rounded-xl appearance-none bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low text-on-surface"
         >
           <option value="">All Provinces</option>
           {CANADIAN_PROVINCES.map((province) => (
@@ -113,11 +122,11 @@ export function SearchFilters() {
 
         {/* City - Filtered by province */}
         <div className="relative">
-          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <select
             value={filters.city}
             onChange={(e) => handleChange('city', e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+            className="w-full pl-9 pr-4 py-2 ghost-border rounded-xl appearance-none bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low text-on-surface"
           >
             <option value="">{filters.province ? 'All Cities' : 'Select Province First'}</option>
             {availableCities.map((city) => (
@@ -130,25 +139,25 @@ export function SearchFilters() {
 
         {/* Min Price */}
         <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <input
             type="number"
             value={filters.minPrice}
             onChange={(e) => handleChange('minPrice', e.target.value)}
             placeholder="Min $"
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+            className="w-full pl-9 pr-4 py-2 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
           />
         </div>
 
         {/* Max Price */}
         <div className="relative">
-          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <input
             type="number"
             value={filters.maxPrice}
             onChange={(e) => handleChange('maxPrice', e.target.value)}
             placeholder="Max $"
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+            className="w-full pl-9 pr-4 py-2 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
           />
         </div>
 
@@ -156,7 +165,7 @@ export function SearchFilters() {
         <select
           value={filters.type}
           onChange={(e) => handleChange('type', e.target.value)}
-          className="w-full px-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+          className="w-full px-4 py-2 ghost-border rounded-xl appearance-none bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low text-on-surface"
         >
           <option value="">All Types</option>
           <option value="room">Private Room</option>
@@ -166,11 +175,11 @@ export function SearchFilters() {
 
         {/* Bathroom Type */}
         <div className="relative">
-          <Bath className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Bath className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <select
             value={filters.bathroomType}
             onChange={(e) => handleChange('bathroomType', e.target.value)}
-            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm transition-all hover:border-gray-300"
+            className="w-full pl-9 pr-4 py-2 ghost-border rounded-xl appearance-none bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-secondary text-sm transition-all hover:bg-surface-container-low text-on-surface"
           >
             <option value="">Any Bathroom</option>
             {BATHROOM_TYPES.map((type) => (
@@ -190,75 +199,85 @@ export function SearchFilters() {
 
       {/* Quick filters */}
       <div className="flex flex-wrap gap-2 pt-2">
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.newcomerFriendly}
             onChange={(e) => handleChange('newcomerFriendly', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <Leaf className="h-4 w-4 text-green-600" />
-          Newcomer Friendly
+          <Leaf className="h-4 w-4 text-secondary" />
+          <span className="text-on-surface-variant">Newcomer Friendly</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.noCreditOk}
             onChange={(e) => handleChange('noCreditOk', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          No Credit History OK
+          <span className="text-on-surface-variant">No Credit History OK</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.idealForStudents}
             onChange={(e) => handleChange('idealForStudents', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <GraduationCap className="h-4 w-4 text-purple-600" />
-          Ideal for Students
+          <GraduationCap className="h-4 w-4 text-primary" />
+          <span className="text-on-surface-variant">Ideal for Students</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.assistanceRequired}
             onChange={(e) => handleChange('assistanceRequired', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <HandHelping className="h-4 w-4 text-orange-600" />
-          Assistance Required
+          <HandHelping className="h-4 w-4 text-tertiary" />
+          <span className="text-on-surface-variant">Assistance Required</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.petsAllowed}
             onChange={(e) => handleChange('petsAllowed', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <PawPrint className="h-4 w-4 text-amber-600" />
-          Pets Allowed
+          <PawPrint className="h-4 w-4 text-tertiary" />
+          <span className="text-on-surface-variant">Pets Allowed</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.noSmoking}
             onChange={(e) => handleChange('noSmoking', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <CigaretteOff className="h-4 w-4 text-red-600" />
-          No Smoking
+          <CigaretteOff className="h-4 w-4 text-error" />
+          <span className="text-on-surface-variant">No Smoking</span>
         </label>
-        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 hover:bg-gray-50 hover:border-gray-300 cursor-pointer text-sm transition-all">
+        <label className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full ghost-border hover:bg-surface-container-low cursor-pointer text-sm transition-all">
           <input
             type="checkbox"
             checked={filters.parkingIncluded}
             onChange={(e) => handleChange('parkingIncluded', e.target.checked)}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="rounded border-outline/30 text-secondary focus:ring-secondary"
           />
-          <Car className="h-4 w-4 text-blue-600" />
-          Parking Included
+          <Car className="h-4 w-4 text-primary" />
+          <span className="text-on-surface-variant">Parking Included</span>
         </label>
+
+        {/* Reset */}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-all"
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+          Reset
+        </button>
       </div>
     </form>
   )

@@ -49,7 +49,7 @@ export function ListingCard({
     <Card variant="bordered" className="overflow-hidden card-hover group">
       <div className="relative">
         <Link href={`/listings/${listing.id}`}>
-          <div className="aspect-[4/3] bg-gray-100 overflow-hidden">
+          <div className="aspect-[4/3] bg-surface-container overflow-hidden">
             {listing.photos && listing.photos.length > 0 ? (
               <img
                 src={listing.photos[0]}
@@ -58,7 +58,7 @@ export function ListingCard({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <Home className="h-12 w-12 text-gray-300" />
+                <Home className="h-12 w-12 text-on-surface-variant/30" />
               </div>
             )}
           </div>
@@ -82,7 +82,7 @@ export function ListingCard({
             </Badge>
           )}
           {listing.ideal_for_students && (
-            <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
+            <Badge variant="default" className="flex items-center gap-1 bg-primary/10 text-primary">
               <GraduationCap className="h-3 w-3" />
               Ideal for Students
             </Badge>
@@ -111,11 +111,11 @@ export function ListingCard({
           }}
           aria-label={isSaved ? 'Remove from saved listings' : 'Save listing'}
           aria-pressed={isSaved}
-          className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white hover:scale-110 transition-all duration-300 shadow-sm z-10"
+          className="absolute bottom-3 right-3 p-2 bg-surface-container-lowest/90 backdrop-blur rounded-full hover:bg-surface-container-lowest hover:scale-110 transition-all duration-300 shadow-sm z-10"
         >
           <Heart
             className={`h-5 w-5 transition-colors duration-300 ${
-              isSaved ? 'fill-red-500 text-red-500' : 'text-gray-600 group-hover:text-red-400'
+              isSaved ? 'fill-red-500 text-red-500' : 'text-on-surface-variant group-hover:text-red-400'
             }`}
           />
         </button>
@@ -124,17 +124,17 @@ export function ListingCard({
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <Link href={`/listings/${listing.id}`}>
-            <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">
+            <h3 className="font-semibold text-on-surface hover:text-secondary transition-colors line-clamp-1">
               {listing.title}
             </h3>
           </Link>
-          <p className="font-bold text-blue-600 whitespace-nowrap">
+          <p className="font-bold text-primary whitespace-nowrap">
             {formatPrice(listing.price)}
-            <span className="text-sm font-normal text-gray-500">/mo</span>
+            <span className="text-sm font-normal text-on-surface-variant">/mo</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
+        <div className="flex items-center gap-1 text-sm text-on-surface-variant mb-3">
           <MapPin className="h-4 w-4" />
           <span>
             {listing.city}, {listing.province}
@@ -142,22 +142,22 @@ export function ListingCard({
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-xs bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full">
             <Home className="h-3 w-3" />
             {typeLabels[listing.type]}
           </span>
           {listing.bathroom_type && (
-            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs bg-secondary-container text-secondary px-2 py-1 rounded-full">
               <Bath className="h-3 w-3" />
               {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label.split(' ')[0] || listing.bathroom_type}
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-xs bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full">
             <Calendar className="h-3 w-3" />
             {formatDate(listing.available_date)}
           </span>
           {listing.utilities_included && (
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+            <span className="text-xs bg-secondary-container text-secondary px-2 py-1 rounded-full">
               Utilities included
             </span>
           )}
@@ -165,9 +165,9 @@ export function ListingCard({
 
         {/* Host info */}
         {listing.profiles && (
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-3 ghost-border-t">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center overflow-hidden">
                 {listing.profiles.profile_photo ? (
                   <img
                     src={listing.profiles.profile_photo}
@@ -175,11 +175,11 @@ export function ListingCard({
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <Users className="h-4 w-4 text-blue-600" />
+                  <Users className="h-4 w-4 text-secondary" />
                 )}
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-on-surface">
                   {listing.profiles.name || 'Anonymous'}
                 </p>
                 <VerificationBadge
@@ -189,7 +189,7 @@ export function ListingCard({
                 />
               </div>
             </div>
-            <div className="flex items-center gap-1 text-xs text-gray-400">
+            <div className="flex items-center gap-1 text-xs text-on-surface-variant">
               <Clock className="h-3 w-3" />
               {getRelativeTime(listing.created_at)}
             </div>
@@ -209,16 +209,16 @@ export function ListingCardSkeleton({ count = 1 }: ListingCardSkeletonProps) {
     <>
       {Array.from({ length: count }).map((_, i) => (
         <Card key={i} variant="bordered" className="overflow-hidden">
-          <div className="aspect-[4/3] bg-gray-200 animate-pulse" />
+          <div className="aspect-[4/3] bg-surface-container animate-pulse" />
           <div className="p-4 space-y-3">
             <div className="flex justify-between">
-              <div className="h-5 w-2/3 bg-gray-200 rounded animate-pulse" />
-              <div className="h-5 w-20 bg-gray-200 rounded animate-pulse" />
+              <div className="h-5 w-2/3 bg-surface-container rounded animate-pulse" />
+              <div className="h-5 w-20 bg-surface-container rounded animate-pulse" />
             </div>
-            <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-1/2 bg-surface-container rounded animate-pulse" />
             <div className="flex gap-2">
-              <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
-              <div className="h-6 w-24 bg-gray-200 rounded-full animate-pulse" />
+              <div className="h-6 w-24 bg-surface-container rounded-full animate-pulse" />
+              <div className="h-6 w-24 bg-surface-container rounded-full animate-pulse" />
             </div>
           </div>
         </Card>
