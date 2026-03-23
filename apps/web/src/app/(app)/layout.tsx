@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
+import { Sidebar } from '@/components/layout/sidebar'
 
 export default async function AppLayout({
   children,
@@ -14,7 +15,10 @@ export default async function AppLayout({
   return (
     <div className="min-h-screen bg-background">
       <Navbar user={user} />
-      <main className="relative z-0">{children}</main>
+      <div className="flex">
+        <Sidebar user={user} />
+        <main className="flex-1 lg:ml-64 p-6 lg:p-8">{children}</main>
+      </div>
     </div>
   )
 }
