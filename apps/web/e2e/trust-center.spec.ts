@@ -19,7 +19,15 @@ test.describe('Trust Center', () => {
   })
 
   test('should display Trust Center heading', async ({ page }) => {
-    await expect(page.getByText(/trust center/i).first()).toBeVisible()
+    // Use heading role to target the main content heading, not the sidebar link
+    const heading = page.getByRole('heading', { name: /trust center/i })
+    const hasHeading = await heading.first().isVisible().catch(() => false)
+    if (hasHeading) {
+      await expect(heading.first()).toBeVisible()
+    } else {
+      // Fallback: look for trust center text in the main content area
+      await expect(page.locator('main').getByText(/trust center/i).first()).toBeVisible()
+    }
   })
 
   test('should display verification cards', async ({ page }) => {

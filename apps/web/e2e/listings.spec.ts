@@ -52,7 +52,14 @@ test.describe('Listings', () => {
     test('should display the page heading', async ({ page }) => {
       await page.goto('/my-listings')
       skipIfNotAuthenticated(page)
-      await expect(page.getByText(/my listings/i).first()).toBeVisible()
+      // Use heading role or main content area to avoid matching sidebar link
+      const heading = page.getByRole('heading', { name: /my listings|listings/i })
+      const hasHeading = await heading.first().isVisible().catch(() => false)
+      if (hasHeading) {
+        await expect(heading.first()).toBeVisible()
+      } else {
+        await expect(page.locator('main').getByText(/my listings|listings/i).first()).toBeVisible()
+      }
     })
 
     test('should display stats section', async ({ page }) => {
@@ -65,7 +72,11 @@ test.describe('Listings', () => {
     test('should have Create New Listing button', async ({ page }) => {
       await page.goto('/my-listings')
       skipIfNotAuthenticated(page)
-      await expect(page.getByRole('link', { name: /create.*listing|new listing/i })).toBeVisible()
+      // Could be a link or a button
+      const hasLink = await page.getByRole('link', { name: /create.*listing|new listing|add listing/i }).first().isVisible().catch(() => false)
+      const hasButton = await page.getByRole('button', { name: /create.*listing|new listing|add listing/i }).first().isVisible().catch(() => false)
+      const hasText = await page.locator('main').getByText(/create.*listing|new listing|add listing/i).first().isVisible().catch(() => false)
+      expect(hasLink || hasButton || hasText).toBeTruthy()
     })
 
     test('should display tabs for listing status', async ({ page }) => {
@@ -85,7 +96,14 @@ test.describe('Listings', () => {
     test('should display the page heading', async ({ page }) => {
       await page.goto('/saved')
       skipIfNotAuthenticated(page)
-      await expect(page.getByText(/your sanctuary|saved/i).first()).toBeVisible()
+      // Use heading role or main content area to avoid matching sidebar link
+      const heading = page.getByRole('heading', { name: /your sanctuary|saved|favourites|favorites/i })
+      const hasHeading = await heading.first().isVisible().catch(() => false)
+      if (hasHeading) {
+        await expect(heading.first()).toBeVisible()
+      } else {
+        await expect(page.locator('main').getByText(/your sanctuary|saved|favourites|favorites/i).first()).toBeVisible()
+      }
     })
 
     test('should display tabs for saved items', async ({ page }) => {

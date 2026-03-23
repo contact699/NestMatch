@@ -36,14 +36,21 @@ test.describe('Dashboard', () => {
   })
 
   test('should display quick action cards', async ({ page }) => {
-    await expect(page.getByText(/find a room/i)).toBeVisible()
-    await expect(page.getByText(/post a listing/i)).toBeVisible()
-    await expect(page.getByText(/my matches/i)).toBeVisible()
-    await expect(page.getByText(/saved/i)).toBeVisible()
+    // Cards may be below the fold, scroll down to reveal them
+    await page.evaluate(() => window.scrollTo(0, 500))
+    await page.waitForTimeout(500)
+    const findRoom = page.getByText(/find a room/i)
+    await findRoom.first().scrollIntoViewIfNeeded()
+    await expect(findRoom.first()).toBeVisible()
+    await expect(page.getByText(/post a listing/i).first()).toBeVisible()
+    await expect(page.getByText(/my matches/i).first()).toBeVisible()
+    await expect(page.getByText(/saved/i).first()).toBeVisible()
   })
 
   test('should display recent activity section', async ({ page }) => {
-    await expect(page.getByText(/recent activity/i)).toBeVisible()
+    const recentActivity = page.getByText(/recent activity/i)
+    await recentActivity.first().scrollIntoViewIfNeeded()
+    await expect(recentActivity.first()).toBeVisible()
   })
 
   test('should display performance section', async ({ page }) => {

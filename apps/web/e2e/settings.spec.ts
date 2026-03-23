@@ -19,7 +19,15 @@ test.describe('Settings', () => {
   })
 
   test('should display settings heading', async ({ page }) => {
-    await expect(page.getByText(/settings/i).first()).toBeVisible()
+    // Use heading role to target the main content heading, not the sidebar link
+    const heading = page.getByRole('heading', { name: /settings/i })
+    const hasHeading = await heading.first().isVisible().catch(() => false)
+    if (hasHeading) {
+      await expect(heading.first()).toBeVisible()
+    } else {
+      // Fallback: look for settings text in the main content area
+      await expect(page.locator('main').getByText(/settings/i).first()).toBeVisible()
+    }
   })
 
   test('should display account section', async ({ page }) => {

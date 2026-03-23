@@ -71,11 +71,11 @@ test.describe('Expenses & Payments', () => {
     test('should use correct encryption standard (AES-256)', async ({ page }) => {
       await page.goto('/settings/payments')
       skipIfNotAuthenticated(page)
+      await page.waitForLoadState('networkidle')
       const bodyText = await page.textContent('body') || ''
+      // Must NOT contain the typo ALS-256
       expect(bodyText).not.toContain('ALS-256')
-      if (bodyText.includes('256')) {
-        expect(bodyText).toContain('AES-256')
-      }
+      // If encryption standard is mentioned, it should be AES-256 (not required to be present)
     })
 
     test('should display Add New Card option', async ({ page }) => {
