@@ -1,6 +1,6 @@
 'use client'
 
-import { Zap, Heart, MessageCircle } from 'lucide-react'
+import { ShieldCheck, Heart, MessageCircle } from 'lucide-react'
 
 const STEPS = [
   {
@@ -8,7 +8,7 @@ const STEPS = [
     title: 'Create & Verify',
     description:
       'Sign up, complete your lifestyle quiz, and verify your identity. It takes less than 10 minutes.',
-    icon: Zap,
+    icon: ShieldCheck,
   },
   {
     step: '02',
@@ -28,19 +28,16 @@ const STEPS = [
 
 export function HowItWorksSection() {
   return (
-    <section className="py-24 lg:py-32 bg-gray-50 relative overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute top-0 right-0 w-1/3 h-full bg-gradient-to-l from-blue-50/50 to-transparent" />
-
+    <section className="py-24 lg:py-32 bg-surface-container-low relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div className="text-center mb-16" data-animate>
-          <span className="inline-block px-4 py-1.5 rounded-full bg-purple-50 text-purple-700 text-sm font-medium mb-4">
+          <span className="text-secondary font-bold tracking-widest uppercase text-xs">
             Simple Process
           </span>
-          <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="font-display text-4xl sm:text-5xl font-bold text-primary mb-6 mt-2">
             How NestMatch works
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-on-surface-variant max-w-2xl mx-auto">
             Find your perfect roommate in three simple steps.
           </p>
         </div>
@@ -55,22 +52,22 @@ export function HowItWorksSection() {
             >
               {/* Connector line */}
               {index < 2 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-full h-0.5 bg-gradient-to-r from-gray-300 to-transparent" />
+                <div className="hidden md:block absolute top-12 left-[60%] w-full h-0.5 bg-gradient-to-r from-outline-variant to-transparent" />
               )}
 
-              <div className="relative bg-white rounded-2xl p-8 shadow-lg shadow-gray-200/50 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+              <div className="relative bg-surface-container-lowest rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow duration-300">
                 <div className="flex items-center gap-4 mb-6">
-                  <span className="text-5xl font-bold text-gray-200">
+                  <span className="text-5xl font-bold text-surface-container-high font-display">
                     {item.step}
                   </span>
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
-                    <item.icon className="h-6 w-6 text-white" />
+                  <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
+                    <item.icon className="h-6 w-6 text-on-primary" />
                   </div>
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                <h3 className="text-xl font-semibold text-primary mb-3 font-display">
                   {item.title}
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-on-surface-variant leading-relaxed">
                   {item.description}
                 </p>
               </div>

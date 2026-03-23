@@ -6,8 +6,8 @@ import {
   HeroSection,
   TrustFeaturesSection,
   HowItWorksSection,
-  StatsSection,
-  NewcomerSection,
+  TopMatchesSection,
+  VerifiedListingsSection,
   CTASection,
   Footer,
 } from '@/components/landing'
@@ -36,15 +36,17 @@ export default function HomePage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-white overflow-hidden">
+    <div className="min-h-screen bg-background overflow-hidden">
       <LandingNav />
-      <HeroSection />
-      <TrustFeaturesSection />
-      <HowItWorksSection />
-      <StatsSection />
-      <FeaturedListingsSection />
-      <NewcomerSection />
-      <CTASection />
+      <main className="pt-24">
+        <HeroSection />
+        <TrustFeaturesSection />
+        <HowItWorksSection />
+        <TopMatchesSection />
+        <VerifiedListingsSection />
+        <FeaturedListingsSection />
+        <CTASection />
+      </main>
       <Footer />
     </div>
   )

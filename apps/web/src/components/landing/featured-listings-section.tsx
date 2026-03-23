@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { clientLogger } from '@/lib/client-logger'
 import { PublicListingCard } from '@/components/listings/public-listing-card'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
 import { Home, ArrowRight, Loader2 } from 'lucide-react'
 
 interface Listing {
@@ -68,27 +67,30 @@ export function FeaturedListingsSection() {
   }
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-white to-gray-50">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-surface-container-low">
       <div className="max-w-7xl mx-auto">
         {/* Section header */}
         <div className="text-center mb-12" data-animate>
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary mb-4">
             Featured Listings
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Browse rooms available right now across Canada. Sign up to see your compatibility score and contact hosts.
+          <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">
+            Browse rooms available right now across Canada. Sign up to see your
+            compatibility score and contact hosts.
           </p>
         </div>
 
         {/* Listings grid */}
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <Home className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500">Unable to load listings. Please try again later.</p>
+            <Home className="h-12 w-12 text-outline-variant mx-auto mb-4" />
+            <p className="text-on-surface-variant">
+              Unable to load listings. Please try again later.
+            </p>
           </div>
         ) : (
           <>
@@ -105,7 +107,10 @@ export function FeaturedListingsSection() {
             </div>
 
             {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 delay-500" data-animate>
+            <div
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 delay-500"
+              data-animate
+            >
               <Link href="/search">
                 <Button variant="outline" size="lg" className="group">
                   Browse all listings
@@ -113,7 +118,7 @@ export function FeaturedListingsSection() {
                 </Button>
               </Link>
               <Link href="/signup">
-                <Button variant="glow" size="lg">
+                <Button variant="primary" size="lg">
                   Sign up to contact hosts
                 </Button>
               </Link>
