@@ -52,10 +52,10 @@ export function CompatibilityBadge({
   }
 
   const getColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50 border-green-200'
-    if (score >= 60) return 'text-blue-600 bg-blue-50 border-blue-200'
-    if (score >= 40) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-    return 'text-gray-600 bg-gray-50 border-gray-200'
+    if (score >= 80) return 'text-secondary bg-secondary-container'
+    if (score >= 60) return 'text-primary bg-primary-fixed'
+    if (score >= 40) return 'text-tertiary-container bg-tertiary-fixed'
+    return 'text-on-surface-variant bg-surface-container'
   }
 
   const sizeClasses = {
@@ -67,7 +67,7 @@ export function CompatibilityBadge({
   return (
     <div
       className={`
-        inline-flex items-center gap-1 rounded-full border font-medium
+        inline-flex items-center gap-1 rounded-full font-medium
         ${getColor(score)}
         ${sizeClasses[size]}
       `}
@@ -92,10 +92,10 @@ export function CompatibilityBadgeStatic({
   if (score === 0) return null
 
   const getColor = (score: number) => {
-    if (score >= 80) return 'text-green-600 bg-green-50 border-green-200'
-    if (score >= 60) return 'text-blue-600 bg-blue-50 border-blue-200'
-    if (score >= 40) return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-    return 'text-gray-600 bg-gray-50 border-gray-200'
+    if (score >= 80) return 'text-secondary bg-secondary-container'
+    if (score >= 60) return 'text-primary bg-primary-fixed'
+    if (score >= 40) return 'text-tertiary-container bg-tertiary-fixed'
+    return 'text-on-surface-variant bg-surface-container'
   }
 
   const sizeClasses = {
@@ -107,7 +107,7 @@ export function CompatibilityBadgeStatic({
   return (
     <div
       className={`
-        inline-flex items-center gap-1 rounded-full border font-medium
+        inline-flex items-center gap-1 rounded-full font-medium
         ${getColor(score)}
         ${sizeClasses[size]}
       `}

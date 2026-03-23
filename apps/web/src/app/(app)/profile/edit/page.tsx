@@ -8,24 +8,56 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Loader2, User, Camera, MapPin } from 'lucide-react'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Loader2,
+  User,
+  Camera,
+  UserCircle,
+  FileText,
+  MapPin,
+  Home,
+  Minus,
+  Plus,
+} from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
+import {
+  CANADIAN_PROVINCES,
+  CITIES_BY_PROVINCE,
+  LANGUAGES,
+  HOUSEHOLD_SITUATIONS,
+} from '@/lib/utils'
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   bio: z.string().max(500, 'Bio must be less than 500 characters').optional(),
-  age: z.number().min(18, 'Must be at least 18').max(120).optional().nullable(),
-  gender: z.enum(['male', 'female', 'non_binary', 'other', 'prefer_not_to_say']).optional().nullable(),
+  age: z
+    .number()
+    .min(18, 'Must be at least 18')
+    .max(120)
+    .optional()
+    .nullable(),
+  gender: z
+    .enum(['male', 'female', 'non_binary', 'other', 'prefer_not_to_say'])
+    .optional()
+    .nullable(),
   occupation: z.string().max(100).optional(),
   phone: z.string().optional(),
   languages: z.array(z.string()).optional(),
   city: z.string().optional(),
   province: z.string().optional(),
-  household_situation: z.enum(['alone', 'couple', 'single_parent', 'couple_with_children', 'with_roommate']).optional().nullable(),
-  number_of_children: z.number().min(1).max(10).optional().nullable(),
+  household_situation: z
+    .enum([
+      'alone',
+      'couple',
+      'single_parent',
+      'couple_with_children',
+      'with_roommate',
+    ])
+    .optional()
+    .nullable(),
+  number_of_children: z.number().min(0).max(10).optional().nullable(),
 })
 
 type ProfileFormData = z.infer<typeof profileSchema>
@@ -45,16 +77,20 @@ export default function ProfileEditPage() {
     reset,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
   })
 
   const selectedProvince = watch('province')
   const selectedHousehold = watch('household_situation')
+  const bioValue = watch('bio') || ''
+  const childrenCount = watch('number_of_children') || 0
 
   // Get cities for selected province
-  const availableCities = selectedProvince ? CITIES_BY_PROVINCE[selectedProvince] || [] : []
+  const availableCities = selectedProvince
+    ? CITIES_BY_PROVINCE[selectedProvince] || []
+    : []
 
   useEffect(() => {
     async function loadProfile() {
@@ -68,11 +104,11 @@ export default function ProfileEditPage() {
         return
       }
 
-      const { data: profile } = await supabase
+      const { data: profile } = (await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single() as { data: any }
+        .single()) as { data: any }
 
       if (profile) {
         reset({
@@ -86,7 +122,7 @@ export default function ProfileEditPage() {
           city: profile.city || '',
           province: profile.province || '',
           household_situation: profile.household_situation,
-          number_of_children: profile.number_of_children,
+          number_of_children: profile.number_of_children || 0,
         })
         setProfilePhoto(profile.profile_photo)
       }
@@ -97,18 +133,20 @@ export default function ProfileEditPage() {
     loadProfile()
   }, [reset, router])
 
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0]
     if (!file) return
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
     if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.')
+      setError(
+        'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.'
+      )
       return
     }
 
-    // Validate file size (max 10MB for profile photos)
     const maxSize = 10 * 1024 * 1024
     if (file.size > maxSize) {
       setError('File too large. Maximum size is 10MB.')
@@ -120,19 +158,19 @@ export default function ProfileEditPage() {
 
     try {
       const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
       if (!user) {
         throw new Error('You must be logged in')
       }
 
-      // Generate unique filename
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 8)
       const extension = file.name.split('.').pop() || 'jpg'
       const filename = `${user.id}/profile-${timestamp}-${randomString}.${extension}`
 
-      // Upload to Supabase Storage
       const { data, error: uploadError } = await supabase.storage
         .from('profile-photos')
         .upload(filename, file, {
@@ -144,7 +182,6 @@ export default function ProfileEditPage() {
         throw new Error(uploadError.message || 'Failed to upload file')
       }
 
-      // Get public URL
       const { data: urlData } = supabase.storage
         .from('profile-photos')
         .getPublicUrl(data.path)
@@ -205,220 +242,131 @@ export default function ProfileEditPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
     )
   }
 
+  const currentLanguages = watch('languages') || []
+
   return (
     <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-6">
-        <Link
-          href="/profile"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to profile
-        </Link>
+      {/* Page Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-on-surface">
+          Edit Profile
+        </h1>
+        <p className="text-on-surface-variant mt-2">
+          Manage your personal sanctuary and housing preferences.
+        </p>
       </div>
 
-      <Card variant="bordered">
-        <CardHeader>
-          <CardTitle>Edit Profile</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-                {error}
-              </div>
-            )}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {error && (
+          <div className="p-4 bg-error-container rounded-xl text-error text-sm">
+            {error}
+          </div>
+        )}
 
-            {/* Profile Photo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Profile Photo
-              </label>
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
-                    {profilePhoto ? (
-                      <img
-                        src={profilePhoto}
-                        alt="Profile"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <User className="h-12 w-12 text-blue-600" />
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploadingPhoto}
-                    className="absolute bottom-0 right-0 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    {isUploadingPhoto ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Camera className="h-4 w-4" />
-                    )}
-                  </button>
+        {/* Profile Photo */}
+        <Card variant="bordered">
+          <CardContent className="py-6">
+            <div className="flex items-center gap-5">
+              <div className="relative flex-shrink-0">
+                <div className="w-24 h-24 rounded-full overflow-hidden bg-surface-container flex items-center justify-center">
+                  {profilePhoto ? (
+                    <img
+                      src={profilePhoto}
+                      alt="Profile"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User className="h-12 w-12 text-on-surface-variant" />
+                  )}
                 </div>
-                <div className="text-sm text-gray-500">
-                  <p>Click the camera icon to upload a photo</p>
-                  <p>JPEG, PNG, WebP, GIF up to 10MB</p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handlePhotoUpload}
-                  className="hidden"
-                />
-              </div>
-            </div>
-
-            <Input
-              {...register('name')}
-              label="Full Name"
-              placeholder="Your full name"
-              error={errors.name?.message}
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Bio
-              </label>
-              <textarea
-                {...register('bio')}
-                rows={4}
-                placeholder="Tell potential roommates about yourself..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              />
-              {errors.bio && (
-                <p className="mt-1 text-sm text-red-600">{errors.bio.message}</p>
-              )}
-            </div>
-
-            {/* Location */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <MapPin className="h-4 w-4" />
-                Location
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Province
-                  </label>
-                  <select
-                    {...register('province')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select province</option>
-                    {CANADIAN_PROVINCES.map((province) => (
-                      <option key={province.value} value={province.value}>
-                        {province.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    City
-                  </label>
-                  <select
-                    {...register('city')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    disabled={!selectedProvince}
-                  >
-                    <option value="">{selectedProvince ? 'Select city' : 'Select province first'}</option>
-                    {availableCities.map((city) => (
-                      <option key={city} value={city}>
-                        {city}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Or type a custom city below
-                  </p>
-                </div>
-              </div>
-              <Input
-                {...register('city')}
-                label="Or enter your city"
-                placeholder="Enter your city if not in the list"
-              />
-            </div>
-
-            {/* Household Situation */}
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Household Situation (Optional)
-                </label>
-                <select
-                  {...register('household_situation')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="absolute bottom-0 right-0 p-2 bg-secondary text-on-secondary rounded-full hover:opacity-90 disabled:opacity-50 transition-opacity"
                 >
-                  <option value="">Prefer not to say</option>
-                  {HOUSEHOLD_SITUATIONS.map((situation) => (
-                    <option key={situation.value} value={situation.value}>
-                      {situation.label}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  This helps hosts know who will be moving in
-                </p>
+                  {isUploadingPhoto ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}
+                </button>
               </div>
-
-              {(selectedHousehold === 'single_parent' || selectedHousehold === 'couple_with_children') && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Children
-                  </label>
-                  <input
-                    type="number"
-                    {...register('number_of_children', {
-                      setValueAs: (v) => v === '' ? null : parseInt(v, 10)
-                    })}
-                    min="1"
-                    max="10"
-                    placeholder="How many children?"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <h3 className="font-display font-semibold text-on-surface">
+                  Profile Photo
+                </h3>
+                <p className="text-sm text-on-surface-variant mt-1">
+                  Clear photos help build trust within the NestMatch community.
+                  JPG or PNG, max 5MB.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingPhoto}
+                  className="mt-3 px-4 py-2 text-sm font-medium text-on-surface bg-surface-container-lowest rounded-lg ghost-border hover:bg-surface-container-low transition-colors disabled:opacity-50"
+                >
+                  Change Photo
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Basic Information */}
+        <div>
+          <h2 className="text-lg font-display font-semibold text-on-surface flex items-center gap-2 mb-5">
+            <UserCircle className="h-5 w-5 text-on-surface-variant" />
+            Basic Information
+          </h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                {...register('name')}
+                label="Full Name"
+                placeholder="Your full name"
+                error={errors.name?.message}
+              />
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Age
                 </label>
                 <input
                   type="number"
                   {...register('age', {
-                    setValueAs: (v) => v === '' ? null : parseInt(v, 10)
+                    setValueAs: (v) => (v === '' ? null : parseInt(v, 10)),
                   })}
                   placeholder="Your age"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 rounded-lg text-on-surface placeholder-on-surface-variant/50 bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest"
                 />
                 {errors.age && (
-                  <p className="mt-1 text-sm text-red-600">{errors.age.message}</p>
+                  <p className="mt-1 text-sm text-error">
+                    {errors.age.message}
+                  </p>
                 )}
               </div>
+            </div>
 
+            <div className="grid grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Gender
                 </label>
                 <select
                   {...register('gender')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2 rounded-lg text-on-surface bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest appearance-none"
                 >
                   <option value="">Prefer not to say</option>
                   <option value="male">Male</option>
@@ -427,75 +375,236 @@ export default function ProfileEditPage() {
                   <option value="other">Other</option>
                 </select>
               </div>
+
+              <Input
+                {...register('phone')}
+                label="Phone"
+                placeholder="+1 (555) 012-3456"
+                error={errors.phone?.message}
+              />
+
+              <Input
+                {...register('occupation')}
+                label="Occupation"
+                placeholder="UI Designer"
+                error={errors.occupation?.message}
+              />
             </div>
+          </div>
+        </div>
 
-            <Input
-              {...register('occupation')}
-              label="Occupation"
-              placeholder="What do you do?"
-              error={errors.occupation?.message}
+        {/* About You */}
+        <div>
+          <h2 className="text-lg font-display font-semibold text-on-surface flex items-center gap-2 mb-5">
+            <FileText className="h-5 w-5 text-on-surface-variant" />
+            About You
+          </h2>
+          <div>
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
+              Bio
+            </label>
+            <textarea
+              {...register('bio')}
+              rows={4}
+              placeholder="Tell potential roommates about yourself..."
+              className="w-full px-4 py-3 rounded-xl text-on-surface placeholder-on-surface-variant/50 bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest resize-none"
             />
+            <div className="flex justify-end mt-1">
+              <span
+                className={`text-xs ${
+                  bioValue.length > 450
+                    ? 'text-error'
+                    : 'text-on-surface-variant'
+                }`}
+              >
+                {bioValue.length} / 500 characters
+              </span>
+            </div>
+            {errors.bio && (
+              <p className="mt-1 text-sm text-error">{errors.bio.message}</p>
+            )}
+          </div>
+        </div>
 
-            <Input
-              {...register('phone')}
-              label="Phone Number"
-              placeholder="+1 (555) 000-0000"
-              error={errors.phone?.message}
-              helperText="Used for verification. Never shared publicly."
-            />
+        {/* Location & Language */}
+        <div className="grid sm:grid-cols-2 gap-6">
+          <Card variant="bordered">
+            <CardContent className="py-5">
+              <h3 className="text-base font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
+                <MapPin className="h-4 w-4 text-on-surface-variant" />
+                Location & Language
+              </h3>
 
-            {/* Languages */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Languages You Speak
-              </label>
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3">
-                {LANGUAGES.map((language) => {
-                  const currentLanguages = watch('languages') || []
-                  const isSelected = currentLanguages.includes(language)
-                  return (
-                    <label
-                      key={language}
-                      className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
-                        isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
-                      }`}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                    City / Province
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      {...register('province')}
+                      className="w-full px-3 py-2 rounded-lg text-on-surface text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest appearance-none"
                     >
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          const current = watch('languages') || []
-                          if (e.target.checked) {
-                            setValue('languages', [...current, language])
-                          } else {
-                            setValue('languages', current.filter((l: string) => l !== language))
-                          }
-                        }}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm">{language}</span>
-                    </label>
-                  )
-                })}
-              </div>
-              <p className="mt-1 text-xs text-gray-500">
-                Select all languages you're comfortable communicating in
-              </p>
-            </div>
+                      <option value="">Province</option>
+                      {CANADIAN_PROVINCES.map((province) => (
+                        <option key={province.value} value={province.value}>
+                          {province.label}
+                        </option>
+                      ))}
+                    </select>
+                    <select
+                      {...register('city')}
+                      className="w-full px-3 py-2 rounded-lg text-on-surface text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest appearance-none"
+                      disabled={!selectedProvince}
+                    >
+                      <option value="">
+                        {selectedProvince ? 'City' : 'Select province'}
+                      </option>
+                      {availableCities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" isLoading={isSaving} className="flex-1">
-                Save Changes
-              </Button>
-              <Link href="/profile" className="flex-1">
-                <Button type="button" variant="outline" className="w-full">
-                  Cancel
-                </Button>
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                    Languages Spoken
+                  </label>
+                  {/* Selected language tags */}
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {currentLanguages.map((lang: string) => (
+                      <span
+                        key={lang}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-container text-secondary text-xs font-medium"
+                      >
+                        {lang}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setValue(
+                              'languages',
+                              currentLanguages.filter(
+                                (l: string) => l !== lang
+                              )
+                            )
+                          }
+                          className="hover:text-error transition-colors ml-0.5"
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                  <select
+                    onChange={(e) => {
+                      const lang = e.target.value
+                      if (lang && !currentLanguages.includes(lang)) {
+                        setValue('languages', [...currentLanguages, lang])
+                      }
+                      e.target.value = ''
+                    }}
+                    className="w-full px-3 py-2 rounded-lg text-on-surface-variant/50 text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest appearance-none"
+                  >
+                    <option value="">Add language...</option>
+                    {LANGUAGES.filter(
+                      (l) => !currentLanguages.includes(l)
+                    ).map((language) => (
+                      <option key={language} value={language}>
+                        {language}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Household Situation */}
+          <Card variant="bordered">
+            <CardContent className="py-5">
+              <h3 className="text-base font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
+                <Home className="h-4 w-4 text-on-surface-variant" />
+                Household Situation
+              </h3>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                    Current Situation
+                  </label>
+                  <select
+                    {...register('household_situation')}
+                    className="w-full px-3 py-2 rounded-lg text-on-surface text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest appearance-none"
+                  >
+                    <option value="">Prefer not to say</option>
+                    {HOUSEHOLD_SITUATIONS.map((situation) => (
+                      <option key={situation.value} value={situation.value}>
+                        {situation.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {(selectedHousehold === 'single_parent' ||
+                  selectedHousehold === 'couple_with_children') && (
+                  <div>
+                    <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                      Children Count
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setValue(
+                            'number_of_children',
+                            Math.max(0, childrenCount - 1)
+                          )
+                        }
+                        className="w-10 h-10 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface transition-colors"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="text-xl font-semibold text-on-surface w-8 text-center">
+                        {childrenCount}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setValue(
+                            'number_of_children',
+                            Math.min(10, childrenCount + 1)
+                          )
+                        }
+                        className="w-10 h-10 rounded-full bg-secondary text-on-secondary hover:opacity-90 flex items-center justify-center transition-opacity"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-4 pt-4">
+          <Link href="/profile">
+            <button
+              type="button"
+              className="px-5 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              Discard Changes
+            </button>
+          </Link>
+          <Button type="submit" isLoading={isSaving} variant="primary">
+            Save Profile
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }
