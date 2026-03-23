@@ -14,7 +14,8 @@ import {
   Clock,
   ArrowRight,
   Loader2,
-  AlertCircle,
+  Zap,
+  Activity,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -53,10 +54,18 @@ interface RecentItem {
   status?: string
 }
 
+interface TrendingResource {
+  id: string
+  title: string
+  view_count: number
+  resource_type: string
+}
+
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentItems, setRecentItems] = useState<RecentItem[]>([])
   const [pendingQuestions, setPendingQuestions] = useState<RecentItem[]>([])
+  const [trendingResources, setTrendingResources] = useState<TrendingResource[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -117,6 +126,23 @@ export default function AdminDashboard() {
           categories: categoryStats,
           questions: questionStats,
         })
+
+        // Fetch trending resources (top by view_count)
+        const { data: trending } = await supabase
+          .from('resources')
+          .select('id, title, view_count, resource_type')
+          .eq('is_published', true)
+          .order('view_count', { ascending: false })
+          .limit(3)
+
+        setTrendingResources(
+          (trending || []).map((r: any) => ({
+            id: r.id,
+            title: r.title,
+            view_count: r.view_count || 0,
+            resource_type: r.resource_type,
+          }))
+        )
 
         // Fetch recent resources
         const { data: recentResources } = await supabase
@@ -179,178 +205,116 @@ export default function AdminDashboard() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
 
   return (
     <div>
+      {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-1">Overview of your knowledge base content</p>
+        <h1 className="text-3xl font-display font-bold text-on-surface">Admin Dashboard</h1>
+        <p className="text-on-surface-variant mt-1">
+          Welcome back, Curator. Monitor platform health, manage community contributions, and track engagement metrics from your sanctuary control center.
+        </p>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {/* Resources */}
-        <Link href="/admin/resources" className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-blue-600" />
+      {/* Top Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Total Resources - Large Card */}
+        <Link href="/admin/resources" className="bg-surface-container-lowest rounded-2xl ghost-border p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <BookOpen className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-xs font-medium text-gray-500">
-              {stats?.resources.published}/{stats?.resources.total} published
-            </span>
+            <span className="text-sm text-on-surface-variant">Total Resources</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">
-            {stats?.resources.total || 0}
+          <div className="text-4xl font-display font-bold text-on-surface mb-2">
+            {stats?.resources.total.toLocaleString() || 0}
           </div>
-          <div className="text-sm text-gray-600">Resources</div>
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <Eye className="h-3 w-3" />
-              {stats?.resources.totalViews.toLocaleString()} views
-            </span>
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="h-3 w-3" />
-              {stats?.resources.totalHelpful} helpful
-            </span>
+          <div className="flex items-center gap-2 text-sm text-secondary">
+            <TrendingUp className="h-4 w-4" />
+            <span>{stats?.resources.published} published</span>
           </div>
         </Link>
 
-        {/* FAQs */}
-        <Link href="/admin/faqs" className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
+        {/* Active FAQs */}
+        <Link href="/admin/faqs" className="bg-surface-container-lowest rounded-2xl ghost-border p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <HelpCircle className="h-5 w-5 text-green-600" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
+                <HelpCircle className="h-5 w-5 text-secondary" />
+              </div>
+              <span className="text-sm text-on-surface-variant">Active FAQs</span>
             </div>
-            <span className="text-xs font-medium text-gray-500">
-              {stats?.faqs.published}/{stats?.faqs.total} published
+            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-secondary-container text-secondary">
+              ACTIVE
             </span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">
-            {stats?.faqs.total || 0}
+          <div className="text-4xl font-display font-bold text-on-surface mb-2">
+            {stats?.faqs.published || 0}
           </div>
-          <div className="text-sm text-gray-600">FAQs</div>
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-            <span className="flex items-center gap-1">
-              <ThumbsUp className="h-3 w-3" />
-              {stats?.faqs.totalHelpful} helpful
-            </span>
-            <span className="flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              {((stats?.faqs.totalHelpful || 0) / Math.max((stats?.faqs.totalHelpful || 0) + (stats?.faqs.totalNotHelpful || 0), 1) * 100).toFixed(0)}% positive
-            </span>
+          <div className="text-sm text-on-surface-variant">
+            {stats?.faqs.total || 0} total FAQs
           </div>
         </Link>
 
-        {/* Categories */}
-        <Link href="/admin/categories" className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-              <FolderOpen className="h-5 w-5 text-purple-600" />
+        {/* Uptime / Platform Status */}
+        <div className="bg-surface-container-lowest rounded-2xl ghost-border p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Zap className="h-5 w-5 text-primary" />
             </div>
-            <span className="text-xs font-medium text-gray-500">
-              {stats?.categories.active}/{stats?.categories.total} active
-            </span>
+            <span className="text-sm text-on-surface-variant">Platform Status</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">
-            {stats?.categories.total || 0}
+          <div className="text-4xl font-display font-bold text-on-surface mb-2">
+            Operational
           </div>
-          <div className="text-sm text-gray-600">Categories</div>
-        </Link>
-
-        {/* Submitted Questions */}
-        <Link href="/admin/questions" className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-amber-600" />
-            </div>
-            {stats?.questions.pending ? (
-              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded-full">
-                {stats.questions.pending} pending
-              </span>
-            ) : (
-              <span className="text-xs font-medium text-gray-500">All reviewed</span>
-            )}
+          <div className="text-sm text-secondary">
+            All systems running
           </div>
-          <div className="text-2xl font-bold text-gray-900 mb-1">
-            {stats?.questions.total || 0}
-          </div>
-          <div className="text-sm text-gray-600">Submitted Questions</div>
-          <div className="mt-3 flex items-center gap-4 text-xs text-gray-500">
-            <span>{stats?.questions.answered} answered</span>
-          </div>
-        </Link>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Pending Questions + Trending Articles Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Pending Questions */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-amber-500" />
-              Pending Questions
-            </h2>
-            <Link href="/admin/questions" className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1">
-              View all
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+        <div className="bg-surface-container-lowest rounded-2xl ghost-border p-6">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-5xl font-display font-bold text-on-surface">
+              {stats?.questions.pending || 0}
+            </div>
           </div>
-
-          {pendingQuestions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <MessageCircle className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-              <p>No pending questions</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pendingQuestions.map((question) => (
-                <Link
-                  key={question.id}
-                  href={`/admin/questions/${question.id}`}
-                  className="block p-3 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 transition-colors"
-                >
-                  <p className="text-sm text-gray-900 line-clamp-2">{question.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(question.date).toLocaleDateString()}
-                  </p>
-                </Link>
-              ))}
-            </div>
-          )}
+          <div className="text-sm font-medium text-on-surface-variant uppercase tracking-wider mb-4">
+            Pending Questions
+          </div>
+          <Link href="/admin/questions">
+            <Button variant="outline" size="sm">
+              Review Now
+            </Button>
+          </Link>
         </div>
 
-        {/* Recent Content */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Clock className="h-5 w-5 text-blue-500" />
-              Recently Added
-            </h2>
+        {/* Trending Articles */}
+        <div className="bg-surface-container-lowest rounded-2xl ghost-border p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <TrendingUp className="h-5 w-5 text-secondary" />
+            <h2 className="text-lg font-display font-semibold text-on-surface">Trending Articles</h2>
           </div>
 
-          {recentItems.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <BookOpen className="h-10 w-10 mx-auto text-gray-300 mb-2" />
-              <p>No content yet</p>
-            </div>
+          {trendingResources.length === 0 ? (
+            <p className="text-sm text-on-surface-variant">No trending articles yet</p>
           ) : (
             <div className="space-y-3">
-              {recentItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 truncate">{item.title}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {new Date(item.date).toLocaleDateString()}
-                    </p>
+              {trendingResources.map((resource) => (
+                <div key={resource.id} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm text-on-surface">{resource.title}</span>
                   </div>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600 capitalize ml-3">
-                    {item.type}
+                  <span className="text-sm text-on-surface-variant">
+                    {resource.view_count.toLocaleString()} views
                   </span>
                 </div>
               ))}
@@ -359,24 +323,69 @@ export default function AdminDashboard() {
         </div>
       </div>
 
+      {/* Recent Activity */}
+      <div className="bg-surface-container-lowest rounded-2xl ghost-border p-6 mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-lg font-display font-semibold text-on-surface">Recent Activity</h2>
+          <Link
+            href="/admin/resources"
+            className="text-sm text-primary hover:text-primary/80 flex items-center gap-1"
+          >
+            View All Logs
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+
+        {recentItems.length === 0 ? (
+          <div className="text-center py-8 text-on-surface-variant">
+            <BookOpen className="h-10 w-10 mx-auto text-on-surface-variant/40 mb-2" />
+            <p>No recent activity</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {recentItems.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between py-3 ghost-border border-t-0 border-l-0 border-r-0 last:border-b-0"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center">
+                    <Activity className="h-4 w-4 text-on-surface-variant" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-on-surface">{item.title}</p>
+                    <p className="text-xs text-on-surface-variant">
+                      {new Date(item.date).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2 py-1 text-xs font-medium rounded-full bg-surface-container text-on-surface-variant capitalize">
+                  {item.type}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Quick Actions */}
-      <div className="mt-8 bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl p-6 text-white">
-        <h2 className="text-lg font-semibold mb-4">Quick Actions</h2>
+      <div className="bg-primary rounded-2xl p-6 text-white">
+        <h2 className="text-lg font-display font-semibold mb-4">Quick Actions</h2>
         <div className="flex flex-wrap gap-3">
           <Link href="/admin/resources/new">
-            <Button variant="secondary" className="bg-white text-blue-700 hover:bg-blue-50">
+            <Button variant="secondary" className="bg-white text-primary hover:bg-white/90">
               <BookOpen className="h-4 w-4 mr-2" />
               Add Resource
             </Button>
           </Link>
           <Link href="/admin/faqs/new">
-            <Button variant="secondary" className="bg-white text-blue-700 hover:bg-blue-50">
+            <Button variant="secondary" className="bg-white text-primary hover:bg-white/90">
               <HelpCircle className="h-4 w-4 mr-2" />
               Add FAQ
             </Button>
           </Link>
           <Link href="/admin/categories/new">
-            <Button variant="secondary" className="bg-white text-blue-700 hover:bg-blue-50">
+            <Button variant="secondary" className="bg-white text-primary hover:bg-white/90">
               <FolderOpen className="h-4 w-4 mr-2" />
               Add Category
             </Button>

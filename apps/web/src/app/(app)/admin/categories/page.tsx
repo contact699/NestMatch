@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import {
   Plus,
@@ -122,7 +122,7 @@ export default function AdminCategoriesPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -131,8 +131,8 @@ export default function AdminCategoriesPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
-          <p className="text-gray-600 mt-1">Organize resources and FAQs into categories</p>
+          <h1 className="text-2xl font-display font-bold text-on-surface">Categories</h1>
+          <p className="text-on-surface-variant mt-1">Organize resources and FAQs into categories</p>
         </div>
         <Link href="/admin/categories/new">
           <Button>
@@ -142,40 +142,40 @@ export default function AdminCategoriesPage() {
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-surface-container-lowest rounded-xl ghost-border overflow-hidden">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className="bg-surface-container-low ghost-border border-t-0 border-l-0 border-r-0">
             <tr>
               <th className="w-10"></th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-on-surface-variant uppercase tracking-wider">
                 Category
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-on-surface-variant uppercase tracking-wider">
                 Slug
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-on-surface-variant uppercase tracking-wider">
                 Status
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-left text-xs font-medium text-on-surface-variant uppercase tracking-wider">
                 Order
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-on-surface-variant uppercase tracking-wider">
                 Actions
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-outline-variant/15">
             {categories.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
-                  <FolderOpen className="h-10 w-10 mx-auto text-gray-300 mb-2" />
+                <td colSpan={6} className="px-6 py-12 text-center text-on-surface-variant">
+                  <FolderOpen className="h-10 w-10 mx-auto text-on-surface-variant/40 mb-2" />
                   <p>No categories yet</p>
                 </td>
               </tr>
             ) : (
               categories.map((category) => (
-                <tr key={category.id} className="hover:bg-gray-50">
-                  <td className="pl-4 text-gray-300 cursor-grab">
+                <tr key={category.id} className="hover:bg-surface-container-low">
+                  <td className="pl-4 text-on-surface-variant/40 cursor-grab">
                     <GripVertical className="h-5 w-5" />
                   </td>
                   <td className="px-6 py-4">
@@ -187,7 +187,7 @@ export default function AdminCategoriesPage() {
                           onChange={(e) =>
                             setEditForm({ ...editForm, name: e.target.value })
                           }
-                          className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 text-sm ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                           placeholder="Name"
                         />
                         <input
@@ -196,47 +196,47 @@ export default function AdminCategoriesPage() {
                           onChange={(e) =>
                             setEditForm({ ...editForm, description: e.target.value })
                           }
-                          className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full px-3 py-1.5 text-sm ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                           placeholder="Description"
                         />
                       </div>
                     ) : (
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                           {category.icon ? (
                             <span className="text-lg">{category.icon}</span>
                           ) : (
-                            <FolderOpen className="h-5 w-5 text-purple-600" />
+                            <FolderOpen className="h-5 w-5 text-primary" />
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">
+                          <p className="text-sm font-medium text-on-surface">
                             {category.name}
                           </p>
                           {category.description && (
-                            <p className="text-xs text-gray-500">{category.description}</p>
+                            <p className="text-xs text-on-surface-variant">{category.description}</p>
                           )}
                         </div>
                       </div>
                     )}
                   </td>
                   <td className="px-6 py-4">
-                    <code className="text-sm text-gray-500">{category.slug}</code>
+                    <code className="text-sm text-on-surface-variant">{category.slug}</code>
                   </td>
                   <td className="px-6 py-4">
                     <button
                       onClick={() => toggleActive(category)}
                       className={`px-2 py-1 text-xs font-medium rounded-full ${
                         category.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
+                          ? 'bg-secondary-container text-secondary'
+                          : 'bg-surface-container text-on-surface-variant'
                       }`}
                     >
                       {category.is_active ? 'Active' : 'Inactive'}
                     </button>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm text-gray-500">{category.display_order}</span>
+                    <span className="text-sm text-on-surface-variant">{category.display_order}</span>
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-2">
@@ -244,14 +244,14 @@ export default function AdminCategoriesPage() {
                         <>
                           <button
                             onClick={() => saveEdit(category.id)}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-lg"
+                            className="p-2 text-secondary hover:bg-secondary/10 rounded-lg"
                             title="Save"
                           >
                             <Check className="h-4 w-4" />
                           </button>
                           <button
                             onClick={cancelEditing}
-                            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                            className="p-2 text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container"
                             title="Cancel"
                           >
                             <X className="h-4 w-4" />
@@ -261,14 +261,14 @@ export default function AdminCategoriesPage() {
                         <>
                           <button
                             onClick={() => startEditing(category)}
-                            className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50"
+                            className="p-2 text-on-surface-variant hover:text-primary rounded-lg hover:bg-primary/10"
                             title="Edit"
                           >
                             <Edit2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(category.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50"
+                            className="p-2 text-on-surface-variant hover:text-error rounded-lg hover:bg-error/10"
                             title="Delete"
                           >
                             <Trash2 className="h-4 w-4" />

@@ -30,7 +30,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -38,7 +38,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
   if (!resource) {
     return (
       <div className="text-center py-16">
-        <p className="text-gray-600">Resource not found</p>
+        <p className="text-on-surface-variant">Resource not found</p>
       </div>
     )
   }

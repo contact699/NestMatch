@@ -5,7 +5,6 @@ import Link from 'next/link'
 import {
   MessageCircle,
   Loader2,
-  Check,
   X,
   HelpCircle,
   Clock,
@@ -26,22 +25,22 @@ const statusConfig = {
   pending: {
     label: 'Pending',
     icon: Clock,
-    color: 'bg-amber-100 text-amber-700',
+    color: 'bg-tertiary-fixed text-tertiary-container',
   },
   reviewed: {
     label: 'Reviewed',
     icon: Eye,
-    color: 'bg-blue-100 text-blue-700',
+    color: 'bg-primary/10 text-primary',
   },
   answered: {
     label: 'Answered',
     icon: CheckCircle,
-    color: 'bg-green-100 text-green-700',
+    color: 'bg-secondary-container text-secondary',
   },
   rejected: {
     label: 'Rejected',
     icon: XCircle,
-    color: 'bg-red-100 text-red-700',
+    color: 'bg-error-container text-error',
   },
 }
 
@@ -137,7 +136,7 @@ export default function AdminQuestionsPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -146,15 +145,15 @@ export default function AdminQuestionsPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Submitted Questions</h1>
-          <p className="text-gray-600 mt-1">Review and respond to user-submitted questions</p>
+          <h1 className="text-2xl font-display font-bold text-on-surface">Submitted Questions</h1>
+          <p className="text-on-surface-variant mt-1">Review and respond to user-submitted questions</p>
         </div>
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-400" />
+          <Filter className="h-4 w-4 text-on-surface-variant" />
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
           >
             <option value="">All Status</option>
             <option value="pending">Pending</option>
@@ -175,27 +174,27 @@ export default function AdminQuestionsPage() {
             <button
               key={status}
               onClick={() => setFilterStatus(filterStatus === status ? '' : status)}
-              className={`bg-white rounded-xl border p-4 text-left transition-colors ${
+              className={`bg-surface-container-lowest rounded-xl p-4 text-left transition-colors ${
                 filterStatus === status
-                  ? 'border-blue-500 ring-2 ring-blue-100'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? 'ghost-border ring-2 ring-primary/20'
+                  : 'ghost-border hover:bg-surface-container-low'
               }`}
             >
               <div className="flex items-center justify-between mb-2">
                 <Icon
                   className={`h-5 w-5 ${
                     status === 'pending'
-                      ? 'text-amber-500'
+                      ? 'text-tertiary-container'
                       : status === 'reviewed'
-                      ? 'text-blue-500'
+                      ? 'text-primary'
                       : status === 'answered'
-                      ? 'text-green-500'
-                      : 'text-red-500'
+                      ? 'text-secondary'
+                      : 'text-error'
                   }`}
                 />
-                <span className="text-2xl font-bold text-gray-900">{count}</span>
+                <span className="text-2xl font-display font-bold text-on-surface">{count}</span>
               </div>
-              <p className="text-sm text-gray-600">{config.label}</p>
+              <p className="text-sm text-on-surface-variant">{config.label}</p>
             </button>
           )
         })}
@@ -204,14 +203,14 @@ export default function AdminQuestionsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Questions List */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+          <div className="bg-surface-container-lowest rounded-xl ghost-border overflow-hidden">
             {filteredQuestions.length === 0 ? (
               <div className="p-12 text-center">
-                <MessageCircle className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-500">No questions found</p>
+                <MessageCircle className="h-12 w-12 mx-auto text-on-surface-variant/40 mb-4" />
+                <p className="text-on-surface-variant">No questions found</p>
               </div>
             ) : (
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-outline-variant/15">
                 {filteredQuestions.map((question) => {
                   const config = statusConfig[question.status]
                   const Icon = config.icon
@@ -223,14 +222,14 @@ export default function AdminQuestionsPage() {
                         setSelectedQuestion(question)
                         setAdminNotes(question.admin_notes || '')
                       }}
-                      className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
-                        selectedQuestion?.id === question.id ? 'bg-blue-50' : ''
+                      className={`w-full p-4 text-left hover:bg-surface-container-low transition-colors ${
+                        selectedQuestion?.id === question.id ? 'bg-primary/5' : ''
                       }`}
                     >
                       <div className="flex items-start gap-3">
-                        <MessageCircle className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                        <MessageCircle className="h-5 w-5 text-on-surface-variant mt-0.5 flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900 line-clamp-2">
+                          <p className="text-sm text-on-surface line-clamp-2">
                             {question.question}
                           </p>
                           <div className="flex items-center gap-3 mt-2">
@@ -241,11 +240,11 @@ export default function AdminQuestionsPage() {
                               {config.label}
                             </span>
                             {question.province && (
-                              <span className="text-xs text-gray-500">
+                              <span className="text-xs text-on-surface-variant">
                                 {question.province}
                               </span>
                             )}
-                            <span className="text-xs text-gray-400">
+                            <span className="text-xs text-on-surface-variant/60">
                               {new Date(question.created_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -262,12 +261,12 @@ export default function AdminQuestionsPage() {
         {/* Detail Panel */}
         <div>
           {selectedQuestion ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-6 sticky top-8">
+            <div className="bg-surface-container-lowest rounded-xl ghost-border p-6 sticky top-8">
               <div className="flex items-start justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Question Details</h2>
+                <h2 className="text-lg font-display font-semibold text-on-surface">Question Details</h2>
                 <button
                   onClick={() => setSelectedQuestion(null)}
-                  className="text-gray-400 hover:text-gray-600"
+                  className="text-on-surface-variant hover:text-on-surface"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -275,35 +274,35 @@ export default function AdminQuestionsPage() {
 
               <div className="space-y-4">
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase">
+                  <label className="text-xs font-medium text-on-surface-variant uppercase">
                     Question
                   </label>
-                  <p className="text-sm text-gray-900 mt-1">{selectedQuestion.question}</p>
+                  <p className="text-sm text-on-surface mt-1">{selectedQuestion.question}</p>
                 </div>
 
                 {selectedQuestion.context && (
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">
+                    <label className="text-xs font-medium text-on-surface-variant uppercase">
                       Context
                     </label>
-                    <p className="text-sm text-gray-600 mt-1">{selectedQuestion.context}</p>
+                    <p className="text-sm text-on-surface-variant mt-1">{selectedQuestion.context}</p>
                   </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">
+                    <label className="text-xs font-medium text-on-surface-variant uppercase">
                       Province
                     </label>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-on-surface mt-1">
                       {selectedQuestion.province || 'Not specified'}
                     </p>
                   </div>
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">
+                    <label className="text-xs font-medium text-on-surface-variant uppercase">
                       Category
                     </label>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-on-surface mt-1">
                       {getCategoryName(selectedQuestion.category_id)}
                     </p>
                   </div>
@@ -311,39 +310,39 @@ export default function AdminQuestionsPage() {
 
                 {selectedQuestion.profile && (
                   <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">
+                    <label className="text-xs font-medium text-on-surface-variant uppercase">
                       Submitted By
                     </label>
-                    <p className="text-sm text-gray-900 mt-1">
+                    <p className="text-sm text-on-surface mt-1">
                       {selectedQuestion.profile.name || selectedQuestion.profile.email}
                     </p>
                   </div>
                 )}
 
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase">
+                  <label className="text-xs font-medium text-on-surface-variant uppercase">
                     Submitted
                   </label>
-                  <p className="text-sm text-gray-900 mt-1">
+                  <p className="text-sm text-on-surface mt-1">
                     {new Date(selectedQuestion.created_at).toLocaleString()}
                   </p>
                 </div>
 
                 <div>
-                  <label className="text-xs font-medium text-gray-500 uppercase block mb-1">
+                  <label className="text-xs font-medium text-on-surface-variant uppercase block mb-1">
                     Admin Notes
                   </label>
                   <textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     rows={3}
-                    className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 text-sm ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                     placeholder="Add notes about this question..."
                   />
                 </div>
 
-                <div className="pt-4 border-t border-gray-100 space-y-2">
-                  <p className="text-xs font-medium text-gray-500 uppercase mb-2">
+                <div className="pt-4 ghost-border border-b-0 border-l-0 border-r-0 space-y-2">
+                  <p className="text-xs font-medium text-on-surface-variant uppercase mb-2">
                     Update Status
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -354,7 +353,7 @@ export default function AdminQuestionsPage() {
                       disabled={isUpdating}
                       className="justify-start"
                     >
-                      <Eye className="h-4 w-4 mr-2 text-blue-500" />
+                      <Eye className="h-4 w-4 mr-2 text-primary" />
                       Reviewed
                     </Button>
                     <Button
@@ -364,7 +363,7 @@ export default function AdminQuestionsPage() {
                       disabled={isUpdating}
                       className="justify-start"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                      <CheckCircle className="h-4 w-4 mr-2 text-secondary" />
                       Answered
                     </Button>
                     <Button
@@ -374,7 +373,7 @@ export default function AdminQuestionsPage() {
                       disabled={isUpdating}
                       className="justify-start"
                     >
-                      <XCircle className="h-4 w-4 mr-2 text-red-500" />
+                      <XCircle className="h-4 w-4 mr-2 text-error" />
                       Rejected
                     </Button>
                     <Button
@@ -384,7 +383,7 @@ export default function AdminQuestionsPage() {
                       disabled={isUpdating}
                       className="justify-start"
                     >
-                      <Clock className="h-4 w-4 mr-2 text-amber-500" />
+                      <Clock className="h-4 w-4 mr-2 text-tertiary-container" />
                       Pending
                     </Button>
                   </div>
@@ -401,9 +400,9 @@ export default function AdminQuestionsPage() {
               </div>
             </div>
           ) : (
-            <div className="bg-gray-50 rounded-xl border border-gray-200 p-6 text-center">
-              <MessageCircle className="h-10 w-10 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500">Select a question to view details</p>
+            <div className="bg-surface-container-low rounded-xl ghost-border p-6 text-center">
+              <MessageCircle className="h-10 w-10 mx-auto text-on-surface-variant/40 mb-3" />
+              <p className="text-on-surface-variant">Select a question to view details</p>
             </div>
           )}
         </div>

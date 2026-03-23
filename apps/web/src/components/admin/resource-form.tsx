@@ -6,10 +6,7 @@ import { clientLogger } from '@/lib/client-logger'
 import {
   Save,
   X,
-  Plus,
   Loader2,
-  BookOpen,
-  Eye,
   ArrowLeft,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -231,15 +228,15 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
           <button
             type="button"
             onClick={() => router.push('/admin/resources')}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-display font-bold text-on-surface">
               {isEditing ? 'Edit Resource' : 'New Resource'}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-on-surface-variant mt-1">
               {isEditing ? 'Update resource details and content' : 'Create a new guide, article, or resource'}
             </p>
           </div>
@@ -268,12 +265,12 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
           {/* Basic Info */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Basic Information</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Title *
                 </label>
                 <input
@@ -281,17 +278,17 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   value={formData.title}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="e.g., Ontario Tenant Rights Guide"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Slug *
                 </label>
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">/resources/guides/</span>
+                  <span className="text-on-surface-variant">/resources/guides/</span>
                   <input
                     type="text"
                     value={formData.slug}
@@ -299,14 +296,14 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                       setFormData({ ...formData, slug: e.target.value })
                     }
                     required
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                     placeholder="ontario-tenant-rights"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Subtitle
                 </label>
                 <input
@@ -315,13 +312,13 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onChange={(e) =>
                     setFormData({ ...formData, subtitle: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="A brief subtitle or tagline"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Excerpt
                 </label>
                 <textarea
@@ -330,7 +327,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                     setFormData({ ...formData, excerpt: e.target.value })
                   }
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="A short description for search results and cards"
                 />
               </div>
@@ -338,17 +335,17 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
           </div>
 
           {/* Content Blocks */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Content</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Content</h2>
 
             <div className="space-y-4">
               {content.map((block, index) => (
                 <div
                   key={index}
-                  className="border border-gray-200 rounded-lg p-4"
+                  className="ghost-border rounded-lg p-4"
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs font-medium text-gray-500 uppercase">
+                    <span className="text-xs font-medium text-on-surface-variant uppercase">
                       {block.type}
                       {block.type === 'heading' && ` (H${block.level})`}
                       {block.type === 'callout' && ` - ${block.variant}`}
@@ -356,7 +353,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                     <button
                       type="button"
                       onClick={() => removeContentBlock(index)}
-                      className="text-gray-400 hover:text-red-500"
+                      className="text-on-surface-variant hover:text-error"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -369,7 +366,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                         onChange={(e) =>
                           updateContentBlock(index, { level: Number(e.target.value) })
                         }
-                        className="px-3 py-1 text-sm border border-gray-200 rounded-lg"
+                        className="px-3 py-1 text-sm ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                       >
                         <option value={2}>H2</option>
                         <option value={3}>H3</option>
@@ -380,7 +377,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                         onChange={(e) =>
                           updateContentBlock(index, { text: e.target.value })
                         }
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                        className="w-full px-4 py-2 ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                         placeholder="Heading text"
                       />
                     </div>
@@ -393,7 +390,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                         updateContentBlock(index, { text: e.target.value })
                       }
                       rows={3}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                      className="w-full px-4 py-2 ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                       placeholder={block.type === 'quote' ? 'Quote text' : 'Paragraph text'}
                     />
                   )}
@@ -407,7 +404,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                             variant: e.target.value as 'info' | 'warning' | 'tip',
                           })
                         }
-                        className="px-3 py-1 text-sm border border-gray-200 rounded-lg"
+                        className="px-3 py-1 text-sm ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                       >
                         <option value="info">Info</option>
                         <option value="warning">Warning</option>
@@ -419,7 +416,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                           updateContentBlock(index, { text: e.target.value })
                         }
                         rows={2}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg"
+                        className="w-full px-4 py-2 ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                         placeholder="Callout text"
                       />
                     </div>
@@ -429,20 +426,20 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                     <div className="space-y-2">
                       {block.items?.map((item, itemIndex) => (
                         <div key={itemIndex} className="flex items-center gap-2">
-                          <span className="text-gray-400">•</span>
+                          <span className="text-on-surface-variant">&bull;</span>
                           <input
                             type="text"
                             value={item}
                             onChange={(e) =>
                               updateListItem(index, itemIndex, e.target.value)
                             }
-                            className="flex-1 px-4 py-2 border border-gray-200 rounded-lg"
+                            className="flex-1 px-4 py-2 ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                             placeholder="List item"
                           />
                           <button
                             type="button"
                             onClick={() => removeListItem(index, itemIndex)}
-                            className="text-gray-400 hover:text-red-500"
+                            className="text-on-surface-variant hover:text-error"
                           >
                             <X className="h-4 w-4" />
                           </button>
@@ -451,7 +448,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                       <button
                         type="button"
                         onClick={() => addListItem(index)}
-                        className="text-sm text-blue-600 hover:text-blue-700"
+                        className="text-sm text-primary hover:text-primary/80"
                       >
                         + Add item
                       </button>
@@ -465,35 +462,35 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                 <button
                   type="button"
                   onClick={() => addContentBlock('heading')}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm ghost-border rounded-lg hover:bg-surface-container-low text-on-surface-variant"
                 >
                   + Heading
                 </button>
                 <button
                   type="button"
                   onClick={() => addContentBlock('paragraph')}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm ghost-border rounded-lg hover:bg-surface-container-low text-on-surface-variant"
                 >
                   + Paragraph
                 </button>
                 <button
                   type="button"
                   onClick={() => addContentBlock('list')}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm ghost-border rounded-lg hover:bg-surface-container-low text-on-surface-variant"
                 >
                   + List
                 </button>
                 <button
                   type="button"
                   onClick={() => addContentBlock('callout')}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm ghost-border rounded-lg hover:bg-surface-container-low text-on-surface-variant"
                 >
                   + Callout
                 </button>
                 <button
                   type="button"
                   onClick={() => addContentBlock('quote')}
-                  className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg hover:bg-gray-50"
+                  className="px-3 py-1.5 text-sm ghost-border rounded-lg hover:bg-surface-container-low text-on-surface-variant"
                 >
                   + Quote
                 </button>
@@ -505,8 +502,8 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Status</h2>
 
             <div className="space-y-4">
               <label className="flex items-center gap-3">
@@ -516,9 +513,9 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onChange={(e) =>
                     setFormData({ ...formData, is_published: e.target.checked })
                   }
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-outline-variant/30"
                 />
-                <span className="text-sm text-gray-700">Published</span>
+                <span className="text-sm text-on-surface">Published</span>
               </label>
 
               <label className="flex items-center gap-3">
@@ -528,37 +525,37 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onChange={(e) =>
                     setFormData({ ...formData, featured: e.target.checked })
                   }
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-outline-variant/30"
                 />
-                <span className="text-sm text-gray-700">Featured</span>
+                <span className="text-sm text-on-surface">Featured</span>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Publish At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.publish_at || ''}
                   onChange={(e) => setFormData({ ...formData, publish_at: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Schedule automatic publishing
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Unpublish At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.unpublish_at || ''}
                   onChange={(e) => setFormData({ ...formData, unpublish_at: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Schedule automatic unpublishing
                 </p>
               </div>
@@ -566,12 +563,12 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
           </div>
 
           {/* Organization */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Organization</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Organization</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Category
                 </label>
                 <select
@@ -579,7 +576,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onChange={(e) =>
                     setFormData({ ...formData, category_id: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 >
                   <option value="">No category</option>
                   {categories.map((category) => (
@@ -591,7 +588,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Type
                 </label>
                 <select
@@ -599,7 +596,7 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onChange={(e) =>
                     setFormData({ ...formData, resource_type: e.target.value })
                   }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 >
                   {RESOURCE_TYPES.map((type) => (
                     <option key={type} value={type}>
@@ -612,8 +609,8 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
           </div>
 
           {/* Provinces */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Provinces</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Provinces</h2>
 
             <div className="flex flex-wrap gap-2">
               {PROVINCES.map((province) => (
@@ -623,8 +620,8 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                   onClick={() => toggleProvince(province.code)}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     formData.provinces.includes(province.code)
-                      ? 'bg-blue-100 border-blue-200 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary/10 border-primary/20 text-primary'
+                      : 'border-outline-variant/15 text-on-surface-variant hover:bg-surface-container-low'
                   }`}
                 >
                   {province.code}
@@ -632,27 +629,27 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
               ))}
             </div>
             {formData.provinces.length === 0 && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-on-surface-variant mt-2">
                 Leave empty for all provinces
               </p>
             )}
           </div>
 
           {/* Tags */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Tags</h2>
 
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 text-gray-700 rounded-full"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-surface-container text-on-surface rounded-full"
                 >
                   #{tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="text-gray-400 hover:text-red-500"
+                    className="text-on-surface-variant hover:text-error"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -666,13 +663,13 @@ export function ResourceForm({ resource, isEditing = false }: ResourceFormProps)
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-1.5 text-sm ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 placeholder="Add tag"
               />
               <button
                 type="button"
                 onClick={addTag}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-surface-container text-on-surface rounded-lg hover:bg-surface-container-high"
               >
                 Add
               </button>

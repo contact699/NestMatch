@@ -191,15 +191,15 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
           <button
             type="button"
             onClick={() => router.push('/admin/clauses')}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-display font-bold text-on-surface">
               {isEditing ? 'Edit Clause' : 'New Clause'}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-on-surface-variant mt-1">
               {isEditing ? 'Update this agreement clause' : 'Create a new agreement clause'}
             </p>
           </div>
@@ -228,12 +228,12 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
         {/* Main Content - Left Side (2/3) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Clause Details */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Clause Details</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Clause Details</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Clause Key *
                 </label>
                 <input
@@ -244,16 +244,16 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                   }
                   required
                   pattern="[a-z_]+"
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="e.g., rent_payment_terms"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Unique identifier in snake_case (lowercase letters and underscores only)
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Title *
                 </label>
                 <input
@@ -263,13 +263,13 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                     setFormData({ ...formData, title: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="e.g., Rent Payment Terms"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Description
                 </label>
                 <textarea
@@ -278,13 +278,13 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="Brief description of what this clause covers..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Category *
                 </label>
                 <select
@@ -293,7 +293,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                     setFormData({ ...formData, category: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat.value} value={cat.value}>
@@ -304,7 +304,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Content Template *
                 </label>
                 <textarea
@@ -314,10 +314,10 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                   }
                   required
                   rows={8}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface font-mono text-sm"
                   placeholder="The tenant agrees to pay {{rent_amount}} on the {{payment_day}} of each month..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Use {'{{variable}}'} placeholders for dynamic content. These will be replaced with user answers.
                 </p>
               </div>
@@ -325,13 +325,13 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
           </div>
 
           {/* Questions */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Questions</h2>
+              <h2 className="text-lg font-display font-semibold text-on-surface">Questions</h2>
               <button
                 type="button"
                 onClick={addQuestion}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-primary/10 text-primary rounded-lg hover:bg-primary/20"
               >
                 <Plus className="h-4 w-4" />
                 Add Question
@@ -339,7 +339,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
             </div>
 
             {questions.length === 0 ? (
-              <p className="text-gray-500 text-sm text-center py-8">
+              <p className="text-on-surface-variant text-sm text-center py-8">
                 No questions added yet. Click &quot;Add Question&quot; to create one.
               </p>
             ) : (
@@ -347,16 +347,16 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                 {questions.map((question, index) => (
                   <div
                     key={index}
-                    className="border border-gray-200 rounded-lg p-4"
+                    className="ghost-border rounded-lg p-4"
                   >
                     <div className="flex items-start justify-between mb-3">
-                      <span className="text-xs font-medium text-gray-500 uppercase">
+                      <span className="text-xs font-medium text-on-surface-variant uppercase">
                         Question {index + 1}
                       </span>
                       <button
                         type="button"
                         onClick={() => removeQuestion(index)}
-                        className="text-gray-400 hover:text-red-500"
+                        className="text-on-surface-variant hover:text-error"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -364,7 +364,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
 
                     <div className="grid grid-cols-2 gap-4 mb-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-on-surface mb-1">
                           Key *
                         </label>
                         <input
@@ -373,12 +373,12 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                           onChange={(e) =>
                             updateQuestion(index, { key: e.target.value })
                           }
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full px-3 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface text-sm"
                           placeholder="rent_amount"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-on-surface mb-1">
                           Type *
                         </label>
                         <select
@@ -388,7 +388,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                               type: e.target.value as ClauseQuestion['type'],
                             })
                           }
-                          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          className="w-full px-3 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface text-sm"
                         >
                           {QUESTION_TYPES.map((type) => (
                             <option key={type.value} value={type.value}>
@@ -400,7 +400,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                     </div>
 
                     <div className="mb-3">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-on-surface mb-1">
                         Label *
                       </label>
                       <input
@@ -409,14 +409,14 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                         onChange={(e) =>
                           updateQuestion(index, { label: e.target.value })
                         }
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface text-sm"
                         placeholder="What is the monthly rent amount?"
                       />
                     </div>
 
                     {question.type === 'select' && (
                       <div className="mb-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-on-surface mb-1">
                           Options
                         </label>
                         <div className="space-y-2">
@@ -428,13 +428,13 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                                 onChange={(e) =>
                                   updateOption(index, optIndex, e.target.value)
                                 }
-                                className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                className="flex-1 px-3 py-1.5 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface text-sm"
                                 placeholder={`Option ${optIndex + 1}`}
                               />
                               <button
                                 type="button"
                                 onClick={() => removeOption(index, optIndex)}
-                                className="text-gray-400 hover:text-red-500"
+                                className="text-on-surface-variant hover:text-error"
                               >
                                 <X className="h-4 w-4" />
                               </button>
@@ -443,7 +443,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                           <button
                             type="button"
                             onClick={() => addOption(index)}
-                            className="text-sm text-blue-600 hover:text-blue-700"
+                            className="text-sm text-primary hover:text-primary/80"
                           >
                             + Add option
                           </button>
@@ -458,9 +458,9 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                         onChange={(e) =>
                           updateQuestion(index, { required: e.target.checked })
                         }
-                        className="w-4 h-4 rounded border-gray-300"
+                        className="w-4 h-4 rounded border-outline-variant/30"
                       />
-                      <span className="text-sm text-gray-700">Required</span>
+                      <span className="text-sm text-on-surface">Required</span>
                     </label>
                   </div>
                 ))}
@@ -472,8 +472,8 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
         {/* Sidebar - Right Side (1/3) */}
         <div className="space-y-6">
           {/* Settings */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Settings</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Settings</h2>
 
             <div className="space-y-4">
               <label className="flex items-center gap-3">
@@ -483,9 +483,9 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, is_active: e.target.checked })
                   }
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-outline-variant/30"
                 />
-                <span className="text-sm text-gray-700">Active</span>
+                <span className="text-sm text-on-surface">Active</span>
               </label>
 
               <label className="flex items-center gap-3">
@@ -495,13 +495,13 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, is_required: e.target.checked })
                   }
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-outline-variant/30"
                 />
-                <span className="text-sm text-gray-700">Required in all agreements</span>
+                <span className="text-sm text-on-surface">Required in all agreements</span>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Display Order
                 </label>
                 <input
@@ -513,9 +513,9 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                       display_order: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Lower numbers appear first
                 </p>
               </div>
@@ -523,8 +523,8 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
           </div>
 
           {/* Provinces */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Provinces</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Provinces</h2>
 
             <div className="flex flex-wrap gap-2">
               {PROVINCES.map((province) => (
@@ -534,8 +534,8 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
                   onClick={() => toggleProvince(province.code)}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     formData.provinces.includes(province.code)
-                      ? 'bg-blue-100 border-blue-200 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary/10 border-primary/20 text-primary'
+                      : 'border-outline-variant/15 text-on-surface-variant hover:bg-surface-container-low'
                   }`}
                 >
                   {province.code}
@@ -543,7 +543,7 @@ export function ClauseForm({ clause, isEditing = false }: ClauseFormProps) {
               ))}
             </div>
             {formData.provinces.length === 0 && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-on-surface-variant mt-2">
                 Leave empty for all provinces
               </p>
             )}

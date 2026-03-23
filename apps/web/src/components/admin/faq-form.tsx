@@ -129,15 +129,15 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
           <button
             type="button"
             onClick={() => router.push('/admin/faqs')}
-            className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+            className="p-2 text-on-surface-variant hover:text-on-surface rounded-lg hover:bg-surface-container"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-display font-bold text-on-surface">
               {isEditing ? 'Edit FAQ' : 'New FAQ'}
             </h1>
-            <p className="text-gray-600 mt-1">
+            <p className="text-on-surface-variant mt-1">
               {isEditing ? 'Update this FAQ' : 'Add a new frequently asked question'}
             </p>
           </div>
@@ -165,12 +165,12 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Question & Answer</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Question & Answer</h2>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Question *
                 </label>
                 <input
@@ -180,13 +180,13 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                     setFormData({ ...formData, question: e.target.value })
                   }
                   required
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="e.g., Can my landlord enter my room without notice?"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Answer *
                 </label>
                 <textarea
@@ -196,10 +196,10 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                   }
                   required
                   rows={8}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                   placeholder="Provide a clear, helpful answer..."
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Supports basic formatting. Keep answers concise but thorough.
                 </p>
               </div>
@@ -210,8 +210,8 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Status */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Status</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Status</h2>
 
             <div className="space-y-4">
               <label className="flex items-center gap-3">
@@ -221,13 +221,13 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                   onChange={(e) =>
                     setFormData({ ...formData, is_published: e.target.checked })
                   }
-                  className="w-4 h-4 rounded border-gray-300"
+                  className="w-4 h-4 rounded border-outline-variant/30"
                 />
-                <span className="text-sm text-gray-700">Published</span>
+                <span className="text-sm text-on-surface">Published</span>
               </label>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Display Order
                 </label>
                 <input
@@ -239,39 +239,39 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                       display_order: parseInt(e.target.value) || 0,
                     })
                   }
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Lower numbers appear first
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Publish At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.publish_at || ''}
                   onChange={(e) => setFormData({ ...formData, publish_at: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Schedule automatic publishing
                 </p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface mb-1">
                   Unpublish At
                 </label>
                 <input
                   type="datetime-local"
                   value={formData.unpublish_at || ''}
                   onChange={(e) => setFormData({ ...formData, unpublish_at: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 />
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-on-surface-variant mt-1">
                   Schedule automatic unpublishing
                 </p>
               </div>
@@ -279,15 +279,15 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
           </div>
 
           {/* Category */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Category</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Category</h2>
 
             <select
               value={formData.category_id}
               onChange={(e) =>
                 setFormData({ ...formData, category_id: e.target.value })
               }
-              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
             >
               <option value="">No category</option>
               {categories.map((category) => (
@@ -299,8 +299,8 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
           </div>
 
           {/* Provinces */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Provinces</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Provinces</h2>
 
             <div className="flex flex-wrap gap-2">
               {PROVINCES.map((province) => (
@@ -310,8 +310,8 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                   onClick={() => toggleProvince(province.code)}
                   className={`px-3 py-1.5 text-sm rounded-full border transition-colors ${
                     formData.provinces.includes(province.code)
-                      ? 'bg-blue-100 border-blue-200 text-blue-700'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary/10 border-primary/20 text-primary'
+                      : 'border-outline-variant/15 text-on-surface-variant hover:bg-surface-container-low'
                   }`}
                 >
                   {province.code}
@@ -319,27 +319,27 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
               ))}
             </div>
             {formData.provinces.length === 0 && (
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-on-surface-variant mt-2">
                 Leave empty for all provinces
               </p>
             )}
           </div>
 
           {/* Tags */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Tags</h2>
+          <div className="bg-surface-container-lowest rounded-xl ghost-border p-6">
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">Tags</h2>
 
             <div className="flex flex-wrap gap-2 mb-3">
               {formData.tags.map((tag) => (
                 <span
                   key={tag}
-                  className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-gray-100 text-gray-700 rounded-full"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-sm bg-surface-container text-on-surface rounded-full"
                 >
                   #{tag}
                   <button
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="text-gray-400 hover:text-red-500"
+                    className="text-on-surface-variant hover:text-error"
                   >
                     <X className="h-3 w-3" />
                   </button>
@@ -353,13 +353,13 @@ export function FAQForm({ faq, isEditing = false }: FAQFormProps) {
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3 py-1.5 text-sm ghost-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-surface-container-lowest text-on-surface"
                 placeholder="Add tag"
               />
               <button
                 type="button"
                 onClick={addTag}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-surface-container text-on-surface rounded-lg hover:bg-surface-container-high"
               >
                 Add
               </button>
