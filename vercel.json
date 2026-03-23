@@ -1,6 +1,6 @@
 {
-  "buildCommand": "cd apps/web && npm install && npx next build",
-  "installCommand": "npm install",
+  "buildCommand": "npm run build:web",
+  "installCommand": "npm install --install-strategy=hoisted",
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next"
 }
