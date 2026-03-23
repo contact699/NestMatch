@@ -70,7 +70,7 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
       <ModalContent>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Search by email or name
             </label>
             <div className="flex gap-2">
@@ -79,7 +79,7 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Enter email or name"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
               />
               <Button onClick={handleSearch} disabled={loading}>
                 {loading ? (
@@ -92,7 +92,7 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
           </div>
 
           {error && (
-            <div className="p-3 bg-yellow-50 text-yellow-800 rounded-lg text-sm">
+            <div className="p-3 bg-tertiary-fixed text-tertiary-container rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -102,11 +102,11 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
               {searchResults.map((user) => (
                 <div
                   key={user.user_id}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                  className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-blue-600">
+                    <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-primary">
                         {user.name.charAt(0).toUpperCase()}
                       </span>
                     </div>
@@ -128,8 +128,8 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
             </div>
           )}
 
-          <div className="pt-4 border-t border-gray-200">
-            <p className="text-sm text-gray-500 mb-3">
+          <div className="pt-4 border-t border-outline-variant/15">
+            <p className="text-sm text-on-surface-variant mb-3">
               Or share this invite link:
             </p>
             <div className="flex gap-2">
@@ -137,7 +137,7 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
                 type="text"
                 readOnly
                 value={`${typeof window !== 'undefined' ? window.location.origin : ''}/groups/join/${groupId}`}
-                className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm"
+                className="flex-1 px-3 py-2 bg-surface-container-low border border-outline-variant/15 rounded-lg text-sm"
               />
               <Button
                 variant="outline"

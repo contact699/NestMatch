@@ -410,9 +410,9 @@ export default function DiscoverPage() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="text-center py-12">
-          <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Sign in to discover</h2>
-          <p className="text-gray-600 mb-4">
+          <Users className="h-12 w-12 text-outline mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-on-surface mb-2">Sign in to discover</h2>
+          <p className="text-on-surface-variant mb-4">
             Create an account to get AI-powered group suggestions and find compatible roommates.
           </p>
           <Link href="/login">
@@ -428,8 +428,8 @@ export default function DiscoverPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Discover</h1>
-          <p className="text-gray-600">Find your perfect roommate match</p>
+          <h1 className="text-2xl font-bold font-display text-on-surface">Discover</h1>
+          <p className="text-on-surface-variant">Find your perfect roommate match</p>
         </div>
         <Link href="/quiz">
           <Button variant="outline" size="sm">
@@ -440,18 +440,18 @@ export default function DiscoverPage() {
       </div>
 
       {/* How it works */}
-      <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+      <div className="mb-6 p-4 bg-gradient-to-r from-primary-fixed to-primary-container/20 rounded-lg ghost-border">
         <div className="flex items-start gap-3">
-          <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-gray-700 space-y-1">
-            <p className="font-medium text-gray-900">How Discovery Works</p>
+          <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <div className="text-sm text-on-surface-variant space-y-1">
+            <p className="font-medium text-on-surface">How Discovery Works</p>
             <ul className="space-y-1">
               <li><span className="font-medium">Suggestions</span> — AI-generated group matches based on your profile and preferences</li>
               <li><span className="font-medium">People</span> — Browse individuals ranked by lifestyle compatibility</li>
               <li><span className="font-medium">Groups</span> — Join existing public groups looking for members</li>
             </ul>
-            <p className="text-gray-500 pt-1">
-              Complete your <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link> and <Link href="/profile/edit" className="text-blue-600 hover:underline">profile</Link> for better matches.
+            <p className="text-on-surface-variant pt-1">
+              Complete your <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link> and <Link href="/profile/edit" className="text-primary hover:underline">profile</Link> for better matches.
             </p>
           </div>
         </div>
@@ -472,14 +472,14 @@ export default function DiscoverPage() {
               <Card key={i} variant="bordered" className="animate-pulse">
                 <CardContent className="p-6">
                   <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full" />
+                    <div className="w-16 h-16 bg-surface-container rounded-full" />
                     <div className="flex-1">
-                      <div className="h-5 w-24 bg-gray-200 rounded mb-2" />
-                      <div className="h-4 w-16 bg-gray-200 rounded" />
+                      <div className="h-5 w-24 bg-surface-container rounded mb-2" />
+                      <div className="h-4 w-16 bg-surface-container rounded" />
                     </div>
                   </div>
-                  <div className="h-4 w-full bg-gray-200 rounded mb-2" />
-                  <div className="h-4 w-3/4 bg-gray-200 rounded" />
+                  <div className="h-4 w-full bg-surface-container rounded mb-2" />
+                  <div className="h-4 w-3/4 bg-surface-container rounded" />
                 </CardContent>
               </Card>
             ))}
@@ -491,7 +491,7 @@ export default function DiscoverPage() {
               <div>
                 {/* Refresh button */}
                 <div className="flex items-center justify-between mb-4">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-on-surface-variant">
                     {suggestions.length} AI-generated group suggestions
                   </p>
                   <Button
@@ -506,7 +506,7 @@ export default function DiscoverPage() {
                 </div>
 
                 {nextRefreshAt && (
-                  <div className="flex items-center gap-2 p-3 mb-4 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-800">
+                  <div className="flex items-center gap-2 p-3 mb-4 bg-tertiary-fixed border border-outline-variant/15 rounded-lg text-sm text-tertiary-container">
                     <AlertCircle className="h-4 w-4" />
                     Next refresh available at{' '}
                     {new Date(nextRefreshAt).toLocaleTimeString()}
@@ -515,15 +515,15 @@ export default function DiscoverPage() {
 
                 {suggestions.length === 0 ? (
                   <div className="text-center py-12">
-                    <Sparkles className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Sparkles className="h-12 w-12 text-outline mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-on-surface mb-2">
                       No suggestions yet
                     </h3>
-                    <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                    <p className="text-on-surface-variant mb-4 max-w-md mx-auto">
                       To get AI-generated group suggestions, complete your{' '}
-                      <Link href="/profile/edit" className="text-blue-600 hover:underline">profile</Link>,{' '}
-                      <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link>, and{' '}
-                      <Link href="/seeking" className="text-blue-600 hover:underline">seeking preferences</Link>, then click below.
+                      <Link href="/profile/edit" className="text-primary hover:underline">profile</Link>,{' '}
+                      <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link>, and{' '}
+                      <Link href="/seeking" className="text-primary hover:underline">seeking preferences</Link>, then click below.
                     </p>
                     <Button variant="glow" onClick={handleRefreshSuggestions}>
                       Generate Suggestions
@@ -557,7 +557,7 @@ export default function DiscoverPage() {
                 {/* Filters Section */}
                 <div className="mb-6">
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-on-surface-variant">
                       {`${filteredProfiles.length} compatible people found`}
                     </p>
                     <Button
@@ -568,7 +568,7 @@ export default function DiscoverPage() {
                       <Filter className="h-4 w-4 mr-1" />
                       Filters
                       {Object.values(peopleFilters).some(v => v !== '') && (
-                        <span className="ml-1 w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
+                        <span className="ml-1 w-5 h-5 rounded-full bg-primary text-on-primary text-xs flex items-center justify-center">
                           {Object.values(peopleFilters).filter(v => v !== '').length}
                         </span>
                       )}
@@ -580,13 +580,13 @@ export default function DiscoverPage() {
                       <div className="space-y-4">
                         {/* Search */}
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
                           <input
                             type="text"
                             value={peopleFilters.searchQuery}
                             onChange={(e) => setPeopleFilters(prev => ({ ...prev, searchQuery: e.target.value }))}
                             placeholder="Search by name or bio..."
-                            className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                            className="w-full pl-9 pr-4 py-2 border border-outline-variant/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-surface-tint/20 text-sm"
                           />
                         </div>
 
@@ -597,7 +597,7 @@ export default function DiscoverPage() {
                             onChange={(e) => {
                               setPeopleFilters(prev => ({ ...prev, province: e.target.value, city: '' }))
                             }}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                           >
                             <option value="">All Provinces</option>
                             {CANADIAN_PROVINCES.map(p => (
@@ -609,7 +609,7 @@ export default function DiscoverPage() {
                           <select
                             value={peopleFilters.city}
                             onChange={(e) => setPeopleFilters(prev => ({ ...prev, city: e.target.value }))}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                           >
                             <option value="">{peopleFilters.province ? 'All Cities' : 'Select Province'}</option>
                             {(CITIES_BY_PROVINCE[peopleFilters.province] || []).map(city => (
@@ -621,7 +621,7 @@ export default function DiscoverPage() {
                           <select
                             value={peopleFilters.gender}
                             onChange={(e) => setPeopleFilters(prev => ({ ...prev, gender: e.target.value }))}
-                            className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                            className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                           >
                             <option value="">Any Gender</option>
                             <option value="male">Male</option>
@@ -639,7 +639,7 @@ export default function DiscoverPage() {
                               placeholder="Age min"
                               min="18"
                               max="120"
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg text-sm focus:ring-2 focus:ring-surface-tint/20"
                             />
                             <input
                               type="number"
@@ -648,7 +648,7 @@ export default function DiscoverPage() {
                               placeholder="Age max"
                               min="18"
                               max="120"
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg text-sm focus:ring-2 focus:ring-surface-tint/20"
                             />
                           </div>
                         </div>
@@ -656,35 +656,35 @@ export default function DiscoverPage() {
                         {/* Budget Range */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
                             <input
                               type="number"
                               value={peopleFilters.budgetMin}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, budgetMin: e.target.value }))}
                               placeholder="Budget min"
-                              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              className="w-full pl-9 pr-3 py-2 border border-outline-variant/15 rounded-lg text-sm focus:ring-2 focus:ring-surface-tint/20"
                             />
                           </div>
                           <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
                             <input
                               type="number"
                               value={peopleFilters.budgetMax}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, budgetMax: e.target.value }))}
                               placeholder="Budget max"
-                              className="w-full pl-9 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
+                              className="w-full pl-9 pr-3 py-2 border border-outline-variant/15 rounded-lg text-sm focus:ring-2 focus:ring-surface-tint/20"
                             />
                           </div>
                         </div>
 
                         {/* Lifestyle Preferences */}
                         <div>
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Lifestyle Preferences</p>
+                          <p className="text-xs font-medium text-on-surface-variant uppercase tracking-wide mb-2">Lifestyle Preferences</p>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             <select
                               value={peopleFilters.sleepSchedule}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, sleepSchedule: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Sleep Schedule</option>
                               <option value="early_bird">Early Bird</option>
@@ -695,7 +695,7 @@ export default function DiscoverPage() {
                             <select
                               value={peopleFilters.noiseTolerance}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, noiseTolerance: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Noise Level</option>
                               <option value="quiet">Quiet</option>
@@ -706,7 +706,7 @@ export default function DiscoverPage() {
                             <select
                               value={peopleFilters.cleanlinessLevel}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, cleanlinessLevel: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Cleanliness</option>
                               <option value="spotless">Spotless</option>
@@ -718,7 +718,7 @@ export default function DiscoverPage() {
                             <select
                               value={peopleFilters.smoking}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, smoking: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Smoking</option>
                               <option value="never">No Smoking</option>
@@ -729,7 +729,7 @@ export default function DiscoverPage() {
                             <select
                               value={peopleFilters.petsPreference}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, petsPreference: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Pets</option>
                               <option value="no_pets">No Pets</option>
@@ -742,7 +742,7 @@ export default function DiscoverPage() {
                             <select
                               value={peopleFilters.temperaturePreference}
                               onChange={(e) => setPeopleFilters(prev => ({ ...prev, temperaturePreference: e.target.value }))}
-                              className="px-3 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500"
+                              className="px-3 py-2 border border-outline-variant/15 rounded-lg text-sm bg-surface-container-lowest focus:ring-2 focus:ring-surface-tint/20"
                             >
                               <option value="">Temperature</option>
                               <option value="cold">Cool</option>
@@ -775,16 +775,16 @@ export default function DiscoverPage() {
 
                 {filteredProfiles.length === 0 ? (
                   <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Users className="h-12 w-12 text-outline mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-on-surface mb-2">
                       No profiles found
                     </h3>
-                    <p className="text-gray-500 max-w-md mx-auto">
+                    <p className="text-on-surface-variant max-w-md mx-auto">
                       {Object.values(peopleFilters).some(v => v !== '')
                         ? 'Try adjusting your filters to see more results.'
                         : (
                           <>
-                            Complete your <Link href="/quiz" className="text-blue-600 hover:underline">lifestyle quiz</Link> to see
+                            Complete your <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link> to see
                             compatibility scores and get ranked matches.
                           </>
                         )}
@@ -796,7 +796,7 @@ export default function DiscoverPage() {
                       <Card key={profile.user_id} variant="bordered" animate>
                         <CardContent className="p-6">
                           <div className="flex items-start gap-4 mb-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
+                            <div className="w-16 h-16 bg-primary-fixed rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
                               {profile.profile_photo ? (
                                 <img
                                   src={profile.profile_photo}
@@ -804,11 +804,11 @@ export default function DiscoverPage() {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <Users className="h-8 w-8 text-blue-600" />
+                                <Users className="h-8 w-8 text-primary" />
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate">
+                              <h3 className="font-semibold text-on-surface truncate">
                                 {profile.name || 'Anonymous'}
                               </h3>
                               <VerificationBadge
@@ -816,7 +816,7 @@ export default function DiscoverPage() {
                                 size="sm"
                               />
                               {(profile.city || profile.province) && (
-                                <div className="flex items-center gap-1 text-sm text-gray-500 mt-1">
+                                <div className="flex items-center gap-1 text-sm text-on-surface-variant mt-1">
                                   <MapPin className="h-3 w-3" />
                                   <span className="truncate">
                                     {[profile.city, profile.province].filter(Boolean).join(', ')}
@@ -837,12 +837,12 @@ export default function DiscoverPage() {
                           )}
 
                           {profile.bio && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                            <p className="text-sm text-on-surface-variant line-clamp-2 mb-4">
                               {profile.bio}
                             </p>
                           )}
 
-                          <div className="flex gap-2 pt-4 border-t border-gray-100">
+                          <div className="flex gap-2 pt-4 border-t border-outline-variant/15">
                             <Link href={`/profile/${profile.user_id}`} className="flex-1">
                               <Button variant="outline" className="w-full" size="sm">
                                 View Profile
@@ -866,17 +866,17 @@ export default function DiscoverPage() {
             {/* Public Groups Tab */}
             {activeTab === 'groups' && (
               <div>
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-on-surface-variant mb-4">
                   {publicGroups.length} public groups looking for members
                 </p>
 
                 {publicGroups.length === 0 ? (
                   <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
+                    <Users className="h-12 w-12 text-outline mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-on-surface mb-2">
                       No public groups yet
                     </h3>
-                    <p className="text-gray-500 mb-4 max-w-md mx-auto">
+                    <p className="text-on-surface-variant mb-4 max-w-md mx-auto">
                       No public groups are forming right now. Create a group and set it to public so others can find and join you.
                     </p>
                     <Link href="/groups">
@@ -893,7 +893,7 @@ export default function DiscoverPage() {
                               {group.members.slice(0, 3).map((m, i) => (
                                 <div
                                   key={i}
-                                  className="w-10 h-10 rounded-full border-2 border-white bg-blue-100 flex items-center justify-center overflow-hidden"
+                                  className="w-10 h-10 rounded-full border-2 border-surface-container-lowest bg-primary-fixed flex items-center justify-center overflow-hidden"
                                   style={{ zIndex: 3 - i }}
                                 >
                                   {m.user?.profile_photo ? (
@@ -903,29 +903,29 @@ export default function DiscoverPage() {
                                       className="w-full h-full object-cover"
                                     />
                                   ) : (
-                                    <Users className="h-4 w-4 text-blue-600" />
+                                    <Users className="h-4 w-4 text-primary" />
                                   )}
                                 </div>
                               ))}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-gray-900 truncate">
+                              <h3 className="font-semibold text-on-surface truncate">
                                 {group.name}
                               </h3>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-on-surface-variant">
                                 {group.member_count} member{group.member_count !== 1 ? 's' : ''}
                               </p>
                             </div>
                           </div>
 
                           {group.description && (
-                            <p className="text-sm text-gray-600 line-clamp-2 mb-4">
+                            <p className="text-sm text-on-surface-variant line-clamp-2 mb-4">
                               {group.description}
                             </p>
                           )}
 
                           {group.preferred_cities && group.preferred_cities.length > 0 && (
-                            <div className="flex items-center gap-1 text-sm text-gray-500 mb-4">
+                            <div className="flex items-center gap-1 text-sm text-on-surface-variant mb-4">
                               <MapPin className="h-3 w-3" />
                               <span className="truncate">
                                 {group.preferred_cities.slice(0, 2).join(', ')}
@@ -934,12 +934,12 @@ export default function DiscoverPage() {
                           )}
 
                           {(group.combined_budget_min || group.combined_budget_max) && (
-                            <p className="text-sm text-gray-500 mb-4">
+                            <p className="text-sm text-on-surface-variant mb-4">
                               Budget: ${group.combined_budget_min?.toLocaleString()} - ${group.combined_budget_max?.toLocaleString()}/mo
                             </p>
                           )}
 
-                          <div className="pt-4 border-t border-gray-100">
+                          <div className="pt-4 border-t border-outline-variant/15">
                             <Link href={`/groups/${group.id}`}>
                               <Button variant="glow" className="w-full" size="sm">
                                 View Group

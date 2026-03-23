@@ -85,11 +85,11 @@ export function SignupForm() {
       <Card variant="bordered" className="w-full max-w-md">
         <CardContent className="pt-6">
           <div className="text-center">
-            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="mx-auto w-12 h-12 bg-secondary-container rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="h-6 w-6 text-secondary" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Check your email</h2>
-            <p className="text-gray-600 mb-4">
+            <h2 className="text-xl font-semibold text-on-surface mb-2">Check your email</h2>
+            <p className="text-on-surface-variant mb-4">
               We&apos;ve sent a verification link to your email address. Please click the link to verify your account.
             </p>
             <Button variant="outline" onClick={() => router.push('/login')}>
@@ -110,14 +110,14 @@ export function SignupForm() {
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" aria-label="Create account">
           {error && (
-            <div role="alert" className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div role="alert" className="flex items-center gap-2 p-3 bg-error-container border border-error/30 rounded-lg text-error text-sm">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
               {error}
             </div>
           )}
 
           <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
             <Input
               {...register('name')}
               type="text"
@@ -128,7 +128,7 @@ export function SignupForm() {
           </div>
 
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
             <Input
               {...register('email')}
               type="email"
@@ -139,7 +139,7 @@ export function SignupForm() {
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
             <Input
               {...register('password')}
               type="password"
@@ -150,7 +150,7 @@ export function SignupForm() {
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-outline" />
             <Input
               {...register('confirmPassword')}
               type="password"
@@ -160,7 +160,7 @@ export function SignupForm() {
             />
           </div>
 
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-on-surface-variant">
             Password must be at least 8 characters with uppercase, lowercase, and number.
           </p>
 
@@ -171,10 +171,10 @@ export function SignupForm() {
 
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200" />
+            <div className="w-full border-t border-outline-variant/15" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">Or continue with</span>
+            <span className="px-2 bg-surface-container-lowest text-on-surface-variant">Or continue with</span>
           </div>
         </div>
 
@@ -205,21 +205,21 @@ export function SignupForm() {
           Continue with Google
         </Button>
 
-        <p className="text-xs text-gray-500 text-center mt-4">
+        <p className="text-xs text-on-surface-variant text-center mt-4">
           By creating an account, you agree to our{' '}
-          <Link href="/terms" className="text-blue-600 hover:underline">
+          <Link href="/terms" className="text-primary hover:underline">
             Terms of Service
           </Link>{' '}
           and{' '}
-          <Link href="/privacy" className="text-blue-600 hover:underline">
+          <Link href="/privacy" className="text-primary hover:underline">
             Privacy Policy
           </Link>
         </p>
       </CardContent>
       <CardFooter className="justify-center">
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-on-surface-variant">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-700 font-medium">
+          <Link href="/login" className="text-primary hover:text-primary font-medium">
             Sign in
           </Link>
         </p>

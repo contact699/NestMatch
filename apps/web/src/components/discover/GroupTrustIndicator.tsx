@@ -45,24 +45,24 @@ export function GroupTrustIndicator({
   const config = {
     basic: {
       icon: Shield,
-      bgColor: 'bg-gray-50',
-      textColor: 'text-gray-600',
-      borderColor: 'border-gray-200',
-      iconColor: 'text-gray-400',
+      bgColor: 'bg-surface-container-low',
+      textColor: 'text-on-surface-variant',
+      borderColor: 'border-outline-variant/15',
+      iconColor: 'text-outline',
     },
     verified: {
       icon: ShieldCheck,
-      bgColor: 'bg-blue-50',
-      textColor: 'text-blue-700',
-      borderColor: 'border-blue-200',
-      iconColor: 'text-blue-500',
+      bgColor: 'bg-primary-fixed',
+      textColor: 'text-primary',
+      borderColor: 'border-outline-variant/15',
+      iconColor: 'text-secondary',
     },
     trusted: {
       icon: ShieldAlert,
-      bgColor: 'bg-green-50',
-      textColor: 'text-green-700',
-      borderColor: 'border-green-200',
-      iconColor: 'text-green-500',
+      bgColor: 'bg-secondary-container',
+      textColor: 'text-secondary',
+      borderColor: 'border-outline-variant/15',
+      iconColor: 'text-secondary',
     },
   }
 
@@ -105,9 +105,9 @@ export function GroupTrustIndicator({
       </div>
 
       {/* Tooltip */}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
+      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-on-surface text-surface-container-lowest text-xs rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap z-10">
         {description}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-gray-900" />
+        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-on-surface" />
       </div>
     </div>
   )

@@ -109,19 +109,19 @@ export default function GroupsPage() {
     switch (status) {
       case 'forming':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-blue-100 text-blue-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-primary-fixed text-primary">
             Forming
           </span>
         )
       case 'searching':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-tertiary-fixed text-tertiary-container">
             Searching
           </span>
         )
       case 'matched':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-secondary-container text-secondary">
             Matched
           </span>
         )
@@ -135,8 +135,8 @@ export default function GroupsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Co-Renter Groups</h1>
-          <p className="text-gray-600">Find roommates and search together</p>
+          <h1 className="text-2xl font-bold font-display text-on-surface">Co-Renter Groups</h1>
+          <p className="text-on-surface-variant">Find roommates and search together</p>
         </div>
         <Button onClick={() => setShowCreateModal(true)}>
           <Plus className="h-4 w-4 mr-2" />
@@ -147,23 +147,23 @@ export default function GroupsPage() {
       {/* Pending Invitations */}
       {invitations.length > 0 && (
         <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Bell className="h-5 w-5 text-blue-600" />
+          <h2 className="text-lg font-semibold text-on-surface mb-4 flex items-center gap-2">
+            <Bell className="h-5 w-5 text-primary" />
             Pending Invitations ({invitations.length})
           </h2>
           <div className="space-y-3">
             {invitations.map((invitation) => (
-              <Card key={invitation.id} variant="bordered" className="border-blue-200 bg-blue-50">
+              <Card key={invitation.id} variant="bordered" className="border-outline-variant/15 bg-primary-fixed">
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">
+                      <p className="font-medium text-on-surface">
                         {invitation.inviter.name} invited you to join
                       </p>
-                      <p className="text-lg font-semibold text-blue-600">
+                      <p className="text-lg font-semibold text-primary">
                         {invitation.group.name}
                       </p>
-                      <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                      <div className="flex items-center gap-4 mt-2 text-sm text-on-surface-variant">
                         <span className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
                           {invitation.group.members?.length || 0} members
@@ -212,16 +212,16 @@ export default function GroupsPage() {
         <FetchError message={groupsError} onRetry={refetchGroups} />
       ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : groups.length === 0 ? (
         <Card variant="bordered">
           <CardContent className="py-12 text-center">
-            <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <Users className="h-12 w-12 text-outline mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-on-surface mb-2">
               No groups yet
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-on-surface-variant mb-4">
               Create a group to start searching for housing with others.
             </p>
             <Button onClick={() => setShowCreateModal(true)}>
@@ -234,25 +234,25 @@ export default function GroupsPage() {
         <div className="space-y-4">
           {groups.map((group) => (
             <Link key={group.id} href={`/groups/${group.id}`}>
-              <Card variant="bordered" className="hover:border-blue-200 transition-colors">
+              <Card variant="bordered" className="ghost-border hover:border-outline-variant/30 transition-colors">
                 <CardContent className="py-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-gray-900">{group.name}</h3>
+                        <h3 className="font-semibold text-on-surface">{group.name}</h3>
                         {group.user_role === 'admin' && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
+                          <Crown className="h-4 w-4 text-tertiary-container" />
                         )}
                         {getStatusBadge(group.status)}
                       </div>
 
                       {group.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        <p className="text-sm text-on-surface-variant mb-3 line-clamp-2">
                           {group.description}
                         </p>
                       )}
 
-                      <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+                      <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
                         <span className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
                           {group.member_count} {group.member_count === 1 ? 'member' : 'members'}
@@ -291,7 +291,7 @@ export default function GroupsPage() {
                         {group.members.slice(0, 5).map((member, idx) => (
                           <div
                             key={member.id}
-                            className="w-8 h-8 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center -ml-2 first:ml-0"
+                            className="w-8 h-8 rounded-full bg-primary-fixed border-2 border-surface-container-lowest flex items-center justify-center -ml-2 first:ml-0"
                             style={{ zIndex: 5 - idx }}
                           >
                             {member.user.profile_photo ? (
@@ -301,15 +301,15 @@ export default function GroupsPage() {
                                 className="w-full h-full rounded-full object-cover"
                               />
                             ) : (
-                              <span className="text-xs font-medium text-blue-600">
+                              <span className="text-xs font-medium text-primary">
                                 {member.user.name.charAt(0).toUpperCase()}
                               </span>
                             )}
                           </div>
                         ))}
                         {group.member_count > 5 && (
-                          <div className="w-8 h-8 rounded-full bg-gray-200 border-2 border-white flex items-center justify-center -ml-2">
-                            <span className="text-xs font-medium text-gray-600">
+                          <div className="w-8 h-8 rounded-full bg-surface-container border-2 border-surface-container-lowest flex items-center justify-center -ml-2">
+                            <span className="text-xs font-medium text-on-surface-variant">
                               +{group.member_count - 5}
                             </span>
                           </div>
@@ -317,12 +317,12 @@ export default function GroupsPage() {
                       </div>
                     </div>
 
-                    <ChevronRight className="h-5 w-5 text-gray-400 flex-shrink-0" />
+                    <ChevronRight className="h-5 w-5 text-outline flex-shrink-0" />
                   </div>
 
                   {group.pending_invitations > 0 && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-sm text-blue-600">
+                    <div className="mt-3 pt-3 border-t border-outline-variant/15">
+                      <span className="text-sm text-primary">
                         <UserPlus className="h-4 w-4 inline mr-1" />
                         {group.pending_invitations} pending invitation{group.pending_invitations !== 1 && 's'}
                       </span>
@@ -347,9 +347,9 @@ export default function GroupsPage() {
       )}
 
       {/* Info */}
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-1">About Co-Renter Groups</h4>
-        <p className="text-sm text-blue-700">
+      <div className="mt-8 p-4 bg-primary-fixed rounded-lg">
+        <h4 className="font-medium text-on-surface mb-1">About Co-Renter Groups</h4>
+        <p className="text-sm text-on-surface-variant">
           Create or join a group to search for housing together. Combine budgets, share
           preferences, and find the perfect place as a team. Groups can include friends,
           colleagues, or people you've matched with on NestMatch.
@@ -454,7 +454,7 @@ function CreateGroupModal({
       <ModalContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Group Name *
             </label>
             <input
@@ -462,13 +462,13 @@ function CreateGroupModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Toronto Apartment Hunt 2026"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
               maxLength={255}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Description
             </label>
             <textarea
@@ -476,14 +476,14 @@ function CreateGroupModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="What are you looking for? What's your ideal situation?"
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary resize-none"
               maxLength={2000}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Budget Min (CAD)
               </label>
               <input
@@ -494,11 +494,11 @@ function CreateGroupModal({
                 min="1"
                 max="99999"
                 step="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Budget Max (CAD)
               </label>
               <input
@@ -509,13 +509,13 @@ function CreateGroupModal({
                 min="1"
                 max="99999"
                 step="1"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Your Budget Contribution (CAD)
             </label>
             <input
@@ -526,25 +526,25 @@ function CreateGroupModal({
               min="1"
               max="99999"
               step="1"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
             />
-            <p className="text-xs text-gray-500 mt-1">How much can you contribute monthly to the group's combined budget?</p>
+            <p className="text-xs text-on-surface-variant mt-1">How much can you contribute monthly to the group's combined budget?</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Target Move Date
             </label>
             <input
               type="date"
               value={moveDate}
               onChange={(e) => setMoveDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Preferred Cities
             </label>
             <input
@@ -552,30 +552,30 @@ function CreateGroupModal({
               value={cities}
               onChange={(e) => setCities(e.target.value)}
               placeholder="Toronto, Vancouver, Montreal"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
             />
-            <p className="text-xs text-gray-500 mt-1">Separate cities with commas</p>
+            <p className="text-xs text-on-surface-variant mt-1">Separate cities with commas</p>
           </div>
 
-          <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+          <label className="flex items-start gap-3 p-3 ghost-border rounded-lg cursor-pointer hover:bg-surface-container-low">
             <input
               type="checkbox"
               checked={isPublic}
               onChange={(e) => setIsPublic(e.target.checked)}
-              className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              className="mt-1 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">
+              <p className="text-sm font-medium text-on-surface">
                 Make this group discoverable
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-on-surface-variant">
                 Public groups appear in Discover so compatible users can request to join.
               </p>
             </div>
           </label>
 
           {error && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+            <div className="p-3 bg-error-container text-error rounded-lg text-sm">
               {error}
             </div>
           )}

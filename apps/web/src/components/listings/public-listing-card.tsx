@@ -54,7 +54,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
   return (
     <Card variant="bordered" className="overflow-hidden feature-card group">
       <Link href={`/signup?redirect=/listings/${listing.id}`}>
-        <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
+        <div className="relative aspect-[4/3] bg-surface-container-low overflow-hidden">
           {listing.photos && listing.photos.length > 0 ? (
             <img
               src={listing.photos[0]}
@@ -63,7 +63,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Home className="h-12 w-12 text-gray-300" />
+              <Home className="h-12 w-12 text-outline" />
             </div>
           )}
 
@@ -85,7 +85,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
               </Badge>
             )}
             {listing.ideal_for_students && (
-              <Badge variant="default" className="flex items-center gap-1 bg-purple-100 text-purple-800">
+              <Badge variant="default" className="flex items-center gap-1 bg-primary-container/20 text-primary-container">
                 <GraduationCap className="h-3 w-3" />
                 Ideal for Students
               </Badge>
@@ -94,7 +94,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
 
           {/* Compatibility badge - locked for public */}
           <div className="absolute top-3 right-3">
-            <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-gray-600">
+            <div className="flex items-center gap-1 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-on-surface-variant">
               <Lock className="h-3 w-3" />
               <span className="blur-[3px]">85%</span>
             </div>
@@ -110,7 +110,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
             className="absolute bottom-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white transition-all duration-300 shadow-sm group/save"
             title="Sign up to save"
           >
-            <Heart className="h-5 w-5 text-gray-400 group-hover/save:text-red-400 transition-colors" />
+            <Heart className="h-5 w-5 text-outline group-hover/save:text-error transition-colors" />
           </button>
         </div>
       </Link>
@@ -118,17 +118,17 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-2">
           <Link href={`/signup?redirect=/listings/${listing.id}`}>
-            <h3 className="font-semibold text-gray-900 hover:text-blue-600 transition-colors line-clamp-1">
+            <h3 className="font-semibold text-on-surface hover:text-primary transition-colors line-clamp-1">
               {listing.title}
             </h3>
           </Link>
-          <p className="font-bold text-blue-600 whitespace-nowrap">
+          <p className="font-bold text-primary whitespace-nowrap">
             {formatPrice(listing.price)}
-            <span className="text-sm font-normal text-gray-500">/mo</span>
+            <span className="text-sm font-normal text-on-surface-variant">/mo</span>
           </p>
         </div>
 
-        <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
+        <div className="flex items-center gap-1 text-sm text-on-surface-variant mb-3">
           <MapPin className="h-4 w-4" />
           <span>
             {listing.city}, {listing.province}
@@ -136,22 +136,22 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
-          <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-xs bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full">
             <Home className="h-3 w-3" />
             {typeLabels[listing.type]}
           </span>
           {listing.bathroom_type && (
-            <span className="inline-flex items-center gap-1 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+            <span className="inline-flex items-center gap-1 text-xs bg-primary-fixed text-primary px-2 py-1 rounded-full">
               <Bath className="h-3 w-3" />
               {BATHROOM_TYPES.find(b => b.value === listing.bathroom_type)?.label.split(' ')[0] || listing.bathroom_type}
             </span>
           )}
-          <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+          <span className="inline-flex items-center gap-1 text-xs bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full">
             <Calendar className="h-3 w-3" />
             {formatDate(listing.available_date)}
           </span>
           {listing.utilities_included && (
-            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+            <span className="text-xs bg-secondary-container text-secondary px-2 py-1 rounded-full">
               Utilities included
             </span>
           )}
@@ -159,9 +159,9 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
 
         {/* Host info */}
         {listing.profiles && (
-          <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+          <div className="flex items-center justify-between pt-3 border-t border-outline-variant/15">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center overflow-hidden">
                 {listing.profiles.profile_photo ? (
                   <img
                     src={listing.profiles.profile_photo}
@@ -169,11 +169,11 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
                     className="w-8 h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <Users className="h-4 w-4 text-blue-600" />
+                  <Users className="h-4 w-4 text-primary" />
                 )}
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-sm font-medium text-on-surface">
                   {listing.profiles.name || 'Anonymous'}
                 </p>
                 <VerificationBadge
@@ -185,7 +185,7 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
             </div>
             <Link
               href={`/signup?redirect=/listings/${listing.id}`}
-              className="text-xs text-blue-600 hover:underline font-medium"
+              className="text-xs text-primary hover:underline font-medium"
             >
               View details
             </Link>

@@ -44,11 +44,11 @@ export function LoadingSpinner({
       aria-busy="true"
     >
       <Loader2
-        className={cn('animate-spin text-blue-600', sizeClasses[size])}
+        className={cn('animate-spin text-primary', sizeClasses[size])}
         aria-hidden="true"
       />
       {text ? (
-        <p className="mt-4 text-gray-500 text-sm">{text}</p>
+        <p className="mt-4 text-on-surface-variant text-sm">{text}</p>
       ) : (
         <span className="sr-only">{label}</span>
       )}

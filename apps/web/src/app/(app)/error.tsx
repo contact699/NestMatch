@@ -23,13 +23,13 @@ export default function Error({
     <div className="min-h-[400px] flex items-center justify-center p-4">
       <Card variant="bordered" className="max-w-md w-full">
         <CardContent className="pt-6 text-center">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <AlertTriangle className="h-6 w-6 text-red-600" />
+          <div className="w-12 h-12 bg-error-container rounded-full flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle className="h-6 w-6 text-error" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">
+          <h2 className="text-lg font-semibold text-on-surface mb-2">
             Something went wrong
           </h2>
-          <p className="text-gray-500 mb-6">
+          <p className="text-on-surface-variant mb-6">
             We encountered an unexpected error. Please try again or return to the dashboard.
           </p>
           <div className="flex gap-3 justify-center">
@@ -45,7 +45,7 @@ export default function Error({
             </Link>
           </div>
           {error.digest && (
-            <p className="mt-4 text-xs text-gray-400">
+            <p className="mt-4 text-xs text-outline">
               Error ID: {error.digest}
             </p>
           )}

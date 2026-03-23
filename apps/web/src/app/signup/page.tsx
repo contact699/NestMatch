@@ -8,9 +8,9 @@ export const metadata = {
 
 export default function SignupPage() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-surface-container-low px-4">
       <Link href="/" className="mb-8">
-        <h1 className="text-3xl font-bold text-blue-600">NestMatch</h1>
+        <h1 className="text-3xl font-bold font-display text-primary">NestMatch</h1>
       </Link>
       <SignupForm />
     </div>

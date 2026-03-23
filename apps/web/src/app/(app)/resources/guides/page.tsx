@@ -95,11 +95,11 @@ export default function GuidesPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <BookOpen className="h-7 w-7 text-blue-600" />
+        <h1 className="text-2xl font-bold font-display text-on-surface flex items-center gap-2">
+          <BookOpen className="h-7 w-7 text-primary" />
           Guides & Resources
         </h1>
-        <p className="mt-1 text-gray-600">
+        <p className="mt-1 text-on-surface-variant">
           Province-specific guides on tenant rights, roommate relationships, and more
         </p>
       </div>
@@ -125,7 +125,7 @@ export default function GuidesPage() {
             <Filter className="h-4 w-4 mr-2" />
             Filters
             {hasFilters && (
-              <span className="ml-2 w-5 h-5 rounded-full bg-blue-600 text-white text-xs flex items-center justify-center">
+              <span className="ml-2 w-5 h-5 rounded-full bg-primary text-on-primary text-xs flex items-center justify-center">
                 {[selectedCategory, selectedProvince].filter(Boolean).length}
               </span>
             )}
@@ -133,7 +133,7 @@ export default function GuidesPage() {
           {hasFilters && (
             <button
               onClick={clearFilters}
-              className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+              className="text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1"
             >
               <X className="h-4 w-4" />
               Clear filters
@@ -166,13 +166,13 @@ export default function GuidesPage() {
       <div className="mt-6">
         {isLoading ? (
           <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : resources.length === 0 ? (
           <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-1">No guides found</h3>
-            <p className="text-gray-500 mb-4">
+            <BookOpen className="h-12 w-12 mx-auto text-outline mb-4" />
+            <h3 className="text-lg font-medium text-on-surface mb-1">No guides found</h3>
+            <p className="text-on-surface-variant mb-4">
               {hasFilters
                 ? 'Try adjusting your filters or search terms'
                 : 'Check back soon for new content'}
@@ -185,7 +185,7 @@ export default function GuidesPage() {
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-on-surface-variant mb-4">
               {resources.length} guide{resources.length !== 1 ? 's' : ''} found
             </p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

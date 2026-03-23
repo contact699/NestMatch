@@ -138,7 +138,7 @@ export function Modal({
       <div
         ref={modalRef}
         className={cn(
-          'relative bg-white rounded-xl w-full max-h-[90vh] overflow-y-auto shadow-xl',
+          'relative bg-surface-container-lowest rounded-xl w-full max-h-[90vh] overflow-y-auto shadow-xl',
           sizeClasses[size],
           className
         )}
@@ -169,7 +169,7 @@ export function ModalHeader({ children, onClose, className }: ModalHeaderProps) 
   return (
     <div
       className={cn(
-        'flex items-center justify-between p-4 border-b border-gray-200',
+        'flex items-center justify-between p-4 border-b border-outline-variant/15',
         className
       )}
     >
@@ -177,10 +177,10 @@ export function ModalHeader({ children, onClose, className }: ModalHeaderProps) 
       {onClose && (
         <button
           onClick={onClose}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors -mr-2"
+          className="p-2 hover:bg-surface-container-low rounded-lg transition-colors -mr-2"
           aria-label="Close"
         >
-          <X className="h-5 w-5 text-gray-500" />
+          <X className="h-5 w-5 text-on-surface-variant" />
         </button>
       )}
     </div>
@@ -199,7 +199,7 @@ interface ModalTitleProps {
  */
 export function ModalTitle({ children, className, id = 'modal-title' }: ModalTitleProps) {
   return (
-    <h2 id={id} className={cn('text-lg font-semibold text-gray-900', className)}>
+    <h2 id={id} className={cn('text-lg font-semibold text-on-surface', className)}>
       {children}
     </h2>
   )
@@ -229,7 +229,7 @@ export function ModalFooter({ children, className }: ModalFooterProps) {
   return (
     <div
       className={cn(
-        'flex gap-3 justify-end p-4 border-t border-gray-200',
+        'flex gap-3 justify-end p-4 border-t border-outline-variant/15',
         className
       )}
     >
@@ -282,8 +282,8 @@ export function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
       <div className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-gray-600 mb-6">{message}</p>
+        <h3 className="text-lg font-semibold text-on-surface mb-2">{title}</h3>
+        <p className="text-on-surface-variant mb-6">{message}</p>
         <div className="flex gap-3 justify-end">
           <Button variant="outline" onClick={onClose} disabled={isLoading}>
             {cancelText}

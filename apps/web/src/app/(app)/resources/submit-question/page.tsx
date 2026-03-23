@@ -81,13 +81,13 @@ export default function SubmitQuestionPage() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Card variant="bordered">
           <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+            <div className="w-16 h-16 rounded-full bg-secondary-container flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-8 w-8 text-secondary" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <h2 className="text-xl font-semibold text-on-surface mb-2">
               Question Submitted!
             </h2>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
+            <p className="text-on-surface-variant mb-6 max-w-md mx-auto">
               Thank you for your question. We'll review it and either add it to our FAQ
               or reach out if we need more information.
             </p>
@@ -114,7 +114,7 @@ export default function SubmitQuestionPage() {
       <div className="mb-6">
         <Link
           href="/resources"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-on-surface-variant hover:text-on-surface"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Resources
@@ -124,8 +124,8 @@ export default function SubmitQuestionPage() {
       <Card variant="bordered">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-              <HelpCircle className="h-5 w-5 text-blue-600" />
+            <div className="w-10 h-10 rounded-lg bg-primary-fixed flex items-center justify-center">
+              <HelpCircle className="h-5 w-5 text-primary" />
             </div>
             <div>
               <CardTitle>Submit a Question</CardTitle>
@@ -139,14 +139,14 @@ export default function SubmitQuestionPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              <div className="p-4 bg-error-container border border-error/30 rounded-lg text-sm text-error">
                 {error}
               </div>
             )}
 
             {/* Question */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Your Question *
               </label>
               <textarea
@@ -154,18 +154,18 @@ export default function SubmitQuestionPage() {
                 onChange={(e) => setFormData({ ...formData, question: e.target.value })}
                 placeholder="What would you like to know about renting or roommates?"
                 rows={4}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors resize-none"
+                className="w-full px-4 py-3 border border-outline-variant/15 rounded-lg focus:border-primary focus:ring-2 focus:ring-surface-tint/20 outline-none transition-colors resize-none"
                 required
                 maxLength={500}
               />
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-on-surface-variant">
                 {formData.question.length}/500 characters
               </p>
             </div>
 
             {/* Context */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Additional Context (optional)
               </label>
               <textarea
@@ -173,20 +173,20 @@ export default function SubmitQuestionPage() {
                 onChange={(e) => setFormData({ ...formData, context: e.target.value })}
                 placeholder="Any additional details that might help us understand your situation..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors resize-none"
+                className="w-full px-4 py-3 border border-outline-variant/15 rounded-lg focus:border-primary focus:ring-2 focus:ring-surface-tint/20 outline-none transition-colors resize-none"
                 maxLength={1000}
               />
             </div>
 
             {/* Province */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Province (optional)
               </label>
               <select
                 value={formData.province}
                 onChange={(e) => setFormData({ ...formData, province: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors bg-white"
+                className="w-full px-4 py-3 border border-outline-variant/15 rounded-lg focus:border-primary focus:ring-2 focus:ring-surface-tint/20 outline-none transition-colors bg-surface-container-lowest"
               >
                 <option value="">Select if province-specific</option>
                 {PROVINCES.map((province) => (
@@ -195,20 +195,20 @@ export default function SubmitQuestionPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-on-surface-variant">
                 If your question is specific to a province's laws
               </p>
             </div>
 
             {/* Category */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Category (optional)
               </label>
               <select
                 value={formData.categoryId}
                 onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors bg-white"
+                className="w-full px-4 py-3 border border-outline-variant/15 rounded-lg focus:border-primary focus:ring-2 focus:ring-surface-tint/20 outline-none transition-colors bg-surface-container-lowest"
               >
                 <option value="">Select a category</option>
                 {categories.map((category) => (
@@ -236,7 +236,7 @@ export default function SubmitQuestionPage() {
               </Button>
             </div>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-on-surface-variant">
               We review all submitted questions. If yours is commonly asked, we'll add it to our FAQ.
               Please don't submit personal or sensitive information.
             </p>

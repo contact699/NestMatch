@@ -62,12 +62,12 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
   }
 
   return (
-    <div className={cn('bg-white rounded-xl border border-gray-200 overflow-hidden', className)}>
+    <div className={cn('bg-surface-container-lowest rounded-xl ghost-border overflow-hidden', className)}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-gray-100">
+      <div className="px-6 py-4 border-b border-outline-variant/15">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h3 className="text-lg font-semibold text-gray-900">Trust Level</h3>
+            <h3 className="text-lg font-semibold text-on-surface">Trust Level</h3>
             <VerificationBadge level={level} variant="prominent" showTooltip />
           </div>
           {isOwner && level !== 'trusted' && (
@@ -82,7 +82,7 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
       </div>
 
       {/* Progress */}
-      <div className="px-6 py-4 bg-gray-50">
+      <div className="px-6 py-4 bg-surface-container-low">
         <div className="flex items-center justify-between">
           {levels.map((l, index) => {
             const isCompleted = index <= currentIndex
@@ -97,15 +97,15 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
                       'w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300',
                       isCompleted
                         ? l.color === 'gray'
-                          ? 'bg-gray-200 text-gray-600'
+                          ? 'bg-surface-container text-on-surface-variant'
                           : l.color === 'blue'
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-green-100 text-green-600'
-                        : 'bg-gray-100 text-gray-400',
+                          ? 'bg-primary-fixed text-primary'
+                          : 'bg-secondary-container text-secondary'
+                        : 'bg-surface-container-low text-outline',
                       isCurrent && 'ring-2 ring-offset-2',
-                      isCurrent && l.color === 'gray' && 'ring-gray-300',
-                      isCurrent && l.color === 'blue' && 'ring-blue-300',
-                      isCurrent && l.color === 'green' && 'ring-green-300'
+                      isCurrent && l.color === 'gray' && 'ring-outline',
+                      isCurrent && l.color === 'blue' && 'ring-primary/30',
+                      isCurrent && l.color === 'green' && 'ring-secondary/30'
                     )}
                   >
                     <Icon className="h-5 w-5" />
@@ -113,18 +113,18 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
                   <span
                     className={cn(
                       'mt-2 text-sm font-medium',
-                      isCompleted ? 'text-gray-900' : 'text-gray-400'
+                      isCompleted ? 'text-on-surface' : 'text-outline'
                     )}
                   >
                     {l.label}
                   </span>
-                  <span className="text-xs text-gray-500">{l.description}</span>
+                  <span className="text-xs text-on-surface-variant">{l.description}</span>
                 </div>
                 {index < levels.length - 1 && (
                   <div
                     className={cn(
                       'flex-1 h-0.5 mx-2',
-                      index < currentIndex ? 'bg-blue-300' : 'bg-gray-200'
+                      index < currentIndex ? 'bg-primary/30' : 'bg-surface-container'
                     )}
                   />
                 )}
@@ -136,30 +136,30 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
 
       {/* Benefits */}
       <div className="px-6 py-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-3">
+        <h4 className="text-sm font-medium text-on-surface-variant mb-3">
           {level === 'trusted' ? 'Your Benefits' : 'Current Benefits'}
         </h4>
         <ul className="space-y-2">
           {benefits[level].map((benefit, index) => (
-            <li key={index} className="flex items-center gap-2 text-sm text-gray-600">
-              <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+            <li key={index} className="flex items-center gap-2 text-sm text-on-surface-variant">
+              <CheckCircle2 className="h-4 w-4 text-secondary flex-shrink-0" />
               {benefit}
             </li>
           ))}
         </ul>
 
         {isOwner && level !== 'trusted' && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <h4 className="text-sm font-medium text-blue-900 mb-2">
+          <div className="mt-4 p-4 bg-primary-fixed rounded-lg">
+            <h4 className="text-sm font-medium text-on-surface mb-2">
               Unlock more benefits
             </h4>
-            <p className="text-sm text-blue-700 mb-3">
+            <p className="text-sm text-on-surface-variant mb-3">
               {level === 'basic'
                 ? 'Verify your identity to get priority in roommate matching.'
                 : 'Complete a background check to become a Trusted member.'}
             </p>
             <Link href="/verify">
-              <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100">
+              <Button variant="outline" size="sm" className="border-primary/30 text-primary hover:bg-primary-fixed">
                 {level === 'basic' ? 'Verify Identity' : 'Get Trusted'}
               </Button>
             </Link>

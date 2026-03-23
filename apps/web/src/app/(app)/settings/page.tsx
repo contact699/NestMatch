@@ -114,7 +114,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -124,7 +124,7 @@ export default function SettingsPage() {
       <div className="mb-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-on-surface-variant hover:text-on-surface"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to dashboard
@@ -132,8 +132,8 @@ export default function SettingsPage() {
       </div>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account preferences</p>
+        <h1 className="text-2xl font-bold font-display text-on-surface">Settings</h1>
+        <p className="text-on-surface-variant">Manage your account preferences</p>
       </div>
 
       <div className="space-y-6">
@@ -144,41 +144,41 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="py-0">
             <Link href="/profile/edit">
-              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Edit Profile</p>
-                    <p className="text-sm text-gray-500">Update your personal information</p>
+                    <p className="font-medium text-on-surface">Edit Profile</p>
+                    <p className="text-sm text-on-surface-variant">Update your personal information</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
 
             <Link href="/verify">
-              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-gray-400" />
+                  <Shield className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Verification</p>
-                    <p className="text-sm text-gray-500">Verify your identity and build trust</p>
+                    <p className="font-medium text-on-surface">Verification</p>
+                    <p className="text-sm text-on-surface-variant">Verify your identity and build trust</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
 
             <Link href="/quiz">
-              <div className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-gray-400" />
+                  <Users className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Lifestyle Quiz</p>
-                    <p className="text-sm text-gray-500">Update your compatibility preferences</p>
+                    <p className="font-medium text-on-surface">Lifestyle Quiz</p>
+                    <p className="text-sm text-on-surface-variant">Update your compatibility preferences</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
           </CardContent>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             {blockedUsers.length === 0 ? (
-              <p className="text-sm text-gray-500">You haven't blocked anyone</p>
+              <p className="text-sm text-on-surface-variant">You haven't blocked anyone</p>
             ) : (
               <div className="space-y-3">
                 {blockedUsers.map((blocked) => (
@@ -203,7 +203,7 @@ export default function SettingsPage() {
                     className="flex items-center justify-between py-2"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                      <div className="w-10 h-10 bg-surface-container-low rounded-full flex items-center justify-center overflow-hidden">
                         {blocked.profile?.profile_photo ? (
                           <img
                             src={blocked.profile.profile_photo}
@@ -211,10 +211,10 @@ export default function SettingsPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <User className="h-5 w-5 text-gray-400" />
+                          <User className="h-5 w-5 text-outline" />
                         )}
                       </div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-on-surface">
                         {blocked.profile?.name || 'Unknown User'}
                       </span>
                     </div>
@@ -246,24 +246,24 @@ export default function SettingsPage() {
             <div className="space-y-4">
               <label className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">Email notifications</p>
-                  <p className="text-sm text-gray-500">Receive updates via email</p>
+                  <p className="font-medium text-on-surface">Email notifications</p>
+                  <p className="text-sm text-on-surface-variant">Receive updates via email</p>
                 </div>
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
                 />
               </label>
               <label className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">New message alerts</p>
-                  <p className="text-sm text-gray-500">Get notified of new messages</p>
+                  <p className="font-medium text-on-surface">New message alerts</p>
+                  <p className="text-sm text-on-surface-variant">Get notified of new messages</p>
                 </div>
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
                 />
               </label>
             </div>
@@ -271,15 +271,15 @@ export default function SettingsPage() {
         </Card>
 
         {/* Danger Zone */}
-        <Card variant="bordered" className="border-red-200">
+        <Card variant="bordered" className="border-error/30">
           <CardHeader className="py-4">
-            <CardTitle className="text-base text-red-600">Danger Zone</CardTitle>
+            <CardTitle className="text-base text-error">Danger Zone</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">Sign out</p>
-                <p className="text-sm text-gray-500">Sign out of your account</p>
+                <p className="font-medium text-on-surface">Sign out</p>
+                <p className="text-sm text-on-surface-variant">Sign out of your account</p>
               </div>
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -287,11 +287,11 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
+            <div className="pt-4 border-t border-outline-variant/15">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">Delete account</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-on-surface">Delete account</p>
+                  <p className="text-sm text-on-surface-variant">
                     Permanently delete your account and all data
                   </p>
                 </div>
@@ -311,12 +311,12 @@ export default function SettingsPage() {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md mx-4">
-            <div className="flex items-center gap-3 text-red-600 mb-4">
+          <div className="bg-surface-container-lowest rounded-xl p-6 max-w-md mx-4">
+            <div className="flex items-center gap-3 text-error mb-4">
               <AlertCircle className="h-6 w-6" />
               <h3 className="text-lg font-semibold">Delete Account?</h3>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-on-surface-variant mb-4">
               This will permanently delete your account, listings, messages, and all associated data. This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">

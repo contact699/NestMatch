@@ -63,13 +63,13 @@ export default function CalendarPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'accepted':
-        return <CheckCircle className="h-3 w-3 text-green-500" />
+        return <CheckCircle className="h-3 w-3 text-secondary" />
       case 'declined':
-        return <XCircle className="h-3 w-3 text-red-500" />
+        return <XCircle className="h-3 w-3 text-error" />
       case 'cancelled':
-        return <XCircle className="h-3 w-3 text-gray-400" />
+        return <XCircle className="h-3 w-3 text-outline" />
       default:
-        return <HelpCircle className="h-3 w-3 text-yellow-500" />
+        return <HelpCircle className="h-3 w-3 text-tertiary-container" />
     }
   }
 
@@ -84,8 +84,8 @@ export default function CalendarPage() {
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-          <p className="text-gray-600">Your scheduled meetups</p>
+          <h1 className="text-2xl font-bold font-display text-on-surface">Calendar</h1>
+          <p className="text-on-surface-variant">Your scheduled meetups</p>
         </div>
       </div>
 
@@ -93,13 +93,13 @@ export default function CalendarPage() {
         <FetchError message={error} onRetry={refetch} />
       ) : isLoading ? (
         <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
         <Card variant="bordered">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <button onClick={prevMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={prevMonth} className="p-2 hover:bg-surface-container-low rounded-lg">
                 <ChevronLeft className="h-5 w-5" />
               </button>
               <CardTitle>
@@ -108,7 +108,7 @@ export default function CalendarPage() {
                   year: 'numeric',
                 })}
               </CardTitle>
-              <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg">
+              <button onClick={nextMonth} className="p-2 hover:bg-surface-container-low rounded-lg">
                 <ChevronRight className="h-5 w-5" />
               </button>
             </div>
@@ -119,7 +119,7 @@ export default function CalendarPage() {
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                 <div
                   key={day}
-                  className="text-center text-xs font-medium text-gray-500 py-2"
+                  className="text-center text-xs font-medium text-on-surface-variant py-2"
                 >
                   {day}
                 </div>
@@ -127,10 +127,10 @@ export default function CalendarPage() {
             </div>
 
             {/* Calendar grid */}
-            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+            <div className="grid grid-cols-7 gap-px bg-surface-container rounded-lg overflow-hidden">
               {/* Empty cells before first day */}
               {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`empty-${i}`} className="bg-gray-50 min-h-[80px] p-1" />
+                <div key={`empty-${i}`} className="bg-surface-container-low min-h-[80px] p-1" />
               ))}
 
               {/* Day cells */}
@@ -142,10 +142,10 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={day}
-                    className={`bg-white min-h-[80px] p-1 ${isToday ? 'ring-2 ring-blue-500 ring-inset' : ''}`}
+                    className={`bg-surface-container-lowest min-h-[80px] p-1 ${isToday ? 'ring-2 ring-primary ring-inset' : ''}`}
                   >
                     <span
-                      className={`text-xs font-medium ${isToday ? 'text-blue-600' : 'text-gray-700'}`}
+                      className={`text-xs font-medium ${isToday ? 'text-primary' : 'text-on-surface-variant'}`}
                     >
                       {day}
                     </span>
@@ -153,7 +153,7 @@ export default function CalendarPage() {
                       {dayEvents.slice(0, 2).map((event) => (
                         <div
                           key={event.id}
-                          className="flex items-center gap-1 px-1 py-0.5 bg-blue-50 rounded text-xs truncate"
+                          className="flex items-center gap-1 px-1 py-0.5 bg-primary-fixed rounded text-xs truncate"
                           title={`${event.title} at ${event.start_time}`}
                         >
                           {getStatusIcon(event.status)}
@@ -161,7 +161,7 @@ export default function CalendarPage() {
                         </div>
                       ))}
                       {dayEvents.length > 2 && (
-                        <p className="text-xs text-gray-400 px-1">
+                        <p className="text-xs text-outline px-1">
                           +{dayEvents.length - 2} more
                         </p>
                       )}
@@ -174,19 +174,19 @@ export default function CalendarPage() {
             {/* Upcoming events list */}
             {events.length > 0 && (
               <div className="mt-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Upcoming events</h3>
+                <h3 className="font-semibold text-on-surface mb-3">Upcoming events</h3>
                 <div className="space-y-3">
                   {events.slice(0, 10).map((event) => (
                     <div
                       key={event.id}
-                      className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                      className="flex items-start gap-3 p-3 bg-surface-container-low rounded-lg"
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {getStatusIcon(event.status)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-sm">{event.title}</p>
-                        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-500">
+                        <p className="font-medium text-on-surface text-sm">{event.title}</p>
+                        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-on-surface-variant">
                           <span className="flex items-center gap-1">
                             <CalendarIcon className="h-3 w-3" />
                             {new Date(event.event_date + 'T00:00:00').toLocaleDateString(
@@ -214,12 +214,12 @@ export default function CalendarPage() {
                       <span
                         className={`text-xs px-2 py-0.5 rounded-full ${
                           event.status === 'accepted'
-                            ? 'bg-green-100 text-green-700'
+                            ? 'bg-secondary-container text-secondary'
                             : event.status === 'declined'
-                              ? 'bg-red-100 text-red-700'
+                              ? 'bg-error-container text-error'
                               : event.status === 'cancelled'
-                                ? 'bg-gray-100 text-gray-500'
-                                : 'bg-yellow-100 text-yellow-700'
+                                ? 'bg-surface-container-low text-on-surface-variant'
+                                : 'bg-tertiary-fixed text-tertiary-container'
                         }`}
                       >
                         {event.status}

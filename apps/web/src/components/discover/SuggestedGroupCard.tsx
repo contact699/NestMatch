@@ -76,13 +76,13 @@ export function SuggestedGroupCard({
     <Card variant="bordered" animate className="overflow-hidden">
       <CardContent className="p-0">
         {/* Header with AI badge */}
-        <div className="px-4 py-3 bg-gradient-to-r from-purple-50 to-blue-50 border-b border-gray-100">
+        <div className="px-4 py-3 bg-gradient-to-r from-primary-container/20 to-primary-fixed border-b border-outline-variant/15">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-purple-100 flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5 text-purple-600" />
+              <div className="w-6 h-6 rounded-full bg-primary-container/30 flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-primary-container" />
               </div>
-              <span className="text-sm font-medium text-purple-700">
+              <span className="text-sm font-medium text-primary-container">
                 AI Suggested Group
               </span>
             </div>
@@ -98,7 +98,7 @@ export function SuggestedGroupCard({
               {otherMembers.slice(0, 3).map((member, index) => (
                 <div
                   key={member.userId}
-                  className="relative w-12 h-12 rounded-full border-2 border-white shadow-sm overflow-hidden transition-transform hover:scale-105 hover:z-10"
+                  className="relative w-12 h-12 rounded-full border-2 border-surface-container-lowest shadow-sm overflow-hidden transition-transform hover:scale-105 hover:z-10"
                   style={{ zIndex: 3 - index }}
                 >
                   {member.profilePhoto ? (
@@ -108,26 +108,26 @@ export function SuggestedGroupCard({
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full bg-blue-100 flex items-center justify-center">
-                      <Users className="h-5 w-5 text-blue-600" />
+                    <div className="w-full h-full bg-primary-fixed flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
                     </div>
                   )}
                 </div>
               ))}
               {otherMembers.length > 3 && (
-                <div className="w-12 h-12 rounded-full border-2 border-white bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-600">
+                <div className="w-12 h-12 rounded-full border-2 border-surface-container-lowest bg-surface-container-low flex items-center justify-center text-sm font-medium text-on-surface-variant">
                   +{otherMembers.length - 3}
                 </div>
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-gray-900 truncate">
+              <h3 className="font-semibold text-on-surface truncate">
                 {otherMembers.length === 1
                   ? otherMembers[0].name || 'Potential Roommate'
                   : `${otherMembers.length} Potential Roommates`}
               </h3>
-              <p className="text-sm text-gray-500 truncate">
+              <p className="text-sm text-on-surface-variant truncate">
                 {matchCriteria.commonCities.slice(0, 2).join(', ')}
               </p>
             </div>
@@ -141,9 +141,9 @@ export function SuggestedGroupCard({
               <Link
                 key={member.userId}
                 href={`/profile/${member.userId}`}
-                className="inline-flex items-center gap-1.5 px-2 py-1 bg-gray-50 rounded-full hover:bg-gray-100 transition-colors"
+                className="inline-flex items-center gap-1.5 px-2 py-1 bg-surface-container-low rounded-full hover:bg-surface-container transition-colors"
               >
-                <span className="text-sm text-gray-700">{member.name || 'Anonymous'}</span>
+                <span className="text-sm text-on-surface-variant">{member.name || 'Anonymous'}</span>
                 <VerificationBadge
                   level={member.verificationLevel}
                   showLabel={false}
@@ -159,7 +159,7 @@ export function SuggestedGroupCard({
           {/* Expandable details */}
           <button
             onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 mt-4 text-sm text-blue-600 hover:text-blue-700 transition-colors"
+            className="flex items-center gap-1 mt-4 text-sm text-primary hover:text-primary transition-colors"
           >
             {expanded ? (
               <>
@@ -182,17 +182,17 @@ export function SuggestedGroupCard({
           >
             {/* Detailed scores */}
             <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{practicalScore}%</p>
-                <p className="text-xs text-gray-500">Practical Match</p>
+              <div className="text-center p-3 bg-surface-container-low rounded-lg">
+                <p className="text-2xl font-bold text-on-surface">{practicalScore}%</p>
+                <p className="text-xs text-on-surface-variant">Practical Match</p>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{compatibilityScore}%</p>
-                <p className="text-xs text-gray-500">Lifestyle Match</p>
+              <div className="text-center p-3 bg-surface-container-low rounded-lg">
+                <p className="text-2xl font-bold text-on-surface">{compatibilityScore}%</p>
+                <p className="text-xs text-on-surface-variant">Lifestyle Match</p>
               </div>
-              <div className="text-center p-3 bg-gray-50 rounded-lg">
-                <p className="text-2xl font-bold text-gray-900">{trustScore}%</p>
-                <p className="text-xs text-gray-500">Trust Score</p>
+              <div className="text-center p-3 bg-surface-container-low rounded-lg">
+                <p className="text-2xl font-bold text-on-surface">{trustScore}%</p>
+                <p className="text-xs text-on-surface-variant">Trust Score</p>
               </div>
             </div>
 

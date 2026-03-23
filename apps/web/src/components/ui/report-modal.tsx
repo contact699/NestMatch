@@ -97,26 +97,26 @@ export function ReportModal({
       <ModalContent>
         {success ? (
           <div className="text-center py-8">
-            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="w-12 h-12 bg-secondary-container rounded-full flex items-center justify-center mx-auto mb-4">
+              <CheckCircle className="h-6 w-6 text-secondary" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <h3 className="text-lg font-medium text-on-surface mb-2">
               Report Submitted
             </h3>
-            <p className="text-gray-500">
+            <p className="text-on-surface-variant">
               Thank you for helping keep NestMatch safe. Our team will review your report.
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {reportedName && (
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-on-surface-variant">
                 Reporting: <span className="font-medium">{reportedName}</span>
               </p>
             )}
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+              <div className="p-3 bg-error-container border border-error/30 rounded-lg flex items-center gap-2 text-error text-sm">
                 <AlertCircle className="h-4 w-4 flex-shrink-0" />
                 {error}
               </div>
@@ -124,7 +124,7 @@ export function ReportModal({
 
             {/* Report type */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Reason for report *
               </label>
               <div className="space-y-2">
@@ -135,8 +135,8 @@ export function ReportModal({
                       flex items-start p-3 border rounded-lg cursor-pointer transition-all
                       ${
                         type === reportType.value
-                          ? 'border-blue-600 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-primary bg-primary-fixed'
+                          : 'border-outline-variant/15 hover:border-outline-variant/30'
                       }
                     `}
                   >
@@ -149,10 +149,10 @@ export function ReportModal({
                       className="mt-0.5 mr-3"
                     />
                     <div>
-                      <p className="font-medium text-gray-900 text-sm">
+                      <p className="font-medium text-on-surface text-sm">
                         {reportType.label}
                       </p>
-                      <p className="text-xs text-gray-500">{reportType.desc}</p>
+                      <p className="text-xs text-on-surface-variant">{reportType.desc}</p>
                     </div>
                   </label>
                 ))}
@@ -161,7 +161,7 @@ export function ReportModal({
 
             {/* Description */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Additional details *
               </label>
               <textarea
@@ -169,9 +169,9 @@ export function ReportModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 placeholder="Please describe what happened..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none text-sm"
+                className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:outline-none focus:ring-2 focus:ring-surface-tint/20 resize-none text-sm"
               />
-              <p className="mt-1 text-xs text-gray-400">
+              <p className="mt-1 text-xs text-outline">
                 {description.length}/2000 characters
               </p>
             </div>
@@ -197,7 +197,7 @@ export function ReportModal({
               </Button>
             </div>
 
-            <p className="text-xs text-gray-400 text-center">
+            <p className="text-xs text-outline text-center">
               False reports may result in account restrictions.
             </p>
           </form>

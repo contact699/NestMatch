@@ -19,10 +19,10 @@ export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
 
   if (loadError) {
     return (
-      <div className="flex items-center justify-center h-[400px] bg-gray-100 rounded-lg">
+      <div className="flex items-center justify-center h-[400px] bg-surface-container-low rounded-lg">
         <div className="text-center p-6">
-          <p className="text-red-600 font-medium mb-2">Failed to load Google Maps</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-error font-medium mb-2">Failed to load Google Maps</p>
+          <p className="text-sm text-on-surface-variant">
             {!apiKey
               ? 'Google Maps API key is not configured.'
               : 'Please check your internet connection and try again.'}
@@ -34,10 +34,10 @@ export function GoogleMapsProvider({ children }: GoogleMapsProviderProps) {
 
   if (!isLoaded) {
     return (
-      <div className="flex items-center justify-center h-[400px] bg-gray-100 rounded-lg animate-pulse">
+      <div className="flex items-center justify-center h-[400px] bg-surface-container-low rounded-lg animate-pulse">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-2" />
-          <p className="text-sm text-gray-500">Loading map...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-on-surface-variant">Loading map...</p>
         </div>
       </div>
     )

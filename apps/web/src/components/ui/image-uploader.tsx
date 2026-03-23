@@ -150,7 +150,7 @@ export function ImageUploader({
     <div className="space-y-4">
       {/* Error message */}
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 text-sm">
+        <div className="p-3 bg-error-container border border-error/30 rounded-lg flex items-center gap-2 text-error text-sm">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {error}
         </div>
@@ -162,7 +162,7 @@ export function ImageUploader({
           {images.map((url, index) => (
             <div
               key={url}
-              className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden group"
+              className="relative aspect-square bg-surface-container-low rounded-lg overflow-hidden group"
             >
               <img
                 src={url}
@@ -199,7 +199,7 @@ export function ImageUploader({
                 <button
                   type="button"
                   onClick={() => removeImage(index)}
-                  className="p-1.5 bg-red-500 text-white rounded-full hover:bg-red-600"
+                  className="p-1.5 bg-error text-on-primary rounded-full hover:bg-error/90"
                   title="Remove"
                 >
                   <X className="h-4 w-4" />
@@ -208,7 +208,7 @@ export function ImageUploader({
 
               {/* First image badge */}
               {index === 0 && (
-                <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                <div className="absolute top-2 left-2 bg-primary text-on-primary text-xs px-2 py-0.5 rounded-full">
                   Cover
                 </div>
               )}
@@ -226,7 +226,7 @@ export function ImageUploader({
           onDrop={handleDrop}
           className={`
             border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer
-            ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'}
+            ${dragActive ? 'border-primary bg-primary-fixed' : 'border-outline-variant/30 hover:border-outline-variant/50'}
             ${isUploading ? 'pointer-events-none opacity-50' : ''}
           `}
           onClick={() => inputRef.current?.click()}
@@ -242,21 +242,21 @@ export function ImageUploader({
 
           {isUploading ? (
             <>
-              <Loader2 className="h-10 w-10 text-blue-500 mx-auto mb-3 animate-spin" />
-              <p className="text-gray-600">Uploading...</p>
+              <Loader2 className="h-10 w-10 text-secondary mx-auto mb-3 animate-spin" />
+              <p className="text-on-surface-variant">Uploading...</p>
             </>
           ) : (
             <>
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <Camera className="h-6 w-6 text-gray-400" />
+              <div className="w-12 h-12 bg-surface-container-low rounded-full flex items-center justify-center mx-auto mb-3">
+                <Camera className="h-6 w-6 text-outline" />
               </div>
-              <p className="text-gray-600 mb-1">
+              <p className="text-on-surface-variant mb-1">
                 Drag and drop images here, or click to browse
               </p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-outline">
                 JPEG, PNG, WebP, GIF up to 10MB each
               </p>
-              <p className="text-sm text-gray-400 mt-1">
+              <p className="text-sm text-outline mt-1">
                 {images.length} / {maxImages} images
               </p>
             </>
@@ -265,7 +265,7 @@ export function ImageUploader({
       )}
 
       {/* Tips */}
-      <p className="text-xs text-gray-500">
+      <p className="text-xs text-on-surface-variant">
         Tip: The first image will be used as the cover photo. Drag to reorder.
       </p>
     </div>
