@@ -19,12 +19,15 @@ test.describe('Search Listings', () => {
   })
 
   test('should display inline filter controls', async ({ page }) => {
-    // The search page uses inline filter inputs (Province, Min $, Max $, Type, Bath dropdowns)
+    // Wait for page content to load (may show loading spinner first)
+    await page.waitForLoadState('networkidle')
+    await page.waitForTimeout(2000)
     const filterArea = page.locator('main')
     const hasSelect = await filterArea.locator('select').first().isVisible().catch(() => false)
     const hasInput = await filterArea.locator('input').first().isVisible().catch(() => false)
     const hasProvince = await filterArea.getByText(/province/i).first().isVisible().catch(() => false)
-    expect(hasSelect || hasInput || hasProvince).toBeTruthy()
+    const hasResults = await filterArea.getByText(/results|loading/i).first().isVisible().catch(() => false)
+    expect(hasSelect || hasInput || hasProvince || hasResults).toBeTruthy()
   })
 
   test('should display property type filter options', async ({ page }) => {

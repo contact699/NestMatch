@@ -23,7 +23,8 @@ test.describe('Reviews & Ratings', () => {
   })
 
   test('should display community trust messaging', async ({ page }) => {
-    await expect(page.getByText(/trust|community|feedback|review|rating/i).first()).toBeVisible()
+    // The subtitle says "Build trust within the community..."
+    await expect(page.getByText(/build trust|cohabitation|high-quality experience/i).first()).toBeVisible()
   })
 
   test('should display user review summary or empty state', async ({ page }) => {

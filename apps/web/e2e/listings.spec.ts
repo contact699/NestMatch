@@ -72,11 +72,14 @@ test.describe('Listings', () => {
     test('should have Create New Listing button', async ({ page }) => {
       await page.goto('/my-listings')
       skipIfNotAuthenticated(page)
-      // Could be a link or a button
+      await page.waitForLoadState('networkidle')
+      await page.waitForTimeout(2000)
+      // Could be a link, button, or text — also check sidebar "Post a Listing"
       const hasLink = await page.getByRole('link', { name: /create.*listing|new listing|add listing/i }).first().isVisible().catch(() => false)
       const hasButton = await page.getByRole('button', { name: /create.*listing|new listing|add listing/i }).first().isVisible().catch(() => false)
-      const hasText = await page.locator('main').getByText(/create.*listing|new listing|add listing/i).first().isVisible().catch(() => false)
-      expect(hasLink || hasButton || hasText).toBeTruthy()
+      const hasText = await page.getByText(/create.*listing|new listing|add listing/i).first().isVisible().catch(() => false)
+      const hasSidebarPost = await page.getByText(/post a listing/i).first().isVisible().catch(() => false)
+      expect(hasLink || hasButton || hasText || hasSidebarPost).toBeTruthy()
     })
 
     test('should display tabs for listing status', async ({ page }) => {

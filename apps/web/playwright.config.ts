@@ -51,10 +51,14 @@ export default defineConfig({
     ] : []),
   ],
 
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  // Start dev server automatically. Set BASE_URL env to skip and test against a running server.
+  ...(!process.env.BASE_URL ? {
+    webServer: {
+      command: 'npx next dev',
+      url: 'http://localhost:3000',
+      cwd: __dirname,
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  } : {}),
 })

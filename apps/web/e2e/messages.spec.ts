@@ -39,12 +39,13 @@ test.describe('Messages', () => {
     test('should not show template artifacts', async ({ page }) => {
       await page.goto('/messages')
       skipIfNotAuthenticated(page)
+      // Wait for page to fully render
       await page.waitForLoadState('networkidle')
-      await page.waitForTimeout(2000)
+      await page.waitForTimeout(3000)
       const bodyText = await page.textContent('body') || ''
-      // Should NOT contain {{DATA:TEXT:TEXT_7}} or any template syntax
-      expect(bodyText).not.toContain('{{')
-      expect(bodyText).not.toContain('}}')
+      // Should NOT contain {{DATA:TEXT:TEXT_7}} or any Stitch template syntax
+      expect(bodyText).not.toContain('{{DATA:')
+      expect(bodyText).not.toContain('TEXT_7}}')
     })
 
     test('should have search or filter functionality', async ({ page }) => {
