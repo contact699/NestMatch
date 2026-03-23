@@ -23,6 +23,9 @@ import {
   CheckCheck,
   Paperclip,
   Smile,
+  Video,
+  Phone,
+  FileText,
   Calendar as CalendarIcon,
 } from 'lucide-react'
 import { ReportModal } from '@/components/ui/report-modal'
@@ -535,7 +538,7 @@ export default function ChatPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
     )
   }
@@ -549,117 +552,131 @@ export default function ChatPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] h-[calc(100dvh-64px)]">
       {/* Header */}
-      <div className="flex-shrink-0 bg-white border-b border-gray-200 px-4 py-3">
+      <div className="flex-shrink-0 bg-surface-container-lowest ghost-border-t px-4 py-3" style={{ borderTop: 'none', boxShadow: '0 1px 0 var(--ghost-border-color, rgba(0,0,0,0.06))' }}>
         <div className="max-w-3xl mx-auto flex items-center gap-4">
           <Link
             href="/messages"
-            className="p-2 -ml-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 -ml-2 hover:bg-surface-container rounded-lg transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 text-gray-600" />
+            <ArrowLeft className="h-5 w-5 text-on-surface-variant" />
           </Link>
 
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden flex-shrink-0">
-              {conversation.other_profile?.profile_photo ? (
-                <img
-                  src={conversation.other_profile.profile_photo}
-                  alt={conversation.other_profile.name || 'User'}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <Users className="h-5 w-5 text-blue-600" />
+            <div className="relative w-10 h-10 flex-shrink-0">
+              <div className="w-10 h-10 bg-surface-container rounded-full flex items-center justify-center overflow-hidden">
+                {conversation.other_profile?.profile_photo ? (
+                  <img
+                    src={conversation.other_profile.profile_photo}
+                    alt={conversation.other_profile.name || 'User'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <Users className="h-5 w-5 text-on-surface-variant" />
+                )}
+              </div>
+              {otherUserOnline && (
+                <div className="absolute bottom-0 right-0 w-3 h-3 bg-secondary rounded-full ring-2 ring-surface-container-lowest" />
               )}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h1 className="font-semibold text-gray-900 truncate">
+                <h1 className="font-semibold text-on-surface truncate">
                   {conversation.other_profile?.name || 'Anonymous'}
                 </h1>
-                {otherUserOnline && (
-                  <div className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0" />
-                )}
-                <VerificationBadge
-                  level={conversation.other_profile?.verification_level || 'basic'}
-                  size="sm"
-                  showLabel={false}
-                />
+                {conversation.other_profile?.verification_level === 'verified' || conversation.other_profile?.verification_level === 'trusted' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-container text-secondary">
+                    VERIFIED
+                  </span>
+                ) : null}
               </div>
-              {conversation.listings && (
-                <p className="text-xs text-gray-500 truncate">
-                  Re: {conversation.listings.title}
-                </p>
-              )}
+              <p className="text-xs text-on-surface-variant">
+                {otherUserOnline ? 'Active now' : 'Offline'}
+              </p>
             </div>
           </div>
 
-          <button
-            onClick={() => setShowScheduleModal(true)}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Schedule meetup"
-          >
-            <CalendarIcon className="h-5 w-5 text-gray-600" />
-          </button>
-
-          <div className="relative">
+          <div className="flex items-center gap-1">
             <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-surface-container rounded-lg transition-colors"
+              title="Video call"
             >
-              <MoreVertical className="h-5 w-5 text-gray-600" />
+              <Video className="h-5 w-5 text-on-surface-variant" />
+            </button>
+            <button
+              className="p-2 hover:bg-surface-container rounded-lg transition-colors"
+              title="Voice call"
+            >
+              <Phone className="h-5 w-5 text-on-surface-variant" />
+            </button>
+            <button
+              onClick={() => setShowScheduleModal(true)}
+              className="p-2 hover:bg-surface-container rounded-lg transition-colors"
+              title="Schedule meetup"
+            >
+              <CalendarIcon className="h-5 w-5 text-on-surface-variant" />
             </button>
 
-            {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowMenu(false)}
-                  aria-hidden="true"
-                />
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                  <Link
-                    href={`/profile/${conversation.other_profile?.user_id}`}
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            <div className="relative">
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                className="p-2 hover:bg-surface-container rounded-lg transition-colors"
+              >
+                <MoreVertical className="h-5 w-5 text-on-surface-variant" />
+              </button>
+
+              {showMenu && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
                     onClick={() => setShowMenu(false)}
-                  >
-                    <Users className="h-4 w-4" />
-                    View Profile
-                  </Link>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full"
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowReportModal(true)
-                    }}
-                  >
-                    <Flag className="h-4 w-4" />
-                    Report User
-                  </button>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-gray-100 w-full"
-                    onClick={() => {
-                      setShowMenu(false)
-                      setShowBlockConfirm(true)
-                    }}
-                  >
-                    <Ban className="h-4 w-4" />
-                    Block User
-                  </button>
-                </div>
-              </>
-            )}
+                    aria-hidden="true"
+                  />
+                  <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-lg ghost-border py-1 z-50">
+                    <Link
+                      href={`/profile/${conversation.other_profile?.user_id}`}
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-container"
+                      onClick={() => setShowMenu(false)}
+                    >
+                      <Users className="h-4 w-4" />
+                      View Profile
+                    </Link>
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-on-surface hover:bg-surface-container w-full"
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowReportModal(true)
+                      }}
+                    >
+                      <Flag className="h-4 w-4" />
+                      Report User
+                    </button>
+                    <button
+                      className="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-surface-container w-full"
+                      onClick={() => {
+                        setShowMenu(false)
+                        setShowBlockConfirm(true)
+                      }}
+                    >
+                      <Ban className="h-4 w-4" />
+                      Block User
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Listing context card */}
       {conversation.listings && (
-        <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-4 py-3">
+        <div className="flex-shrink-0 bg-surface-container-low px-4 py-3" style={{ boxShadow: '0 1px 0 rgba(0,0,0,0.06)' }}>
           <div className="max-w-3xl mx-auto">
             <Link href={`/listings/${conversation.listings.id}`}>
-              <Card variant="bordered" className="hover:bg-white transition-colors">
+              <Card variant="bordered" className="hover:bg-surface-container-lowest transition-colors">
                 <CardContent className="py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-16 h-12 bg-gray-100 rounded overflow-hidden flex-shrink-0">
+                    <div className="w-16 h-12 bg-surface-container rounded overflow-hidden flex-shrink-0">
                       {conversation.listings.photos?.[0] ? (
                         <img
                           src={conversation.listings.photos[0]}
@@ -668,20 +685,20 @@ export default function ChatPage() {
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Home className="h-5 w-5 text-gray-300" />
+                          <Home className="h-5 w-5 text-on-surface-variant/30" />
                         </div>
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm truncate">
+                      <h3 className="font-medium text-on-surface text-sm truncate">
                         {conversation.listings.title}
                       </h3>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                      <div className="flex items-center gap-2 text-xs text-on-surface-variant">
                         <MapPin className="h-3 w-3" />
                         <span>
                           {conversation.listings.city}, {conversation.listings.province}
                         </span>
-                        <span className="text-blue-600 font-medium">
+                        <span className="text-secondary font-medium">
                           {formatPrice(conversation.listings.price)}/mo
                         </span>
                       </div>
@@ -694,28 +711,12 @@ export default function ChatPage() {
         </div>
       )}
 
-      {/* Online Status Bar */}
-      <div className="flex-shrink-0 bg-gray-50 border-b border-gray-200 px-4 py-2">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm">
-            <div className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-            <span className="text-gray-600">{isOnline ? 'Online' : 'Offline'}</span>
-          </div>
-          <button
-            onClick={toggleOnlineStatus}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-          >
-            Go {isOnline ? 'offline' : 'online'}
-          </button>
-        </div>
-      </div>
-
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-6">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-6 bg-surface-container-low/50">
         <div className="max-w-3xl mx-auto space-y-6">
           {messages.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">
+              <p className="text-on-surface-variant">
                 No messages yet. Start the conversation!
               </p>
             </div>
@@ -723,16 +724,14 @@ export default function ChatPage() {
             messageGroups.map((group) => (
               <div key={group.date}>
                 {/* Date divider */}
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex-1 h-px bg-gray-200" />
-                  <span className="text-xs text-gray-400 font-medium">
+                <div className="flex items-center justify-center mb-4">
+                  <span className="px-3 py-1 text-xs text-on-surface-variant font-medium bg-surface-container rounded-full">
                     {new Date(group.date).toLocaleDateString('en-CA', {
                       weekday: 'long',
                       month: 'short',
                       day: 'numeric',
                     })}
                   </span>
-                  <div className="flex-1 h-px bg-gray-200" />
                 </div>
 
                 {/* Messages */}
@@ -744,55 +743,60 @@ export default function ChatPage() {
                         key={message.id}
                         className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                       >
-                        <div
-                          className={`
-                            max-w-[75%] px-4 py-2.5 rounded-2xl
-                            ${
-                              isOwn
-                                ? 'bg-blue-600 text-white rounded-br-md'
-                                : 'bg-gray-100 text-gray-900 rounded-bl-md'
-                            }
-                          `}
-                        >
-                          {message.attachment_url && (
-                            <div className="mb-2">
-                              {message.attachment_type === 'image' || message.attachment_type === 'gif' ? (
-                                <img
-                                  src={message.attachment_url}
-                                  alt={message.attachment_name || 'Image'}
-                                  className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer"
-                                  onClick={() => window.open(message.attachment_url!, '_blank')}
-                                />
-                              ) : message.attachment_type === 'video' ? (
-                                <video
-                                  src={message.attachment_url}
-                                  controls
-                                  className="max-w-full rounded-lg max-h-64"
-                                />
-                              ) : (
-                                <a
-                                  href={message.attachment_url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
-                                    isOwn ? 'bg-blue-500/30' : 'bg-gray-200'
-                                  }`}
-                                >
-                                  <Paperclip className="h-4 w-4 flex-shrink-0" />
-                                  <span className="text-sm truncate">{message.attachment_name || 'Document'}</span>
-                                </a>
-                              )}
-                            </div>
-                          )}
-                          {message.content && (
-                            <p className="whitespace-pre-wrap break-words">
-                              {message.content}
-                            </p>
-                          )}
+                        <div className="flex flex-col max-w-[75%]">
+                          <div
+                            className={`
+                              px-4 py-2.5 rounded-2xl
+                              ${
+                                isOwn
+                                  ? 'bg-primary text-on-primary rounded-br-md'
+                                  : 'bg-surface-container-low text-on-surface rounded-bl-md'
+                              }
+                            `}
+                          >
+                            {message.attachment_url && (
+                              <div className="mb-2">
+                                {message.attachment_type === 'image' || message.attachment_type === 'gif' ? (
+                                  <img
+                                    src={message.attachment_url}
+                                    alt={message.attachment_name || 'Image'}
+                                    className="max-w-full rounded-lg max-h-64 object-contain cursor-pointer"
+                                    onClick={() => window.open(message.attachment_url!, '_blank')}
+                                  />
+                                ) : message.attachment_type === 'video' ? (
+                                  <video
+                                    src={message.attachment_url}
+                                    controls
+                                    className="max-w-full rounded-lg max-h-64"
+                                  />
+                                ) : (
+                                  <a
+                                    href={message.attachment_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-3 px-3 py-2 rounded-lg bg-surface-container-lowest ghost-border"
+                                  >
+                                    <div className="w-10 h-10 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                                      <FileText className="h-5 w-5 text-secondary" />
+                                    </div>
+                                    <div className="min-w-0">
+                                      <span className={`text-sm font-medium truncate block ${isOwn ? 'text-on-surface' : 'text-on-surface'}`}>
+                                        {message.attachment_name || 'Document'}
+                                      </span>
+                                      <span className="text-xs text-on-surface-variant">Tap to open</span>
+                                    </div>
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                            {message.content && (
+                              <p className="whitespace-pre-wrap break-words">
+                                {message.content}
+                              </p>
+                            )}
+                          </div>
                           <p
-                            className={`text-xs mt-1 ${
-                              isOwn ? 'text-blue-200' : 'text-gray-400'
-                            }`}
+                            className="text-xs mt-1 text-on-surface-variant px-1"
                           >
                             {new Date(message.created_at).toLocaleTimeString('en-CA', {
                               hour: 'numeric',
@@ -801,7 +805,7 @@ export default function ChatPage() {
                             {isOwn && (
                               <span className="ml-2 inline-flex items-center">
                                 {message.status === 'read' ? (
-                                  <CheckCheck className="h-3.5 w-3.5 text-blue-300" />
+                                  <CheckCheck className="h-3.5 w-3.5 text-secondary" />
                                 ) : message.status === 'delivered' ? (
                                   <CheckCheck className="h-3.5 w-3.5" />
                                 ) : (
@@ -824,19 +828,19 @@ export default function ChatPage() {
 
       {/* Emoji Picker */}
       {showEmojiPicker && (
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+        <div className="flex-shrink-0 bg-surface-container-lowest px-4 py-3" style={{ boxShadow: '0 -1px 0 rgba(0,0,0,0.06)' }}>
           <div className="max-w-3xl mx-auto">
             <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
               {Object.entries(EMOJI_CATEGORIES).map(([category, emojis]) => (
                 <div key={category}>
-                  <p className="text-xs font-medium text-gray-500 mb-1">{category}</p>
+                  <p className="text-xs font-medium text-on-surface-variant mb-1">{category}</p>
                   <div className="flex flex-wrap gap-1">
                     {emojis.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => insertEmoji(emoji)}
-                        className="w-8 h-8 flex items-center justify-center text-lg hover:bg-gray-100 rounded transition-colors"
+                        className="w-8 h-8 flex items-center justify-center text-lg hover:bg-surface-container rounded transition-colors"
                       >
                         {emoji}
                       </button>
@@ -851,22 +855,22 @@ export default function ChatPage() {
 
       {/* GIF Picker */}
       {showGifPicker && (
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 py-3">
+        <div className="flex-shrink-0 bg-surface-container-lowest px-4 py-3" style={{ boxShadow: '0 -1px 0 rgba(0,0,0,0.06)' }}>
           <div className="max-w-3xl mx-auto">
             <input
               type="text"
               value={gifSearchQuery}
               onChange={(e) => setGifSearchQuery(e.target.value)}
               placeholder="Search GIFs..."
-              className="w-full px-3 py-2 mb-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 mb-2 ghost-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-secondary bg-surface-container-low text-on-surface placeholder:text-on-surface-variant"
             />
             <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
               {isLoadingGifs ? (
                 <div className="col-span-3 flex justify-center py-4">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
                 </div>
               ) : gifs.length === 0 ? (
-                <p className="col-span-3 text-center text-sm text-gray-400 py-4">
+                <p className="col-span-3 text-center text-sm text-on-surface-variant py-4">
                   {gifSearchQuery ? 'No GIFs found — try a different keyword' : 'Loading GIFs...'}
                 </p>
               ) : (
@@ -892,7 +896,7 @@ export default function ChatPage() {
       )}
 
       {/* Input */}
-      <div className="flex-shrink-0 bg-white border-t border-gray-200 shadow-[0_-2px_8px_rgba(0,0,0,0.04)] px-4 pt-3 pb-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)' }}>
+      <div className="flex-shrink-0 bg-surface-container-lowest shadow-[0_-2px_8px_rgba(0,0,0,0.04)] px-4 pt-3 pb-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)' }}>
         <div className="max-w-3xl mx-auto flex items-end gap-2 sm:gap-3">
           <input
             ref={fileInputRef}
@@ -904,33 +908,13 @@ export default function ChatPage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isUploading}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
+            className="p-2.5 text-on-surface-variant hover:text-on-surface transition-colors rounded-full hover:bg-surface-container flex-shrink-0"
           >
             {isUploading ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <Paperclip className="h-5 w-5" />
             )}
-          </button>
-          <button
-            onClick={() => {
-              setShowEmojiPicker(!showEmojiPicker)
-              setShowGifPicker(false)
-            }}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
-            type="button"
-          >
-            <Smile className="h-5 w-5" />
-          </button>
-          <button
-            onClick={() => {
-              setShowGifPicker(!showGifPicker)
-              setShowEmojiPicker(false)
-            }}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 flex-shrink-0"
-            type="button"
-          >
-            <span className="text-xs font-bold">GIF</span>
           </button>
           <textarea
             ref={inputRef}
@@ -942,7 +926,7 @@ export default function ChatPage() {
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             rows={1}
-            className="flex-1 resize-none px-4 py-2.5 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32 text-base"
+            className="flex-1 resize-none px-4 py-2.5 bg-surface-container-low rounded-2xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent max-h-32 text-base text-on-surface placeholder:text-on-surface-variant"
             style={{
               minHeight: '44px',
               height: 'auto',
@@ -958,6 +942,16 @@ export default function ChatPage() {
               setTimeout(() => scrollToBottom(), 300)
             }}
           />
+          <button
+            onClick={() => {
+              setShowEmojiPicker(!showEmojiPicker)
+              setShowGifPicker(false)
+            }}
+            className="p-2.5 text-on-surface-variant hover:text-on-surface transition-colors rounded-full hover:bg-surface-container flex-shrink-0"
+            type="button"
+          >
+            <Smile className="h-5 w-5" />
+          </button>
           <Button
             onClick={handleSend}
             disabled={!newMessage.trim() || isSending}
@@ -971,10 +965,32 @@ export default function ChatPage() {
           </Button>
         </div>
         {sendError && (
-          <div className="max-w-3xl mx-auto mt-2 text-sm text-red-600">
+          <div className="max-w-3xl mx-auto mt-2 text-sm text-error">
             {sendError}
           </div>
         )}
+        {/* Report / Block + Honest Security Notice */}
+        <div className="max-w-3xl mx-auto mt-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowReportModal(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <Flag className="h-3.5 w-3.5" />
+              REPORT
+            </button>
+            <button
+              onClick={() => setShowBlockConfirm(true)}
+              className="flex items-center gap-1.5 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors"
+            >
+              <Ban className="h-3.5 w-3.5" />
+              BLOCK USER
+            </button>
+          </div>
+          <p className="text-xs text-on-surface-variant italic">
+            Your messages are stored securely.
+          </p>
+        </div>
       </div>
 
       {/* Report Modal */}
@@ -1004,8 +1020,8 @@ export default function ChatPage() {
             className="fixed inset-0 bg-black/50 z-50"
             onClick={() => setShowScheduleModal(false)}
           />
-          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-white rounded-xl shadow-xl z-50 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 max-w-md mx-auto bg-surface-container-lowest rounded-xl shadow-xl z-50 p-6">
+            <h3 className="text-lg font-display font-semibold text-on-surface mb-4">
               Schedule a Meetup
             </h3>
             <div className="space-y-3">
@@ -1016,7 +1032,7 @@ export default function ChatPage() {
                 onChange={(e) =>
                   setEventForm({ ...eventForm, title: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-low placeholder:text-on-surface-variant"
                 maxLength={200}
               />
               <input
@@ -1025,7 +1041,7 @@ export default function ChatPage() {
                 onChange={(e) =>
                   setEventForm({ ...eventForm, event_date: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-low"
               />
               <div className="grid grid-cols-2 gap-3">
                 <input
@@ -1034,7 +1050,7 @@ export default function ChatPage() {
                   onChange={(e) =>
                     setEventForm({ ...eventForm, start_time: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-low"
                   placeholder="Start"
                 />
                 <input
@@ -1043,7 +1059,7 @@ export default function ChatPage() {
                   onChange={(e) =>
                     setEventForm({ ...eventForm, end_time: e.target.value })
                   }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-low"
                   placeholder="End (optional)"
                 />
               </div>
@@ -1054,7 +1070,7 @@ export default function ChatPage() {
                 onChange={(e) =>
                   setEventForm({ ...eventForm, location: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-low placeholder:text-on-surface-variant"
               />
               <textarea
                 placeholder="Description (optional)"
@@ -1063,7 +1079,7 @@ export default function ChatPage() {
                   setEventForm({ ...eventForm, description: e.target.value })
                 }
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm resize-none"
+                className="w-full px-3 py-2 ghost-border rounded-lg text-sm resize-none text-on-surface bg-surface-container-low placeholder:text-on-surface-variant"
               />
             </div>
             <div className="flex gap-3 mt-4">

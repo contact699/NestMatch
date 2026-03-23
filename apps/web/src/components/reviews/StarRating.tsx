@@ -54,7 +54,7 @@ export function StarRating({
             <Star
               className={cn(
                 sizeClasses[size],
-                'text-gray-300'
+                'text-on-surface-variant/20'
               )}
             />
             {/* Foreground star (filled) */}
@@ -66,7 +66,7 @@ export function StarRating({
                 <Star
                   className={cn(
                     sizeClasses[size],
-                    'text-yellow-400 fill-yellow-400'
+                    'text-secondary fill-secondary'
                   )}
                 />
               </div>
@@ -95,7 +95,7 @@ export function StarRatingDisplay({
 }: StarRatingDisplayProps) {
   if (rating === null) {
     return (
-      <div className={cn('flex items-center gap-1 text-gray-500', className)}>
+      <div className={cn('flex items-center gap-1 text-on-surface-variant', className)}>
         <StarRating rating={0} size={size} />
         <span className="text-sm">No reviews yet</span>
       </div>
@@ -105,11 +105,11 @@ export function StarRatingDisplay({
   return (
     <div className={cn('flex items-center gap-1', className)}>
       <StarRating rating={rating} size={size} />
-      <span className="text-sm font-medium text-gray-700">
+      <span className="text-sm font-medium text-on-surface">
         {rating.toFixed(1)}
       </span>
       {showCount && reviewCount !== undefined && (
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-on-surface-variant">
           ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
         </span>
       )}

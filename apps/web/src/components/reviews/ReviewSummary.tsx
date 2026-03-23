@@ -27,7 +27,7 @@ export function ReviewSummary({
     return (
       <Card variant="bordered" className={className}>
         <CardContent className="py-6 text-center">
-          <p className="text-gray-500">No reviews yet</p>
+          <p className="text-on-surface-variant">No reviews yet</p>
         </CardContent>
       </Card>
     )
@@ -55,17 +55,17 @@ export function ReviewSummary({
   return (
     <Card variant="bordered" className={className}>
       <CardHeader>
-        <CardTitle className="text-lg">Reviews</CardTitle>
+        <CardTitle className="text-lg font-display">Reviews</CardTitle>
       </CardHeader>
       <CardContent>
         {/* Overall Rating */}
         <div className="flex items-center gap-4 mb-6">
           <div className="text-center">
-            <div className="text-4xl font-bold text-gray-900">
+            <div className="text-4xl font-bold text-on-surface">
               {aggregate.average_overall.toFixed(1)}
             </div>
             <StarRating rating={aggregate.average_overall} size="md" />
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-on-surface-variant mt-1">
               {aggregate.total_reviews} {aggregate.total_reviews === 1 ? 'review' : 'reviews'}
             </p>
           </div>
@@ -75,14 +75,14 @@ export function ReviewSummary({
             <div className="flex-1 space-y-2">
               {categories.map((category) => (
                 <div key={category.label} className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600 w-28">{category.label}</span>
-                  <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                  <span className="text-sm text-on-surface-variant w-28">{category.label}</span>
+                  <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-yellow-400 rounded-full"
+                      className="h-full bg-secondary rounded-full"
                       style={{ width: `${((category.value || 0) / 5) * 100}%` }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-700 w-8">
+                  <span className="text-sm font-medium text-on-surface w-8">
                     {category.value?.toFixed(1)}
                   </span>
                 </div>
@@ -109,7 +109,7 @@ export function InlineReviewSummary({
 }: InlineReviewSummaryProps) {
   if (averageRating === null || reviewCount === 0) {
     return (
-      <span className="text-sm text-gray-500">No reviews</span>
+      <span className="text-sm text-on-surface-variant">No reviews</span>
     )
   }
 
@@ -117,7 +117,7 @@ export function InlineReviewSummary({
     <div className="flex items-center gap-1">
       <StarRating rating={averageRating} size={size} />
       <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
-      <span className="text-sm text-gray-500">({reviewCount})</span>
+      <span className="text-sm text-on-surface-variant">({reviewCount})</span>
     </div>
   )
 }

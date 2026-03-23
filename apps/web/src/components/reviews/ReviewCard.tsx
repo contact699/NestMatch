@@ -74,13 +74,13 @@ export function ReviewCard({
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-blue-600" />
+                  <div className="w-10 h-10 bg-surface-container rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-on-surface-variant" />
                   </div>
                 )}
                 <div>
-                  <p className="font-medium text-gray-900">{review.reviewer.name}</p>
-                  <p className="text-xs text-gray-500">
+                  <p className="font-medium text-on-surface">{review.reviewer.name}</p>
+                  <p className="text-xs text-on-surface-variant">
                     {formatDate(review.created_at)}
                   </p>
                 </div>
@@ -97,13 +97,13 @@ export function ReviewCard({
                     className="w-10 h-10 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <User className="h-5 w-5 text-green-600" />
+                  <div className="w-10 h-10 bg-secondary-container/30 rounded-full flex items-center justify-center">
+                    <User className="h-5 w-5 text-secondary" />
                   </div>
                 )}
                 <div>
-                  <p className="text-sm text-gray-500">Review for</p>
-                  <p className="font-medium text-gray-900">{review.reviewee.name}</p>
+                  <p className="text-sm text-on-surface-variant">Review for</p>
+                  <p className="font-medium text-on-surface">{review.reviewee.name}</p>
                 </div>
               </div>
             )}
@@ -116,7 +116,7 @@ export function ReviewCard({
               size={compact ? 'sm' : 'md'}
             />
             {review.overall_rating && (
-              <p className="text-sm font-medium text-gray-700 mt-0.5">
+              <p className="text-sm font-medium text-on-surface mt-0.5">
                 {review.overall_rating.toFixed(1)}
               </p>
             )}
@@ -125,7 +125,7 @@ export function ReviewCard({
 
         {/* Listing Info */}
         {showListing && review.cohabitation?.listing && (
-          <div className="flex items-center gap-4 mb-3 text-sm text-gray-500">
+          <div className="flex items-center gap-4 mb-3 text-sm text-on-surface-variant">
             <div className="flex items-center gap-1">
               <Home className="h-4 w-4" />
               <span>{review.cohabitation.listing.title}</span>
@@ -144,8 +144,8 @@ export function ReviewCard({
         {!compact && ratingCategories.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
             {ratingCategories.map((category) => (
-              <div key={category.key} className="text-center p-2 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 mb-1">{category.label}</p>
+              <div key={category.key} className="text-center p-2 bg-surface-container-low rounded-lg">
+                <p className="text-xs text-on-surface-variant mb-1">{category.label}</p>
                 <div className="flex items-center justify-center gap-1">
                   <StarRating rating={category.value || 0} size="sm" />
                 </div>
@@ -156,14 +156,14 @@ export function ReviewCard({
 
         {/* Comment */}
         {review.comment && (
-          <p className={`text-gray-700 ${compact ? 'text-sm line-clamp-2' : ''}`}>
-            {review.comment}
+          <p className={`text-on-surface ${compact ? 'text-sm line-clamp-2' : ''}`}>
+            &ldquo;{review.comment}&rdquo;
           </p>
         )}
 
         {/* No comment placeholder */}
         {!review.comment && !compact && (
-          <p className="text-gray-400 italic text-sm">No written review provided</p>
+          <p className="text-on-surface-variant italic text-sm">No written review provided</p>
         )}
       </CardContent>
     </Card>

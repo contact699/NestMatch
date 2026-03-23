@@ -14,6 +14,8 @@ import {
   Home,
   Loader2,
   AlertCircle,
+  Filter,
+  PenLine,
 } from 'lucide-react'
 
 interface Conversation {
@@ -186,7 +188,7 @@ export default function MessagesPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
     )
   }
@@ -197,25 +199,38 @@ export default function MessagesPage() {
       <div className="mb-6" data-animate>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Messages</h1>
-            <p className="text-gray-600">
+            <h1 className="text-3xl font-display font-bold text-on-surface">Inbox</h1>
+            <p className="text-on-surface-variant mt-1">
               {totalUnread > 0
-                ? `${totalUnread} unread message${totalUnread > 1 ? 's' : ''}`
+                ? <>You have <span className="font-semibold text-on-surface">{totalUnread} unread</span> message{totalUnread > 1 ? 's' : ''}</>
                 : 'Your conversations'}
             </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-xl transition-colors">
+              <Filter className="h-4 w-4" />
+              Filter
+            </button>
+            <Link
+              href="/messages?compose=true"
+              className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-on-secondary text-sm font-medium rounded-xl hover:bg-secondary/90 transition-colors"
+            >
+              <PenLine className="h-4 w-4" />
+              New Message
+            </Link>
           </div>
         </div>
 
         {/* Search */}
         {conversations.length > 0 && (
           <div className="relative mt-4 delay-100" data-animate>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search conversations..."
-              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all"
+              placeholder="Search messages..."
+              className="w-full pl-10 pr-4 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest backdrop-blur-sm transition-all text-on-surface placeholder:text-on-surface-variant"
             />
           </div>
         )}
@@ -225,7 +240,7 @@ export default function MessagesPage() {
       {error && (
         <Card variant="bordered" data-animate className="delay-200 mb-4">
           <CardContent className="py-4">
-            <div className="flex items-center gap-3 text-red-600">
+            <div className="flex items-center gap-3 text-error">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <p className="text-sm">{error}</p>
             </div>
@@ -237,16 +252,16 @@ export default function MessagesPage() {
       {conversations.length === 0 && !error ? (
         <Card variant="bordered" data-animate className="delay-200">
           <CardContent className="py-12 text-center">
-            <MessageCircle className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <MessageCircle className="h-12 w-12 text-on-surface-variant/30 mx-auto mb-4" />
+            <h3 className="text-lg font-display font-semibold text-on-surface mb-2">
               No messages yet
             </h3>
-            <p className="text-gray-500 mb-4">
+            <p className="text-on-surface-variant mb-4">
               Start a conversation by contacting someone from a listing.
             </p>
             <Link
               href="/search"
-              className="text-blue-600 hover:underline"
+              className="text-secondary hover:underline font-medium"
             >
               Browse listings
             </Link>
@@ -255,7 +270,7 @@ export default function MessagesPage() {
       ) : filteredConversations.length === 0 ? (
         <Card variant="bordered" data-animate className="delay-200">
           <CardContent className="py-8 text-center">
-            <p className="text-gray-500">No conversations match your search.</p>
+            <p className="text-on-surface-variant">No conversations match your search.</p>
           </CardContent>
         </Card>
       ) : (
@@ -271,14 +286,14 @@ export default function MessagesPage() {
                 variant="bordered"
                 animate
                 className={`cursor-pointer ${
-                  conversation.unread_count > 0 ? 'border-blue-200 bg-blue-50/30' : ''
+                  conversation.unread_count > 0 ? 'bg-secondary-container/10' : ''
                 }`}
               >
                 <CardContent className="py-4">
                   <div className="flex items-start gap-4">
                     {/* Avatar */}
                     <div className="flex-shrink-0">
-                      <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105">
+                      <div className="w-12 h-12 bg-surface-container rounded-full flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105">
                         {conversation.other_profile?.profile_photo ? (
                           <img
                             src={conversation.other_profile.profile_photo}
@@ -286,7 +301,7 @@ export default function MessagesPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <Users className="h-6 w-6 text-blue-600" />
+                          <Users className="h-6 w-6 text-on-surface-variant" />
                         )}
                       </div>
                     </div>
@@ -295,8 +310,8 @@ export default function MessagesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2 min-w-0">
-                          <h3 className={`font-medium truncate ${
-                            conversation.unread_count > 0 ? 'text-gray-900' : 'text-gray-700'
+                          <h3 className={`truncate ${
+                            conversation.unread_count > 0 ? 'font-semibold text-on-surface' : 'font-medium text-on-surface'
                           }`}>
                             {conversation.other_profile?.name || 'Anonymous'}
                           </h3>
@@ -306,38 +321,41 @@ export default function MessagesPage() {
                             showLabel={false}
                           />
                         </div>
-                        <span className="text-xs text-gray-400 flex-shrink-0">
+                        <span className={`text-xs flex-shrink-0 ${
+                          conversation.unread_count > 0 ? 'text-secondary font-semibold' : 'text-on-surface-variant'
+                        }`}>
                           {conversation.last_message?.created_at
                             ? getRelativeTime(conversation.last_message.created_at)
                             : getRelativeTime(conversation.created_at)}
                         </span>
                       </div>
 
-                      {/* Last message */}
-                      {conversation.last_message && (
-                        <p className={`text-sm truncate mt-1 ${
-                          conversation.unread_count > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'
+                      {/* Subject line - listing title as subject */}
+                      {conversation.listings && (
+                        <p className={`text-sm truncate mt-0.5 ${
+                          conversation.unread_count > 0 ? 'font-semibold text-on-surface' : 'text-on-surface-variant'
                         }`}>
-                          {conversation.last_message.sender_id === currentUserId && (
-                            <span className="text-gray-400">You: </span>
-                          )}
-                          {conversation.last_message.content}
+                          Re: {conversation.listings.title}
                         </p>
                       )}
 
-                      {/* Listing context */}
-                      {conversation.listings && (
-                        <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-400">
-                          <Home className="h-3 w-3" />
-                          <span className="truncate">{conversation.listings.title}</span>
-                        </div>
+                      {/* Last message preview */}
+                      {conversation.last_message && (
+                        <p className={`text-sm truncate mt-0.5 ${
+                          conversation.unread_count > 0 ? 'text-on-surface' : 'text-on-surface-variant'
+                        }`}>
+                          {conversation.last_message.sender_id === currentUserId && (
+                            <span className="text-on-surface-variant">You: </span>
+                          )}
+                          {conversation.last_message.content}
+                        </p>
                       )}
                     </div>
 
                     {/* Unread indicator */}
                     {conversation.unread_count > 0 && (
                       <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-5 h-5 bg-blue-600 text-white text-xs font-medium rounded-full animate-pulse">
+                        <span className="inline-flex items-center justify-center w-5 h-5 bg-secondary text-on-secondary text-xs font-medium rounded-full">
                           {conversation.unread_count > 9 ? '9+' : conversation.unread_count}
                         </span>
                       </div>

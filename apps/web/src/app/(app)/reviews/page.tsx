@@ -15,6 +15,10 @@ import {
   Loader2,
   ChevronRight,
   PenSquare,
+  Shield,
+  Clock,
+  Sparkles,
+  BarChart3,
 } from 'lucide-react'
 
 interface Cohabitation {
@@ -96,62 +100,73 @@ interface ReviewsData {
   aggregate: ReviewAggregate | null
 }
 
+interface ProfileData {
+  profile: {
+    name: string | null
+    profile_photo: string | null
+    created_at: string
+    background_checks_count?: number
+    response_rate?: number
+  } | null
+}
+
 export default function ReviewsPage() {
-  const [tab, setTab] = useState<'cohabitations' | 'received' | 'given'>('cohabitations')
+  const [tab, setTab] = useState<'all' | 'roommates' | 'hosts'>('all')
   const [reviewingId, setReviewingId] = useState<string | null>(null)
 
-  // Fetch cohabitations when on that tab
+  // Fetch cohabitations for "awaiting feedback" section
   const {
     data: cohabitationsData,
     isLoading: cohabLoading,
     error: cohabError,
     refetch: refetchCohabitations,
-  } = useFetch<CohabitationsData>(
-    '/api/cohabitations',
-    { skip: tab !== 'cohabitations', deps: [tab] }
-  )
+  } = useFetch<CohabitationsData>('/api/cohabitations')
 
-  // Fetch reviews when on received or given tabs
-  const reviewsUrl = tab === 'given' ? '/api/reviews?type=given' : '/api/reviews'
+  // Fetch reviews
   const {
     data: reviewsData,
     isLoading: reviewsLoading,
     error: reviewsError,
     refetch: refetchReviews,
-  } = useFetch<ReviewsData>(
-    reviewsUrl,
-    { skip: tab === 'cohabitations', deps: [tab] }
-  )
+  } = useFetch<ReviewsData>('/api/reviews')
+
+  // Fetch profile for sidebar
+  const {
+    data: profileData,
+  } = useFetch<ProfileData>('/api/profile')
 
   const cohabitations = cohabitationsData?.cohabitations ?? []
   const reviews = reviewsData?.reviews ?? []
   const aggregate = reviewsData?.aggregate ?? null
-  const isLoading = tab === 'cohabitations' ? cohabLoading : reviewsLoading
-  const error = tab === 'cohabitations' ? cohabError : reviewsError
-  const refetch = tab === 'cohabitations' ? refetchCohabitations : refetchReviews
+  const profile = profileData?.profile ?? null
+  const isLoading = cohabLoading || reviewsLoading
+  const error = cohabError || reviewsError
+
+  const pendingReviews = cohabitations.filter((c) => c.can_review && !c.user_has_reviewed)
 
   const handleReviewSuccess = () => {
     setReviewingId(null)
     refetchCohabitations()
+    refetchReviews()
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-secondary-container text-secondary font-medium">
             Active
           </span>
         )
       case 'completed':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-surface-container text-on-surface-variant font-medium">
             Completed
           </span>
         )
       case 'cancelled':
         return (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-error-container text-error font-medium">
             Cancelled
           </span>
         )
@@ -160,210 +175,272 @@ export default function ReviewsPage() {
     }
   }
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Reviews</h1>
-        <p className="text-gray-600">Manage your roommate reviews and cohabitations</p>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 border-b border-gray-200">
-        {[
-          { key: 'cohabitations', label: 'Cohabitations', icon: Users },
-          { key: 'received', label: 'Received', icon: Star },
-          { key: 'given', label: 'Given', icon: PenSquare },
-        ].map(({ key, label, icon: Icon }) => (
-          <button
-            key={key}
-            onClick={() => setTab(key as any)}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
-              tab === key
-                ? 'border-blue-600 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </button>
+  // Stars helper
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className={`h-4 w-4 ${i < Math.round(rating) ? 'text-secondary fill-secondary' : 'text-on-surface-variant/20'}`}
+          />
         ))}
       </div>
+    )
+  }
 
-      {/* Content */}
-      {error ? (
-        <FetchError message={error} onRetry={refetch} />
-      ) : isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      ) : tab === 'cohabitations' ? (
-        // Cohabitations List
-        cohabitations.length === 0 ? (
+  const memberSince = profile?.created_at
+    ? new Date(profile.created_at).toLocaleDateString('en-CA', { month: 'short', year: 'numeric' })
+    : null
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <FetchError message={error} onRetry={() => { refetchCohabitations(); refetchReviews() }} />
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-display font-bold text-on-surface">Reviews & Ratings</h1>
+        <p className="text-on-surface-variant mt-1">
+          Build trust within the community. Your cohabitation history and feedback help ensure a safe, high-quality experience for everyone.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
+        {/* Left Sidebar */}
+        <div className="space-y-6">
+          {/* Profile Summary Card */}
           <Card variant="bordered">
-            <CardContent className="py-12 text-center">
-              <Users className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No cohabitations yet
+            <CardContent className="py-6 text-center">
+              <div className="w-20 h-20 mx-auto rounded-full bg-surface-container overflow-hidden mb-3">
+                {profile?.profile_photo ? (
+                  <img
+                    src={profile.profile_photo}
+                    alt={profile.name || 'User'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Users className="h-10 w-10 text-on-surface-variant" />
+                  </div>
+                )}
+              </div>
+              <h3 className="font-display font-semibold text-on-surface">
+                {profile?.name || 'User'}
               </h3>
-              <p className="text-gray-500">
-                Cohabitation records will appear here when you start living with
-                other NestMatch users.
-              </p>
+              {memberSince && (
+                <p className="text-sm text-on-surface-variant mt-0.5">
+                  Member since {memberSince}
+                </p>
+              )}
+
+              {/* Overall Rating */}
+              {aggregate && aggregate.total_reviews > 0 && (
+                <div className="mt-4">
+                  <div className="text-4xl font-bold text-on-surface">
+                    {aggregate.average_overall.toFixed(1)}
+                  </div>
+                  <div className="flex justify-center mt-1">
+                    {renderStars(aggregate.average_overall)}
+                  </div>
+                  <div className="flex items-center justify-center gap-4 mt-3 text-sm text-on-surface-variant">
+                    <div className="text-center">
+                      <div className="font-semibold text-on-surface">{aggregate.total_reviews}</div>
+                      <div className="text-xs uppercase tracking-wide">Reviews</div>
+                    </div>
+                    <div className="w-px h-8 bg-on-surface-variant/10" />
+                    <div className="text-center">
+                      <div className="font-semibold text-on-surface">{cohabitations.length}</div>
+                      <div className="text-xs uppercase tracking-wide">Stays</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          <div className="space-y-4">
-            {cohabitations.map((cohab) => {
-              const otherPerson = cohab.is_provider ? cohab.seeker : cohab.provider
-              const isReviewing = reviewingId === cohab.id
 
-              return (
-                <Card key={cohab.id} variant="bordered">
-                  <CardContent className="py-4">
-                    {/* Cohabitation Info */}
-                    <div className="flex items-start gap-4 mb-4">
-                      {/* Listing Image */}
-                      <div className="w-20 h-20 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                        {cohab.listing.photos?.[0] ? (
-                          <img
-                            src={cohab.listing.photos[0]}
-                            alt={cohab.listing.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Home className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
+          {/* Community Verified */}
+          <div className="bg-secondary-container/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="h-5 w-5 text-secondary" />
+              <span className="font-semibold text-secondary text-sm">Community Verified</span>
+            </div>
+            <p className="text-xs text-on-surface-variant">
+              This user has completed {profile?.background_checks_count ?? 0} background check{(profile?.background_checks_count ?? 0) !== 1 ? 's' : ''} and has a {profile?.response_rate ?? 100}% response rate.
+            </p>
+          </div>
+        </div>
 
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between">
-                          <div>
-                            <h3 className="font-medium text-gray-900">
-                              {cohab.listing.title}
-                            </h3>
-                            <p className="text-sm text-gray-500">
-                              {cohab.listing.city}
-                            </p>
-                          </div>
-                          {getStatusBadge(cohab.status)}
-                        </div>
+        {/* Main Content */}
+        <div className="space-y-8">
+          {/* Awaiting Your Feedback */}
+          {pendingReviews.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Clock className="h-4 w-4 text-on-surface-variant" />
+                <h2 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wide">
+                  Awaiting Your Feedback
+                </h2>
+              </div>
+              <div className="space-y-3">
+                {pendingReviews.map((cohab) => {
+                  const otherPerson = cohab.is_provider ? cohab.seeker : cohab.provider
+                  const isReviewing = reviewingId === cohab.id
 
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>
-                              {formatDate(cohab.start_date)}
-                              {cohab.end_date && ` - ${formatDate(cohab.end_date)}`}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Other Person */}
-                        <div className="flex items-center gap-2 mt-3">
-                          {otherPerson.profile_photo ? (
-                            <img
-                              src={otherPerson.profile_photo}
-                              alt={otherPerson.name}
-                              className="w-8 h-8 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              <Users className="h-4 w-4 text-blue-600" />
-                            </div>
-                          )}
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {otherPerson.name}
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {cohab.is_provider ? 'Tenant' : 'Landlord'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Review Section */}
-                    {isReviewing ? (
+                  if (isReviewing) {
+                    return (
                       <ReviewForm
+                        key={cohab.id}
                         cohabitationId={cohab.id}
                         revieweeId={otherPerson.user_id}
                         revieweeName={otherPerson.name}
                         onSuccess={handleReviewSuccess}
                         onCancel={() => setReviewingId(null)}
                       />
-                    ) : cohab.user_has_reviewed ? (
-                      <div className="p-3 bg-green-50 rounded-lg flex items-center gap-2">
-                        <Star className="h-5 w-5 text-green-600" />
-                        <span className="text-sm text-green-800">
-                          You have reviewed this cohabitation
-                        </span>
-                      </div>
-                    ) : cohab.can_review ? (
-                      <Button
-                        onClick={() => setReviewingId(cohab.id)}
-                        className="w-full"
-                      >
-                        <PenSquare className="h-4 w-4 mr-2" />
-                        Write a Review
-                      </Button>
-                    ) : null}
-                  </CardContent>
-                </Card>
-              )
-            })}
-          </div>
-        )
-      ) : (
-        // Reviews List
-        <div className="space-y-6">
-          {/* Aggregate Summary (for received reviews) */}
-          {tab === 'received' && (
-            <ReviewSummary aggregate={aggregate} />
+                    )
+                  }
+
+                  return (
+                    <Card key={cohab.id} variant="bordered">
+                      <CardContent className="py-4">
+                        <div className="flex items-center justify-between gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-12 h-12 bg-surface-container rounded-lg overflow-hidden flex-shrink-0">
+                              {cohab.listing.photos?.[0] ? (
+                                <img
+                                  src={cohab.listing.photos[0]}
+                                  alt={cohab.listing.title}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <Home className="h-5 w-5 text-on-surface-variant/30" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-medium text-on-surface truncate">
+                                {cohab.listing.title}
+                              </h4>
+                              <p className="text-sm text-on-surface-variant">
+                                Stay ended {cohab.end_date ? formatDate(cohab.end_date) : 'recently'}
+                              </p>
+                              <p className="text-xs text-on-surface-variant mt-0.5">
+                                Host: {otherPerson.name}
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            onClick={() => setReviewingId(cohab.id)}
+                            variant="outline"
+                            className="flex-shrink-0"
+                          >
+                            <PenSquare className="h-4 w-4 mr-2" />
+                            Leave a Review
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )
+                })}
+              </div>
+            </div>
           )}
 
-          {/* Reviews */}
-          {reviews.length === 0 ? (
-            <Card variant="bordered">
-              <CardContent className="py-12 text-center">
-                <Star className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  No reviews yet
-                </h3>
-                <p className="text-gray-500">
-                  {tab === 'received'
-                    ? 'Reviews from your roommates will appear here.'
-                    : 'Reviews you have written will appear here.'}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-4">
-              {reviews.map((review) => (
-                <ReviewCard
-                  key={review.id}
-                  review={review}
-                  showReviewer={tab === 'received'}
-                  showReviewee={tab === 'given'}
-                  showListing
-                />
-              ))}
+          {/* Recent Reviews */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-on-surface-variant" />
+                <h2 className="text-sm font-semibold text-on-surface-variant uppercase tracking-wide">
+                  Recent Reviews
+                </h2>
+              </div>
+              <div className="flex items-center gap-1 bg-surface-container rounded-lg p-1">
+                {(['all', 'roommates', 'hosts'] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                      tab === t
+                        ? 'bg-surface-container-lowest text-on-surface shadow-sm'
+                        : 'text-on-surface-variant hover:text-on-surface'
+                    }`}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {reviews.length === 0 ? (
+              <Card variant="bordered">
+                <CardContent className="py-12 text-center">
+                  <Star className="h-12 w-12 text-on-surface-variant/20 mx-auto mb-4" />
+                  <h3 className="text-lg font-display font-semibold text-on-surface mb-2">
+                    No reviews yet
+                  </h3>
+                  <p className="text-on-surface-variant">
+                    Reviews from your roommates will appear here.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {reviews.map((review) => (
+                  <ReviewCard
+                    key={review.id}
+                    review={review}
+                    showReviewer
+                    showListing
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Trait Highlights */}
+          {aggregate && aggregate.total_reviews > 0 && (
+            <div>
+              <h2 className="text-xl font-display font-semibold text-on-surface mb-4">
+                Trait Highlights
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {[
+                  { label: 'Cleanliness', value: aggregate.average_cleanliness, icon: Sparkles },
+                  { label: 'Reliability', value: aggregate.average_rent_payment, icon: Shield },
+                  { label: 'Communication', value: aggregate.average_communication, icon: BarChart3 },
+                  { label: 'Noise Level', value: aggregate.average_respect, icon: Users },
+                ].map((trait) => (
+                  <Card key={trait.label} variant="bordered">
+                    <CardContent className="py-4 text-center">
+                      <trait.icon className="h-6 w-6 text-on-surface-variant mx-auto mb-2" />
+                      <p className="text-xs text-on-surface-variant uppercase tracking-wide mb-1">
+                        {trait.label}
+                      </p>
+                      <p className="text-2xl font-bold text-on-surface">
+                        {trait.value != null ? trait.value.toFixed(1) : '--'}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
           )}
         </div>
-      )}
-
-      {/* Info */}
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-1">About Reviews</h4>
-        <p className="text-sm text-blue-700">
-          Reviews help build trust in the NestMatch community. You can review roommates
-          after your cohabitation begins. Reviews are visible to other users and can be
-          edited within 7 days of submission.
-        </p>
       </div>
     </div>
   )

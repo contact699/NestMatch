@@ -108,7 +108,7 @@ export function ReviewForm({
   return (
     <Card variant="bordered">
       <CardHeader>
-        <CardTitle>Review {revieweeName}</CardTitle>
+        <CardTitle className="font-display">Review {revieweeName}</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -118,10 +118,10 @@ export function ReviewForm({
               <div key={category.key} className="space-y-1">
                 <div className="flex items-center justify-between">
                   <div>
-                    <label className="text-sm font-medium text-gray-900">
+                    <label className="text-sm font-medium text-on-surface">
                       {category.label}
                     </label>
-                    <p className="text-xs text-gray-500">{category.description}</p>
+                    <p className="text-xs text-on-surface-variant">{category.description}</p>
                   </div>
                   <StarRating
                     rating={ratings[category.key] || 0}
@@ -136,12 +136,12 @@ export function ReviewForm({
 
           {/* Average Preview */}
           {averageRating > 0 && (
-            <div className="p-3 bg-gray-50 rounded-lg">
+            <div className="p-3 bg-surface-container-low rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Overall Rating</span>
+                <span className="text-sm text-on-surface-variant">Overall Rating</span>
                 <div className="flex items-center gap-2">
                   <StarRating rating={averageRating} size="sm" />
-                  <span className="text-sm font-medium">{averageRating.toFixed(1)}</span>
+                  <span className="text-sm font-medium text-on-surface">{averageRating.toFixed(1)}</span>
                 </div>
               </div>
             </div>
@@ -149,7 +149,7 @@ export function ReviewForm({
 
           {/* Comment */}
           <div>
-            <label className="block text-sm font-medium text-gray-900 mb-1">
+            <label className="block text-sm font-medium text-on-surface mb-1">
               Comment (optional)
             </label>
             <textarea
@@ -158,16 +158,16 @@ export function ReviewForm({
               rows={4}
               maxLength={2000}
               placeholder="Share your experience living with this person..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+              className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-secondary resize-none bg-surface-container-low text-on-surface placeholder:text-on-surface-variant"
             />
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-xs text-on-surface-variant mt-1">
               {comment.length}/2000 characters
             </p>
           </div>
 
           {/* Error */}
           {error && (
-            <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+            <div className="p-3 bg-error-container text-error rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -202,7 +202,7 @@ export function ReviewForm({
           </div>
 
           {/* Disclaimer */}
-          <p className="text-xs text-gray-500 text-center">
+          <p className="text-xs text-on-surface-variant text-center">
             Your review will be visible to other NestMatch users. Reviews can be edited within 7 days of submission.
           </p>
         </form>
