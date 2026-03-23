@@ -12,7 +12,7 @@ export default async function AppLayout({
   } = await supabase.auth.getUser()
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navbar user={user} />
       <main className="relative z-0">{children}</main>
     </div>
