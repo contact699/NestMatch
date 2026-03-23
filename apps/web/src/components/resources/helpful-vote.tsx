@@ -79,7 +79,7 @@ export function HelpfulVote({
 
   return (
     <div className="flex items-center gap-4">
-      <span className="text-sm text-gray-500">Was this helpful?</span>
+      <span className="text-sm text-on-surface-variant">Was this helpful?</span>
       <div className="flex items-center gap-2">
         <button
           onClick={() => handleVote('helpful')}
@@ -87,8 +87,8 @@ export function HelpfulVote({
           className={`
             flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors
             ${vote === 'helpful'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+              ? 'bg-secondary-container text-secondary'
+              : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
             disabled:opacity-50
           `}
         >
@@ -105,8 +105,8 @@ export function HelpfulVote({
           className={`
             flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors
             ${vote === 'not_helpful'
-              ? 'bg-red-100 text-red-700'
-              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+              ? 'bg-error-container text-error'
+              : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
             disabled:opacity-50
           `}
         >

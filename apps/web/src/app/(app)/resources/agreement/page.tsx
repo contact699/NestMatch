@@ -16,10 +16,14 @@ import {
   Download,
   Accessibility,
   X,
+  Shield,
+  BookOpen,
+  HelpCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { LegalDisclaimer } from '@/components/resources'
+import { PROVINCES } from '@/components/resources'
 import { agreementSchema, AgreementFormData, defaultValues } from './types'
 import { useFormDraft } from '@/lib/hooks/use-form-draft'
 import {
@@ -33,13 +37,13 @@ import {
 } from './steps'
 
 const STEPS = [
-  { id: 1, title: 'Basics', icon: FileText, description: 'Names and address' },
-  { id: 2, title: 'Financial', icon: DollarSign, description: 'Rent and utilities' },
-  { id: 3, title: 'Lifestyle', icon: Moon, description: 'House rules' },
-  { id: 4, title: 'Responsibilities', icon: Sparkles, description: 'Cleaning and supplies' },
-  { id: 5, title: 'Accommodations', icon: Accessibility, description: 'Parking & accessibility' },
-  { id: 6, title: 'Review', icon: Check, description: 'Check details' },
-  { id: 7, title: 'Download', icon: Download, description: 'Get your agreement' },
+  { id: 1, title: 'Basics', shortTitle: 'BASICS', icon: FileText, description: 'Names and address' },
+  { id: 2, title: 'Financials', shortTitle: 'FINANCIALS', icon: DollarSign, description: 'Rent and utilities' },
+  { id: 3, title: 'House Rules', shortTitle: 'HOUSE RULES', icon: Moon, description: 'Lifestyle rules' },
+  { id: 4, title: 'Responsibilities', shortTitle: 'RESPONSIBILITIES', icon: Sparkles, description: 'Cleaning and supplies' },
+  { id: 5, title: 'Accommodations', shortTitle: 'ACCOMMODATIONS', icon: Accessibility, description: 'Parking & accessibility' },
+  { id: 6, title: 'Review', shortTitle: 'REVIEW', icon: Check, description: 'Check details' },
+  { id: 7, title: 'Download', shortTitle: 'DOWNLOAD', icon: Download, description: 'Get your agreement' },
 ]
 
 const formatTime = (time: string | undefined) => {
@@ -335,6 +339,9 @@ export default function AgreementGeneratorPage() {
     mode: 'onBlur',
   })
 
+  const province = watch('province')
+  const provinceName = PROVINCES.find(p => p.code === province)?.name || province
+
   // Persist form values to draft on change (subscription-based to avoid infinite re-render)
   const draftTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   useEffect(() => {
@@ -407,7 +414,7 @@ export default function AgreementGeneratorPage() {
         return <StepReview watch={watch} />
       case 7:
         const formData = watch()
-        const provinceName = {
+        const pdfProvinceName = {
           ON: 'Ontario',
           BC: 'British Columbia',
           QC: 'Quebec',
@@ -418,7 +425,7 @@ export default function AgreementGeneratorPage() {
         const pdfData = {
           title: `Roommate Agreement - ${formData.address.split(',')[0] || formData.address}`,
           address: formData.address,
-          province: provinceName,
+          province: pdfProvinceName,
           moveInDate: new Date(formData.moveInDate).toLocaleDateString('en-CA', {
             year: 'numeric',
             month: 'long',
@@ -433,136 +440,199 @@ export default function AgreementGeneratorPage() {
     }
   }
 
+  // Tab navigation for steps 1-4 + review
+  const tabSteps = STEPS.slice(0, 4).concat(STEPS[5]) // BASICS, FINANCIALS, HOUSE RULES, RESPONSIBILITIES, REVIEW
+
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Back link */}
       <div className="mb-6">
         <Link
           href="/resources"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-on-surface-variant hover:text-on-surface"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to Resources
         </Link>
       </div>
 
-      <Card variant="bordered">
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-50 flex items-center justify-center">
-                <Scale className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <CardTitle>Roommate Agreement Generator</CardTitle>
-                <CardDescription>
-                  Create a customized agreement for your living situation
-                </CardDescription>
-              </div>
-            </div>
-            <Link
-              href="/resources"
-              className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
-              aria-label="Cancel and return to resources"
-            >
-              <X className="h-5 w-5" />
-            </Link>
-          </div>
-        </CardHeader>
-
-        {/* Progress indicator */}
-        <div className="px-6 pb-4">
-          <div className="flex items-center justify-between overflow-x-auto pb-2">
-            {STEPS.map((step, index) => (
-              <div key={step.id} className="flex items-center">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`
-                      flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                      ${currentStep > step.id
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : currentStep === step.id
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-gray-200 text-gray-400'}
-                    `}
-                  >
-                    {currentStep > step.id ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <step.icon className="h-5 w-5" />
-                    )}
-                  </div>
-                  <span className="text-xs text-gray-500 mt-1 hidden sm:block">{step.title}</span>
-                </div>
-                {index < STEPS.length - 1 && (
-                  <div
-                    className={`w-8 sm:w-12 h-0.5 mx-1 ${
-                      currentStep > step.id ? 'bg-blue-600' : 'bg-gray-200'
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="text-center text-sm text-gray-600 mt-2">
-            Step {currentStep} of {STEPS.length}: {STEPS[currentStep - 1].title}
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-display font-bold text-on-surface">
+            Create Agreement
+          </h1>
+          <p className="text-on-surface-variant mt-1">
+            Step {currentStep}: {STEPS[currentStep - 1].title}
           </p>
         </div>
+        {province && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-secondary-container text-secondary rounded-full">
+            <Shield className="h-4 w-4" />
+            Legally Vetted for {provinceName}
+          </span>
+        )}
+      </div>
 
-        <CardContent>
-          {currentStep === 1 && (
-            <div className="mb-6">
-              <LegalDisclaimer variant="banner" />
-            </div>
-          )}
+      {/* Progress bar */}
+      <div className="mb-6">
+        <div className="h-1.5 bg-surface-container rounded-full overflow-hidden">
+          <div
+            className="h-full bg-secondary transition-all duration-300"
+            style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
+          />
+        </div>
+      </div>
 
-          {renderStep()}
-
-          {/* Navigation buttons */}
-          {currentStep < 7 && (
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={prevStep}
-                disabled={currentStep === 1}
+      {/* Tab navigation */}
+      {currentStep <= 6 && (
+        <div className="flex items-center gap-0 mb-6 overflow-x-auto pb-2">
+          {['BASICS', 'FINANCIALS', 'HOUSE RULES', 'REVIEW'].map((tab, idx) => {
+            const stepNum = idx === 3 ? 6 : idx + 1
+            const isActive = currentStep === stepNum
+            const isPast = currentStep > stepNum
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  if (isPast || isActive) setCurrentStep(stepNum)
+                }}
+                className={`
+                  px-4 py-2 text-xs font-semibold tracking-widest whitespace-nowrap transition-colors
+                  ${isActive
+                    ? 'text-secondary border-b-2 border-secondary'
+                    : isPast
+                    ? 'text-on-surface-variant hover:text-on-surface'
+                    : 'text-on-surface-variant/50'}
+                `}
               >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
+                {tab}
+              </button>
+            )
+          })}
+        </div>
+      )}
 
-              <Button type="button" onClick={nextStep}>
-                {currentStep === 6 ? (
-                  <>
-                    Generate Agreement
-                    <Download className="h-4 w-4 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Next
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </Button>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main content */}
+        <div className="lg:col-span-2">
+          <div className="bg-surface-container-lowest ghost-border rounded-xl p-6">
+            {currentStep === 1 && (
+              <div className="mb-6">
+                <LegalDisclaimer variant="banner" />
+              </div>
+            )}
+
+            {renderStep()}
+
+            {/* Navigation buttons */}
+            {currentStep < 7 && (
+              <div className="flex justify-between mt-8 pt-6 ghost-border-t">
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="text-sm text-on-surface-variant hover:text-on-surface disabled:opacity-30 disabled:cursor-not-allowed"
+                >
+                  Save as Draft
+                </button>
+
+                <Button type="button" onClick={nextStep}>
+                  {currentStep === 6 ? (
+                    <>
+                      Generate Agreement
+                      <Download className="h-4 w-4 ml-2" />
+                    </>
+                  ) : (
+                    <>
+                      Continue to {STEPS[currentStep]?.title || 'Next'}
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+
+            {currentStep === 7 && (
+              <div className="flex justify-between mt-8 pt-6 ghost-border-t">
+                <Button type="button" variant="outline" onClick={() => setCurrentStep(6)}>
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Edit Agreement
+                </Button>
+                <Link href="/resources" onClick={() => clearDraft()}>
+                  <Button>
+                    <Check className="h-4 w-4 mr-2" />
+                    Done
+                  </Button>
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Sidebar */}
+        <div className="lg:col-span-1 space-y-4">
+          {/* Legal Insights card */}
+          {currentStep <= 2 && (
+            <div className="bg-secondary-container rounded-xl p-5">
+              <h3 className="font-display font-semibold text-on-surface mb-2 flex items-center gap-2">
+                <Scale className="h-4 w-4 text-secondary" />
+                Legal Insights
+              </h3>
+              <p className="text-sm text-on-surface-variant mb-3">
+                In most jurisdictions, a written roommate agreement is a legally binding contract that protects your security deposit and clarifies utility sharing.
+              </p>
+              <ul className="space-y-2 text-sm text-on-surface-variant">
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
+                  Prevents disputes over common area usage.
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
+                  Establishes &ldquo;joint and several liability.&rdquo;
+                </li>
+                <li className="flex items-start gap-2">
+                  <Check className="h-4 w-4 text-secondary flex-shrink-0 mt-0.5" />
+                  Safeguards your credit score.
+                </li>
+              </ul>
             </div>
           )}
 
-          {currentStep === 7 && (
-            <div className="flex justify-between mt-8 pt-6 border-t border-gray-200">
-              <Button type="button" variant="outline" onClick={() => setCurrentStep(6)}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Edit Agreement
-              </Button>
-              <Link href="/resources" onClick={() => clearDraft()}>
-                <Button>
-                  <Check className="h-4 w-4 mr-2" />
-                  Done
-                </Button>
+          {/* NEED HELP? card - REMOVED "Live Concierge", replaced with View Example + Help Center */}
+          <div className="bg-surface-container-lowest ghost-border rounded-xl p-5">
+            <h3 className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant mb-3">
+              Need Help?
+            </h3>
+            <div className="space-y-3">
+              <Link
+                href="/resources/guides?category=legal"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                  <BookOpen className="h-4 w-4 text-on-surface-variant" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-on-surface">View Example</p>
+                  <p className="text-xs text-on-surface-variant">Standard 2-bedroom agreement</p>
+                </div>
+              </Link>
+              <Link
+                href="/resources/faq"
+                className="flex items-center gap-3 p-3 rounded-lg hover:bg-surface-container transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                  <HelpCircle className="h-4 w-4 text-on-surface-variant" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-on-surface">Help Center</p>
+                  <p className="text-xs text-on-surface-variant">Browse FAQs and guides</p>
+                </div>
               </Link>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

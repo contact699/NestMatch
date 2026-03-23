@@ -38,36 +38,36 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">Lifestyle Rules</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-lg font-display font-semibold text-on-surface mb-1">Lifestyle Rules</h3>
+        <p className="text-sm text-on-surface-variant">
           Set expectations for daily living and shared spaces
         </p>
       </div>
 
       {/* Quiet Hours */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-on-surface-variant mb-2">
           Quiet Hours
         </label>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-xs text-on-surface-variant mb-3">
           When should noise be kept to a minimum?
         </p>
         <div className="flex items-center gap-3">
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">Start</label>
-            <Input type="time" {...register('quietHoursStart')} />
+            <label className="text-xs text-on-surface-variant block mb-1">Start</label>
+            <Input type="time" {...register('quietHoursStart')} className="bg-surface-container-lowest" />
           </div>
-          <span className="text-gray-400 pt-5">to</span>
+          <span className="text-on-surface-variant pt-5">to</span>
           <div className="flex-1">
-            <label className="text-xs text-gray-500 block mb-1">End</label>
-            <Input type="time" {...register('quietHoursEnd')} />
+            <label className="text-xs text-on-surface-variant block mb-1">End</label>
+            <Input type="time" {...register('quietHoursEnd')} className="bg-surface-container-lowest" />
           </div>
         </div>
       </div>
 
       {/* Guest Policy */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-on-surface-variant mb-2">
           Guest Policy *
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -77,14 +77,14 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
               type="button"
               onClick={() => setValue('guestPolicy', policy.value as any)}
               className={`
-                p-3 rounded-lg border-2 text-left transition-colors
+                p-3 rounded-xl ghost-border text-left transition-colors
                 ${guestPolicy === policy.value
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'}
+                  ? 'bg-secondary-container/30 ring-1 ring-secondary'
+                  : 'bg-surface-container-lowest hover:bg-surface-container'}
               `}
             >
-              <p className="font-medium text-sm text-gray-900">{policy.label}</p>
-              <p className="text-xs text-gray-500">{policy.desc}</p>
+              <p className="font-medium text-sm text-on-surface">{policy.label}</p>
+              <p className="text-xs text-on-surface-variant">{policy.desc}</p>
             </button>
           ))}
         </div>
@@ -93,7 +93,7 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
       {/* Overnight Guest Limit */}
       {guestPolicy === 'limit' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-on-surface-variant mb-2">
             Maximum overnight guest nights per week
           </label>
           <Input
@@ -102,18 +102,19 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
             min={0}
             max={7}
             placeholder="3"
+            className="bg-surface-container-lowest"
           />
         </div>
       )}
 
       {/* Smoking Policy */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-on-surface-variant mb-2">
           Smoking Policy *
         </label>
         <select
           {...register('smokingPolicy')}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors bg-white"
+          className="w-full px-4 py-3 ghost-border rounded-xl focus:ring-2 focus:ring-secondary/30 outline-none transition-colors bg-surface-container-lowest text-on-surface"
         >
           {SMOKING_POLICIES.map((policy) => (
             <option key={policy.value} value={policy.value}>
@@ -125,12 +126,12 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
 
       {/* Cannabis Policy */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-on-surface-variant mb-2">
           Cannabis Policy *
         </label>
         <select
           {...register('cannabisPolicy')}
-          className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors bg-white"
+          className="w-full px-4 py-3 ghost-border rounded-xl focus:ring-2 focus:ring-secondary/30 outline-none transition-colors bg-surface-container-lowest text-on-surface"
         >
           {CANNABIS_POLICIES.map((policy) => (
             <option key={policy.value} value={policy.value}>
@@ -146,25 +147,25 @@ export function StepLifestyle({ register, watch, setValue, errors }: StepLifesty
           <input
             type="checkbox"
             {...register('petsAllowed')}
-            className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="w-5 h-5 rounded text-secondary focus:ring-secondary"
           />
           <div>
-            <span className="text-sm font-medium text-gray-900">Pets are allowed</span>
-            <p className="text-xs text-gray-500">Check this if any roommate has or may have pets</p>
+            <span className="text-sm font-medium text-on-surface">Pets are allowed</span>
+            <p className="text-xs text-on-surface-variant">Check this if any roommate has or may have pets</p>
           </div>
         </label>
       </div>
 
       {petsAllowed && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-on-surface-variant mb-2">
             Pet Details
           </label>
           <textarea
             {...register('petDetails')}
             placeholder="Describe current or expected pets (type, size, who owns them, any restrictions)"
             rows={3}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-colors resize-none"
+            className="w-full px-4 py-3 ghost-border rounded-xl focus:ring-2 focus:ring-secondary/30 outline-none transition-colors resize-none bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
           />
         </div>
       )}

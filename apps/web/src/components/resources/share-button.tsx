@@ -43,8 +43,6 @@ export function ShareButton({ title, url, variant = 'icon' }: ShareButtonProps) 
 
   const shareInMessages = () => {
     const shareText = `Check out this resource: ${title}\n${shareUrl}`
-    // Could integrate with messages feature here
-    // For now, copy to clipboard with a message format
     navigator.clipboard.writeText(shareText)
     setCopied(true)
     setTimeout(() => {
@@ -59,8 +57,8 @@ export function ShareButton({ title, url, variant = 'icon' }: ShareButtonProps) 
         onClick={() => setIsOpen(!isOpen)}
         className={`
           ${variant === 'icon'
-            ? 'p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200'
-            : 'flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-gray-100 text-gray-700 hover:bg-gray-200'}
+            ? 'p-2 rounded-full bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+            : 'flex items-center gap-2 px-4 py-2 text-sm rounded-lg bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
           transition-colors
         `}
         title="Share"
@@ -70,15 +68,15 @@ export function ShareButton({ title, url, variant = 'icon' }: ShareButtonProps) 
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+        <div className="absolute right-0 mt-2 w-48 bg-surface-container-lowest rounded-xl shadow-lg ghost-border py-1 z-50">
           <button
             onClick={copyToClipboard}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low transition-colors"
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 text-green-600" />
-                <span className="text-green-600">Copied!</span>
+                <Check className="h-4 w-4 text-secondary" />
+                <span className="text-secondary">Copied!</span>
               </>
             ) : (
               <>
@@ -89,7 +87,7 @@ export function ShareButton({ title, url, variant = 'icon' }: ShareButtonProps) 
           </button>
           <button
             onClick={shareInMessages}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container-low transition-colors"
           >
             <MessageSquare className="h-4 w-4" />
             <span>Share in messages</span>

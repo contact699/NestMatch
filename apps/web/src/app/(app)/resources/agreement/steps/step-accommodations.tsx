@@ -50,21 +50,21 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
   return (
     <div className="space-y-8">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">Accommodations</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-lg font-display font-semibold text-on-surface mb-1">Accommodations</h3>
+        <p className="text-sm text-on-surface-variant">
           Parking arrangements and accessibility needs
         </p>
       </div>
 
       {/* Parking Section */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Parking</h4>
+        <h4 className="font-display font-medium text-on-surface ghost-border-b pb-2">Parking</h4>
 
         {/* Parking Included Toggle */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex items-center justify-between p-4 bg-surface-container rounded-xl">
           <div>
-            <p className="font-medium text-sm text-gray-900">Parking Included</p>
-            <p className="text-xs text-gray-500">Does this property include parking?</p>
+            <p className="font-medium text-sm text-on-surface">Parking Included</p>
+            <p className="text-xs text-on-surface-variant">Does this property include parking?</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -79,16 +79,16 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               }}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-container-high after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
           </label>
         </div>
 
         {parkingIncluded && (
-          <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+          <div className="space-y-4 pl-4 border-l-2 border-secondary/30">
             {/* Number of Spots */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Number of Spots
                 </label>
                 <input
@@ -101,21 +101,21 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                     setValue('parkingSpots', spots)
                     initializeParkingAssignments(spots)
                   }}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                  className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Monthly Cost (optional)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-2 text-on-surface-variant">$</span>
                   <input
                     type="number"
                     {...register('parkingMonthlyCost', { valueAsNumber: true })}
                     min="0"
                     placeholder="0"
-                    className="w-full pl-7 pr-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                    className="w-full pl-7 pr-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface"
                   />
                 </div>
               </div>
@@ -123,15 +123,15 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
             {/* Spot Assignments */}
             {parkingSpots > 0 && parkingAssignments.length > 0 && (
-              <div className="p-4 bg-gray-50 rounded-lg space-y-3">
-                <p className="text-sm font-medium text-gray-700">Assign spots to roommates:</p>
+              <div className="p-4 bg-surface-container rounded-xl space-y-3">
+                <p className="text-sm font-medium text-on-surface-variant">Assign spots to roommates:</p>
                 {parkingAssignments.map((assignment, index) => (
                   <div key={index} className="flex items-center gap-3">
-                    <span className="text-sm text-gray-700 w-20">{assignment.spotNumber}</span>
+                    <span className="text-sm text-on-surface-variant w-20">{assignment.spotNumber}</span>
                     <select
                       value={assignment.roommate || ''}
                       onChange={(e) => updateParkingAssignment(index, e.target.value)}
-                      className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white"
+                      className="flex-1 px-3 py-2 text-sm ghost-border rounded-lg bg-surface-container-lowest text-on-surface"
                     >
                       <option value="">Unassigned</option>
                       {roommateNames.filter(Boolean).map((name, i) => (
@@ -149,7 +149,7 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
             {/* Visitor Parking */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Visitor Parking Policy
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -159,62 +159,62 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                     type="button"
                     onClick={() => setValue('visitorParkingPolicy', option.value as any)}
                     className={`
-                      p-2 rounded-lg border-2 text-left transition-colors
+                      p-2 rounded-xl ghost-border text-left transition-colors
                       ${watch('visitorParkingPolicy') === option.value
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'}
+                        ? 'bg-secondary-container/30 ring-1 ring-secondary'
+                        : 'bg-surface-container-lowest hover:bg-surface-container'}
                     `}
                   >
-                    <p className="font-medium text-xs text-gray-900">{option.label}</p>
-                    <p className="text-xs text-gray-500">{option.desc}</p>
+                    <p className="font-medium text-xs text-on-surface">{option.label}</p>
+                    <p className="text-xs text-on-surface-variant">{option.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Parking Rotation */}
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+            <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
               <input
                 type="checkbox"
                 {...register('parkingRotation')}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-secondary rounded focus:ring-secondary"
               />
               <div>
-                <p className="text-sm font-medium text-gray-900">Parking Rotation</p>
-                <p className="text-xs text-gray-500">Spots rotate among roommates periodically</p>
+                <p className="text-sm font-medium text-on-surface">Parking Rotation</p>
+                <p className="text-xs text-on-surface-variant">Spots rotate among roommates periodically</p>
               </div>
             </label>
 
             {/* Parking Hours Restriction */}
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+            <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
               <input
                 type="checkbox"
                 {...register('parkingHoursRestriction')}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-secondary rounded focus:ring-secondary"
               />
               <div>
-                <p className="text-sm font-medium text-gray-900">Parking Hours Restriction</p>
-                <p className="text-xs text-gray-500">Are there specific hours when parking is restricted?</p>
+                <p className="text-sm font-medium text-on-surface">Parking Hours Restriction</p>
+                <p className="text-xs text-on-surface-variant">Are there specific hours when parking is restricted?</p>
               </div>
             </label>
 
             {watch('parkingHoursRestriction') && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Parking Hours Details
                 </label>
                 <input
                   type="text"
                   {...register('parkingHoursDetails')}
                   placeholder="e.g., No overnight parking 2am-6am, No parking during snow removal"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 />
               </div>
             )}
 
             {/* Snow Removal */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Snow Removal Responsibility
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -229,69 +229,69 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                     type="button"
                     onClick={() => setValue('parkingSnowRemoval', option.value as any)}
                     className={`
-                      p-2 rounded-lg border-2 text-left transition-colors
+                      p-2 rounded-xl ghost-border text-left transition-colors
                       ${watch('parkingSnowRemoval') === option.value
-                        ? 'border-blue-600 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'}
+                        ? 'bg-secondary-container/30 ring-1 ring-secondary'
+                        : 'bg-surface-container-lowest hover:bg-surface-container'}
                     `}
                   >
-                    <p className="font-medium text-xs text-gray-900">{option.label}</p>
-                    <p className="text-xs text-gray-500">{option.desc}</p>
+                    <p className="font-medium text-xs text-on-surface">{option.label}</p>
+                    <p className="text-xs text-on-surface-variant">{option.desc}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* EV Charging */}
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+            <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
               <input
                 type="checkbox"
                 {...register('parkingEvCharging')}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-secondary rounded focus:ring-secondary"
               />
               <div>
-                <p className="text-sm font-medium text-gray-900">EV Charging Available</p>
-                <p className="text-xs text-gray-500">Electric vehicle charging station on premises</p>
+                <p className="text-sm font-medium text-on-surface">EV Charging Available</p>
+                <p className="text-xs text-on-surface-variant">Electric vehicle charging station on premises</p>
               </div>
             </label>
 
             {watch('parkingEvCharging') && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   EV Charging Details
                 </label>
                 <input
                   type="text"
                   {...register('parkingEvDetails')}
                   placeholder="e.g., Level 2 charger, shared between tenants, electricity cost split equally"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 />
               </div>
             )}
 
             {/* Towing Policy */}
-            <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+            <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
               <input
                 type="checkbox"
                 {...register('parkingTowingPolicy')}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-secondary rounded focus:ring-secondary"
               />
               <div>
-                <p className="text-sm font-medium text-gray-900">Unauthorized Vehicle Towing</p>
-                <p className="text-xs text-gray-500">Unauthorized vehicles may be towed at owner's expense</p>
+                <p className="text-sm font-medium text-on-surface">Unauthorized Vehicle Towing</p>
+                <p className="text-xs text-on-surface-variant">Unauthorized vehicles may be towed at owner&apos;s expense</p>
               </div>
             </label>
 
             {/* Vehicle Restrictions */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Vehicle Restrictions (optional)
               </label>
               <textarea
                 {...register('vehicleRestrictions')}
                 placeholder="e.g., No commercial vehicles, size limitations..."
                 rows={2}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none resize-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
               />
             </div>
           </div>
@@ -300,42 +300,42 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
       {/* Accessibility Section */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Accessibility Needs</h4>
+        <h4 className="font-display font-medium text-on-surface ghost-border-b pb-2">Accessibility Needs</h4>
 
         <div className="space-y-3">
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('accessibilityWheelchair')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Wheelchair Accessible Entrance Required</p>
-              <p className="text-xs text-gray-500">Unit needs accessible entryways and pathways</p>
+              <p className="text-sm font-medium text-on-surface">Wheelchair Accessible Entrance Required</p>
+              <p className="text-xs text-on-surface-variant">Unit needs accessible entryways and pathways</p>
             </div>
           </label>
 
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('accessibilityMobilityStorage')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Mobility Aid Storage Needed</p>
-              <p className="text-xs text-gray-500">Space required for wheelchairs, walkers, or other mobility devices</p>
+              <p className="text-sm font-medium text-on-surface">Mobility Aid Storage Needed</p>
+              <p className="text-xs text-on-surface-variant">Space required for wheelchairs, walkers, or other mobility devices</p>
             </div>
           </label>
 
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('accessibilityServiceAnimal')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Service Animal Accommodation</p>
-              <p className="text-xs text-gray-500">A service animal will be residing in the unit</p>
+              <p className="text-sm font-medium text-on-surface">Service Animal Accommodation</p>
+              <p className="text-xs text-on-surface-variant">A service animal will be residing in the unit</p>
             </div>
           </label>
         </div>
@@ -343,57 +343,57 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
       {/* Care/Support Needs Section */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Care/Support Needs</h4>
+        <h4 className="font-display font-medium text-on-surface ghost-border-b pb-2">Care/Support Needs</h4>
 
         <div className="space-y-3">
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('careScheduledVisits')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Scheduled Support Worker Visits</p>
-              <p className="text-xs text-gray-500">Regular visits from healthcare or support workers</p>
+              <p className="text-sm font-medium text-on-surface">Scheduled Support Worker Visits</p>
+              <p className="text-xs text-on-surface-variant">Regular visits from healthcare or support workers</p>
             </div>
           </label>
 
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('careQuietHoursMedical')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Quiet Hours for Medical Needs</p>
-              <p className="text-xs text-gray-500">Extended or specific quiet hours required for health reasons</p>
+              <p className="text-sm font-medium text-on-surface">Quiet Hours for Medical Needs</p>
+              <p className="text-xs text-on-surface-variant">Extended or specific quiet hours required for health reasons</p>
             </div>
           </label>
 
-          <label className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+          <label className="flex items-center gap-3 p-3 bg-surface-container rounded-xl cursor-pointer">
             <input
               type="checkbox"
               {...register('careAccessibilityMods')}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              className="w-4 h-4 text-secondary rounded focus:ring-secondary"
             />
             <div>
-              <p className="text-sm font-medium text-gray-900">Specific Accessibility Modifications</p>
-              <p className="text-xs text-gray-500">Grab bars, ramps, or other modifications needed</p>
+              <p className="text-sm font-medium text-on-surface">Specific Accessibility Modifications</p>
+              <p className="text-xs text-on-surface-variant">Grab bars, ramps, or other modifications needed</p>
             </div>
           </label>
         </div>
 
         {/* Additional Details */}
         {hasCareNeeds && (
-          <div className="pl-4 border-l-2 border-blue-200">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="pl-4 border-l-2 border-secondary/30">
+            <label className="block text-sm font-medium text-on-surface-variant mb-1">
               Additional Details
             </label>
             <textarea
               {...register('careAdditionalDetails')}
               placeholder="Describe any specific care or accessibility requirements that roommates should be aware of..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
+              className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none resize-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
             />
           </div>
         )}
@@ -401,15 +401,15 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
       {/* Assistance Required / Help Exchange Section */}
       <div className="space-y-4">
-        <h4 className="font-medium text-gray-800 border-b border-gray-200 pb-2">Assistance Required</h4>
-        <p className="text-sm text-gray-500">
+        <h4 className="font-display font-medium text-on-surface ghost-border-b pb-2">Assistance Required</h4>
+        <p className="text-sm text-on-surface-variant">
           If a roommate provides help or assistance (e.g., cleaning, errands, caregiving, elderly care, babysitting) in exchange for reduced rent or other compensation, document the arrangement here.
         </p>
 
-        <div className="flex items-center justify-between p-4 bg-orange-50 rounded-lg border border-orange-200">
+        <div className="flex items-center justify-between p-4 bg-error-container/20 rounded-xl ghost-border">
           <div>
-            <p className="font-medium text-sm text-gray-900">Assistance Required Arrangement</p>
-            <p className="text-xs text-gray-500">Does this living arrangement include assistance in exchange for compensation?</p>
+            <p className="font-medium text-sm text-on-surface">Assistance Required Arrangement</p>
+            <p className="text-xs text-on-surface-variant">Does this living arrangement include assistance in exchange for compensation?</p>
           </div>
           <label className="relative inline-flex items-center cursor-pointer">
             <input
@@ -418,20 +418,20 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
               onChange={(e) => setValue('helpExchangeEnabled', e.target.checked)}
               className="sr-only peer"
             />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+            <div className="w-11 h-6 bg-surface-container-high peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-secondary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-container-high after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-secondary"></div>
           </label>
         </div>
 
         {helpExchangeEnabled && (
-          <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+          <div className="space-y-4 pl-4 border-l-2 border-secondary/30">
             {/* Who provides help */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Who provides the assistance?
               </label>
               <select
                 {...register('helpExchangeProvider')}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface"
               >
                 <option value="">Select a roommate</option>
                 {roommateNames.filter(Boolean).map((name, i) => (
@@ -442,7 +442,7 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
             {/* Tasks */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-on-surface-variant mb-2">
                 Tasks included in the arrangement
               </label>
               <div className="grid grid-cols-2 gap-2">
@@ -456,12 +456,12 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                   { value: 'driving', label: 'Driving/Transportation' },
                   { value: 'pet_care', label: 'Pet Care' },
                 ].map((task) => (
-                  <label key={task.value} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg cursor-pointer text-sm">
+                  <label key={task.value} className="flex items-center gap-2 p-2 bg-surface-container rounded-lg cursor-pointer text-sm text-on-surface">
                     <input
                       type="checkbox"
                       value={task.value}
                       {...register('helpExchangeTasks')}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      className="w-4 h-4 text-secondary rounded focus:ring-secondary"
                     />
                     {task.label}
                   </label>
@@ -471,12 +471,12 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
             {/* Compensation */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Compensation type
               </label>
               <select
                 {...register('helpExchangeCompensation')}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface"
               >
                 <option value="reduced_rent">Reduced Rent</option>
                 <option value="free_rent">Free Rent</option>
@@ -488,7 +488,7 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
             {/* Hours Per Week */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Expected Hours Per Week
                 </label>
                 <input
@@ -497,11 +497,11 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                   min="0"
                   max="40"
                   placeholder="e.g., 10"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">
                   Trial Period (days)
                 </label>
                 <input
@@ -510,35 +510,35 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
                   min="0"
                   max="90"
                   placeholder="e.g., 30"
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                  className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 />
-                <p className="text-xs text-gray-500 mt-1">Period to evaluate if the arrangement works</p>
+                <p className="text-xs text-on-surface-variant mt-1">Period to evaluate if the arrangement works</p>
               </div>
             </div>
 
             {/* Schedule */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Assistance Schedule
               </label>
               <input
                 type="text"
                 {...register('helpExchangeSchedule')}
                 placeholder="e.g., Weekday mornings 8am-12pm, or as needed"
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
               />
             </div>
 
             {/* Additional Details */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-on-surface-variant mb-1">
                 Additional Details
               </label>
               <textarea
                 {...register('helpExchangeDetails')}
                 placeholder="Describe any specific requirements, expectations, boundaries, or other relevant details..."
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none resize-none text-sm"
+                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none resize-none text-sm bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
               />
             </div>
           </div>

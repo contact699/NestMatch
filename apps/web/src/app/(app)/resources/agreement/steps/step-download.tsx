@@ -53,9 +53,6 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       const fileName = `roommate-agreement-${new Date().toISOString().split('T')[0]}.pdf`
 
       if (isMobile()) {
-        // On mobile, try multiple strategies for reliable download
-
-        // Strategy 1: Use Web Share API with file (best for mobile)
         if (navigator.share && navigator.canShare) {
           try {
             const file = new File([blob], fileName, { type: 'application/pdf' })
@@ -71,7 +68,6 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
           }
         }
 
-        // Strategy 2: Convert to data URL and open (works on iOS Safari)
         try {
           const reader = new FileReader()
           reader.onloadend = () => {
@@ -85,7 +81,6 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
               )
               newWindow.document.close()
             } else {
-              // Strategy 3: Direct link download as fallback
               const link = document.createElement('a')
               link.href = dataUrl
               link.download = fileName
@@ -97,12 +92,10 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
           }
           reader.readAsDataURL(blob)
         } catch {
-          // Final fallback: blob URL
           const url = URL.createObjectURL(blob)
           window.location.href = url
         }
       } else {
-        // On desktop, trigger a direct download
         const url = URL.createObjectURL(blob)
         const link = document.createElement('a')
         link.href = url
@@ -139,11 +132,9 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
           url: window.location.href,
         })
       } catch (err) {
-        // User cancelled or share failed
         clientLogger.error('Share failed', err)
       }
     } else {
-      // Fallback to copy link
       copyLink()
     }
   }
@@ -156,44 +147,44 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
     <div className="space-y-6">
       {/* Success Icon and Heading */}
       <div className="text-center">
-        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-          <FileText className="h-8 w-8 text-green-600" />
+        <div className="mx-auto w-16 h-16 bg-secondary-container rounded-full flex items-center justify-center mb-4">
+          <FileText className="h-8 w-8 text-secondary" />
         </div>
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
+        <h3 className="text-2xl font-display font-bold text-on-surface mb-2">
           Your Agreement is Ready!
         </h3>
-        <p className="text-gray-500">
+        <p className="text-on-surface-variant">
           Download your customized roommate agreement as a PDF
         </p>
       </div>
 
       {/* Agreement Summary */}
-      <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-        <h4 className="font-medium text-gray-900">Agreement Summary</h4>
+      <div className="bg-surface-container rounded-xl p-6 space-y-4">
+        <h4 className="font-display font-medium text-on-surface">Agreement Summary</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
           <div>
-            <span className="text-gray-500">Title:</span>
-            <p className="font-medium text-gray-900">{data.title}</p>
+            <span className="text-on-surface-variant">Title:</span>
+            <p className="font-medium text-on-surface">{data.title}</p>
           </div>
           <div>
-            <span className="text-gray-500">Property:</span>
-            <p className="font-medium text-gray-900">{data.address}</p>
+            <span className="text-on-surface-variant">Property:</span>
+            <p className="font-medium text-on-surface">{data.address}</p>
           </div>
           <div>
-            <span className="text-gray-500">Province:</span>
-            <p className="font-medium text-gray-900">{data.province}</p>
+            <span className="text-on-surface-variant">Province:</span>
+            <p className="font-medium text-on-surface">{data.province}</p>
           </div>
           <div>
-            <span className="text-gray-500">Move-in Date:</span>
-            <p className="font-medium text-gray-900">{data.moveInDate}</p>
+            <span className="text-on-surface-variant">Move-in Date:</span>
+            <p className="font-medium text-on-surface">{data.moveInDate}</p>
           </div>
           <div>
-            <span className="text-gray-500">Roommates:</span>
-            <p className="font-medium text-gray-900">{data.roommates.length}</p>
+            <span className="text-on-surface-variant">Roommates:</span>
+            <p className="font-medium text-on-surface">{data.roommates.length}</p>
           </div>
           <div>
-            <span className="text-gray-500">Clauses:</span>
-            <p className="font-medium text-gray-900">{data.clauses.length}</p>
+            <span className="text-on-surface-variant">Clauses:</span>
+            <p className="font-medium text-on-surface">{data.clauses.length}</p>
           </div>
         </div>
       </div>
@@ -220,7 +211,7 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
 
       {/* Error message */}
       {downloadError && (
-        <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
+        <div className="p-3 bg-error-container text-error rounded-xl text-sm">
           {downloadError}
         </div>
       )}
@@ -247,16 +238,16 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
       </div>
 
       {/* Warning */}
-      <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-        <p className="text-sm text-amber-800">
-          <strong>Important:</strong> This agreement is a template and does not constitute legal advice.
+      <div className="p-4 bg-error-container/30 ghost-border rounded-xl">
+        <p className="text-sm text-on-surface-variant">
+          <strong className="text-on-surface">Important:</strong> This agreement is a template and does not constitute legal advice.
           Review the document with all roommates before signing and consider consulting a legal professional
           for advice specific to your situation.
         </p>
       </div>
 
       {/* Navigation Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-200">
+      <div className="flex flex-col sm:flex-row gap-3 pt-4 ghost-border-t">
         <Button variant="outline" onClick={onBack} className="flex-1">
           Back to Review
         </Button>

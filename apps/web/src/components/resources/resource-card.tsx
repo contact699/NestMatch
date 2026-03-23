@@ -23,30 +23,30 @@ export function ResourceCard({ resource, showCategory, categoryName }: ResourceC
   return (
     <Link
       href={`/resources/guides/${resource.slug}`}
-      className="group block bg-white border border-gray-200 rounded-xl p-5 hover:border-blue-300 hover:shadow-md transition-all"
+      className="group block bg-surface-container-lowest ghost-border rounded-xl p-5 hover:shadow-md transition-all"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-full capitalize">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-surface-container text-on-surface-variant rounded-full capitalize">
               <Icon className="h-3 w-3" />
               {resource.resource_type}
             </span>
             {showCategory && categoryName && (
-              <span className="text-xs text-gray-500">{categoryName}</span>
+              <span className="text-xs text-on-surface-variant">{categoryName}</span>
             )}
           </div>
 
-          <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors line-clamp-2">
+          <h3 className="font-semibold text-on-surface group-hover:text-secondary transition-colors line-clamp-2">
             {resource.title}
           </h3>
 
           {resource.subtitle && (
-            <p className="text-sm text-gray-500 mt-1 line-clamp-1">{resource.subtitle}</p>
+            <p className="text-sm text-on-surface-variant mt-1 line-clamp-1">{resource.subtitle}</p>
           )}
 
           {resource.excerpt && (
-            <p className="text-sm text-gray-600 mt-2 line-clamp-2">{resource.excerpt}</p>
+            <p className="text-sm text-on-surface-variant mt-2 line-clamp-2">{resource.excerpt}</p>
           )}
 
           <div className="flex items-center gap-4 mt-3">
@@ -56,11 +56,11 @@ export function ResourceCard({ resource, showCategory, categoryName }: ResourceC
                   <ProvinceBadge key={province} province={province} />
                 ))}
                 {resource.provinces.length > 2 && (
-                  <span className="text-xs text-gray-500">+{resource.provinces.length - 2}</span>
+                  <span className="text-xs text-on-surface-variant">+{resource.provinces.length - 2}</span>
                 )}
               </div>
             )}
-            <div className="flex items-center gap-3 text-xs text-gray-500">
+            <div className="flex items-center gap-3 text-xs text-on-surface-variant">
               <span className="flex items-center gap-1">
                 <Eye className="h-3.5 w-3.5" />
                 {resource.view_count}
@@ -74,8 +74,8 @@ export function ResourceCard({ resource, showCategory, categoryName }: ResourceC
         </div>
 
         <div className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
-            <ArrowRight className="h-5 w-5 text-blue-600" />
+          <div className="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center group-hover:bg-secondary/20 transition-colors">
+            <ArrowRight className="h-5 w-5 text-secondary" />
           </div>
         </div>
       </div>
@@ -93,23 +93,23 @@ export function FeaturedResourceCard({ resource }: FeaturedResourceCardProps) {
   return (
     <Link
       href={`/resources/guides/${resource.slug}`}
-      className="group block bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-6 text-white hover:from-blue-700 hover:to-blue-800 transition-all"
+      className="group block bg-gradient-to-br from-primary to-primary/90 rounded-xl p-6 text-on-primary hover:from-primary/95 hover:to-primary/85 transition-all"
     >
       <div className="flex items-start gap-4">
         <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white" />
+          <Icon className="h-6 w-6 text-on-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <span className="text-xs font-medium text-blue-200 uppercase tracking-wide">
+          <span className="text-xs font-medium text-on-primary/70 uppercase tracking-wide">
             Featured Guide
           </span>
           <h3 className="font-semibold text-lg mt-1 group-hover:underline">
             {resource.title}
           </h3>
           {resource.excerpt && (
-            <p className="text-sm text-blue-100 mt-2 line-clamp-2">{resource.excerpt}</p>
+            <p className="text-sm text-on-primary/80 mt-2 line-clamp-2">{resource.excerpt}</p>
           )}
-          <div className="flex items-center gap-2 mt-3 text-sm text-blue-200">
+          <div className="flex items-center gap-2 mt-3 text-sm text-on-primary/70">
             <span>Read guide</span>
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </div>

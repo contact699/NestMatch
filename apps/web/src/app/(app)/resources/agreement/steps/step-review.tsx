@@ -193,24 +193,24 @@ export function StepReview({ watch }: StepReviewProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-1">Review Your Agreement</h3>
-        <p className="text-sm text-gray-500">
+        <h3 className="text-lg font-display font-semibold text-on-surface mb-1">Review Your Agreement</h3>
+        <p className="text-sm text-on-surface-variant">
           Check all the details before generating your agreement
         </p>
       </div>
 
       <div className="space-y-4">
         {sections.map((section) => (
-          <div key={section.title} className="p-4 bg-gray-50 rounded-lg">
-            <h4 className="flex items-center gap-2 font-medium text-gray-900 mb-3">
-              <section.icon className="h-4 w-4 text-gray-500" />
+          <div key={section.title} className="p-4 bg-surface-container rounded-xl">
+            <h4 className="flex items-center gap-2 font-display font-medium text-on-surface mb-3">
+              <section.icon className="h-4 w-4 text-on-surface-variant" />
               {section.title}
             </h4>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
               {section.items.map((item) => (
                 <div key={item.label} className="flex justify-between sm:flex-col">
-                  <dt className="text-gray-500">{item.label}</dt>
-                  <dd className="text-gray-900 font-medium sm:mt-0.5">{item.value}</dd>
+                  <dt className="text-on-surface-variant">{item.label}</dt>
+                  <dd className="text-on-surface font-medium sm:mt-0.5">{item.value}</dd>
                 </div>
               ))}
             </dl>
@@ -220,13 +220,13 @@ export function StepReview({ watch }: StepReviewProps) {
 
       {/* Rent Split Details */}
       {formData.rentSplitMethod === 'custom' && formData.rentSplits && formData.rentSplits.length > 0 && (
-        <div className="p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Rent Split Breakdown</h4>
+        <div className="p-4 bg-secondary-container/30 rounded-xl">
+          <h4 className="font-display font-medium text-on-surface mb-2">Rent Split Breakdown</h4>
           <div className="space-y-1 text-sm">
             {formData.rentSplits.map((split, index) => (
               <div key={index} className="flex justify-between">
-                <span className="text-blue-700">{split.name || `Roommate ${index + 1}`}</span>
-                <span className="font-medium text-blue-900">{formatCurrency(split.amount)}/month</span>
+                <span className="text-on-surface-variant">{split.name || `Roommate ${index + 1}`}</span>
+                <span className="font-medium text-on-surface">{formatCurrency(split.amount)}/month</span>
               </div>
             ))}
           </div>

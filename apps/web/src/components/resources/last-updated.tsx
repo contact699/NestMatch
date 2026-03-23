@@ -13,13 +13,13 @@ export function LastUpdated({ date, reviewedAt }: LastUpdatedProps) {
   const reviewed = reviewedAt ? new Date(reviewedAt) : null
 
   return (
-    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+    <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant">
       <span className="flex items-center gap-1.5">
         <Clock className="h-4 w-4" />
         Updated {formatDistanceToNow(updatedDate, { addSuffix: true })}
       </span>
       {reviewed && (
-        <span className="flex items-center gap-1.5 text-green-600">
+        <span className="flex items-center gap-1.5 text-secondary">
           <CheckCircle className="h-4 w-4" />
           Reviewed {formatDistanceToNow(reviewed, { addSuffix: true })}
         </span>

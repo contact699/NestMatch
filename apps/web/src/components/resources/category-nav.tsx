@@ -61,8 +61,8 @@ export function CategoryNav({ categories, variant = 'horizontal' }: CategoryNavP
               className={`
                 flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors
                 ${isActive
-                  ? 'bg-blue-50 text-blue-700 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
+                  ? 'bg-secondary-container text-secondary font-medium'
+                  : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'}
               `}
             >
               <Icon className="h-5 w-5" />
@@ -88,8 +88,8 @@ export function CategoryNav({ categories, variant = 'horizontal' }: CategoryNavP
             className={`
               flex items-center gap-2 px-4 py-2 text-sm rounded-full whitespace-nowrap transition-colors
               ${isActive
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'}
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}
             `}
           >
             <Icon className="h-4 w-4" />
@@ -115,8 +115,8 @@ export function CategoryChips({ categories, selected, onSelect }: CategoryChipsP
         className={`
           px-3 py-1.5 text-sm rounded-full transition-colors
           ${!selected
-            ? 'bg-blue-600 text-white'
-            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+            ? 'bg-primary text-on-primary'
+            : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
         `}
       >
         All
@@ -130,8 +130,8 @@ export function CategoryChips({ categories, selected, onSelect }: CategoryChipsP
             className={`
               flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-full transition-colors
               ${selected === category.id
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+                ? 'bg-primary text-on-primary'
+                : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
             `}
           >
             <Icon className="h-3.5 w-3.5" />

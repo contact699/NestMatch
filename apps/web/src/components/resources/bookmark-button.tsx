@@ -53,8 +53,8 @@ export function BookmarkButton({
         className={`
           p-2 rounded-full transition-colors
           ${isBookmarked
-            ? 'bg-blue-100 text-blue-600'
-            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}
+            ? 'bg-secondary-container text-secondary'
+            : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
           disabled:opacity-50
         `}
         title={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
@@ -75,8 +75,8 @@ export function BookmarkButton({
       className={`
         flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors
         ${isBookmarked
-          ? 'bg-blue-100 text-blue-700'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+          ? 'bg-secondary-container text-secondary'
+          : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
         disabled:opacity-50
       `}
     >

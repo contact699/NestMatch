@@ -18,7 +18,7 @@ interface ProvinceFilterProps {
 export function ProvinceFilter({ selected, onChange, showAll = true }: ProvinceFilterProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-gray-500 flex items-center gap-1">
+      <span className="text-sm text-on-surface-variant flex items-center gap-1">
         <MapPin className="h-4 w-4" />
         Province:
       </span>
@@ -28,8 +28,8 @@ export function ProvinceFilter({ selected, onChange, showAll = true }: ProvinceF
           className={`
             px-3 py-1.5 text-sm rounded-full transition-colors
             ${!selected
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+              ? 'bg-primary text-on-primary'
+              : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
           `}
         >
           All
@@ -42,8 +42,8 @@ export function ProvinceFilter({ selected, onChange, showAll = true }: ProvinceF
           className={`
             px-3 py-1.5 text-sm rounded-full transition-colors
             ${selected === province.code
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}
+              ? 'bg-primary text-on-primary'
+              : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}
           `}
         >
           {province.name}
@@ -56,7 +56,7 @@ export function ProvinceFilter({ selected, onChange, showAll = true }: ProvinceF
 export function ProvinceBadge({ province }: { province: string }) {
   const name = PROVINCES.find(p => p.code === province)?.name || province
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-secondary-container text-secondary rounded-full">
       <MapPin className="h-3 w-3" />
       {name}
     </span>
