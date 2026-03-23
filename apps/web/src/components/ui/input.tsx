@@ -27,11 +27,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-medium text-gray-700 mb-1"
+            className="block text-sm font-medium text-on-surface-variant mb-1"
           >
             {label}
             {required && (
-              <span className="text-red-500 ml-1" aria-hidden="true">*</span>
+              <span className="text-error ml-1" aria-hidden="true">*</span>
             )}
           </label>
         )}
@@ -44,23 +44,24 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           aria-describedby={ariaDescribedBy}
           aria-required={required}
           className={cn(
-            'w-full px-3 py-2 border rounded-lg text-gray-900 placeholder-gray-400',
-            'focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent',
-            'disabled:bg-gray-100 disabled:cursor-not-allowed',
+            'w-full px-3 py-2 rounded-lg text-on-surface placeholder-on-surface-variant/50',
+            'bg-surface-container-low border-0',
+            'focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest',
+            'disabled:bg-surface-container-high disabled:cursor-not-allowed',
             error
-              ? 'border-red-500 focus:ring-red-500'
-              : 'border-gray-300',
+              ? 'ring-2 ring-error/50'
+              : '',
             className
           )}
           {...props}
         />
         {error && (
-          <p id={errorId} className="mt-1 text-sm text-red-600" role="alert">
+          <p id={errorId} className="mt-1 text-sm text-error" role="alert">
             {error}
           </p>
         )}
         {helperText && !error && (
-          <p id={helperId} className="mt-1 text-sm text-gray-500">
+          <p id={helperId} className="mt-1 text-sm text-on-surface-variant">
             {helperText}
           </p>
         )}

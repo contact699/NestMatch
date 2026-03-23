@@ -8,11 +8,11 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export function Card({ className, variant = 'default', animate = false, ...props }: CardProps) {
   const variants = {
-    default: 'bg-white rounded-xl',
-    bordered: 'bg-white rounded-xl border border-gray-200',
-    elevated: 'bg-white rounded-xl shadow-lg',
+    default: 'bg-surface-container-lowest rounded-xl',
+    bordered: 'bg-surface-container-lowest rounded-xl ghost-border',
+    elevated: 'bg-surface-container-lowest rounded-xl shadow-lg',
     feature: 'feature-card',
-    glass: 'glass rounded-xl',
+    glass: 'glass-nav rounded-xl',
   }
 
   return (
@@ -30,7 +30,7 @@ export function Card({ className, variant = 'default', animate = false, ...props
 export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('px-6 py-4 border-b border-gray-100', className)}
+      className={cn('px-6 py-4 pb-4', className)}
       {...props}
     />
   )
@@ -39,7 +39,7 @@ export function CardHeader({ className, ...props }: HTMLAttributes<HTMLDivElemen
 export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h3
-      className={cn('text-lg font-semibold text-gray-900', className)}
+      className={cn('text-lg font-semibold text-on-surface', className)}
       {...props}
     />
   )
@@ -48,7 +48,7 @@ export function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingEle
 export function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
   return (
     <p
-      className={cn('text-sm text-gray-500 mt-1', className)}
+      className={cn('text-sm text-on-surface-variant mt-1', className)}
       {...props}
     />
   )
@@ -66,7 +66,7 @@ export function CardContent({ className, ...props }: HTMLAttributes<HTMLDivEleme
 export function CardFooter({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('px-6 py-4 border-t border-gray-100', className)}
+      className={cn('px-6 py-4 pt-4', className)}
       {...props}
     />
   )

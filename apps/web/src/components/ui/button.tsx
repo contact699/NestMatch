@@ -13,7 +13,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', isLoading, children, disabled, ...props }, ref) => {
     const baseStyles = `
-      relative inline-flex items-center justify-center font-medium rounded-xl
+      relative inline-flex items-center justify-center font-medium rounded-lg
       transition-all duration-300 ease-out
       focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2
       disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
@@ -22,34 +22,34 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary: `
-        bg-blue-600 text-white
-        hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-500/25 hover:-translate-y-0.5
-        focus-visible:ring-blue-500
+        bg-primary text-on-primary
+        hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5
+        focus-visible:ring-primary
       `,
       secondary: `
-        bg-gray-100 text-gray-900
-        hover:bg-gray-200 hover:shadow-md hover:-translate-y-0.5
-        focus-visible:ring-gray-500
+        bg-surface-container-high text-on-surface
+        hover:bg-surface-container-highest hover:shadow-md hover:-translate-y-0.5
+        focus-visible:ring-outline
       `,
       outline: `
-        border-2 border-gray-200 bg-white text-gray-700
-        hover:border-gray-300 hover:bg-gray-50 hover:shadow-md hover:-translate-y-0.5
-        focus-visible:ring-blue-500
+        border border-outline-variant/30 bg-surface-container-lowest text-on-surface
+        hover:bg-surface-container-low hover:shadow-md hover:-translate-y-0.5
+        focus-visible:ring-primary
       `,
       ghost: `
-        text-gray-700
-        hover:bg-gray-100
-        focus-visible:ring-gray-500
+        text-on-surface-variant
+        hover:bg-surface-container-low
+        focus-visible:ring-outline
       `,
       danger: `
-        bg-red-600 text-white
-        hover:bg-red-700 hover:shadow-lg hover:shadow-red-500/25 hover:-translate-y-0.5
-        focus-visible:ring-red-500
+        bg-error text-on-error
+        hover:opacity-90 hover:shadow-lg hover:-translate-y-0.5
+        focus-visible:ring-error
       `,
       glow: `
-        bg-gradient-to-r from-blue-600 to-purple-600 text-white btn-glow
-        hover:shadow-lg hover:shadow-blue-500/30
-        focus-visible:ring-blue-500
+        bg-gradient-to-r from-primary to-primary-container text-on-primary
+        hover:shadow-lg hover:opacity-95
+        focus-visible:ring-primary
       `,
     }
 
