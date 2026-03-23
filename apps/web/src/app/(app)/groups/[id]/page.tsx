@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect, use, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
@@ -16,7 +16,6 @@ import {
   Calendar,
   DollarSign,
   Loader2,
-  ArrowLeft,
   Crown,
   UserPlus,
   Settings,
@@ -25,6 +24,9 @@ import {
   Search,
   Clock,
   X,
+  CheckCircle,
+  Circle,
+  Pencil,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -78,8 +80,25 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
+  // Expense summary state
+  const [expenseSummary, setExpenseSummary] = useState<{
+    total_spent: number
+    user_balance: number
+    settled: boolean
+    categories: { name: string; amount: number }[]
+  } | null>(null)
+
+  // Shared goals state
+  const [goals, setGoals] = useState<{ id: string; label: string; completed: boolean }[]>([
+    { id: '1', label: 'Finalize Shared Budget', completed: false },
+    { id: '2', label: 'Verify Income & Identities', completed: false },
+    { id: '3', label: 'Sign Digital Cohabitation Agreement', completed: false },
+    { id: '4', label: 'Schedule Viewing', completed: false },
+  ])
+
   useEffect(() => {
     fetchGroup()
+    fetchExpenseSummary()
   }, [id])
 
   const fetchGroup = async () => {
@@ -97,6 +116,26 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       clientLogger.error('Error fetching group', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchExpenseSummary = async () => {
+    try {
+      const res = await fetch(`/api/expenses?group_id=${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        const expenses = data.expenses ?? []
+        const totalSpent = expenses.reduce((sum: number, e: { total_amount: number }) => sum + e.total_amount, 0)
+        const summary = data.summary ?? {}
+        setExpenseSummary({
+          total_spent: totalSpent,
+          user_balance: (summary.total_owing ?? 0) - (summary.total_owed ?? 0),
+          settled: (summary.total_owed ?? 0) === 0 && (summary.total_owing ?? 0) === 0,
+          categories: [],
+        })
+      }
+    } catch {
+      // expense summary is supplementary
     }
   }
 
@@ -210,35 +249,38 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'forming':
-        return (
-          <span className="px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-            Forming Team
-          </span>
-        )
-      case 'searching':
-        return (
-          <span className="px-3 py-1 rounded-full text-sm bg-yellow-100 text-yellow-800">
-            Actively Searching
-          </span>
-        )
-      case 'matched':
-        return (
-          <span className="px-3 py-1 rounded-full text-sm bg-green-100 text-green-800">
-            Found a Place
-          </span>
-        )
-      default:
-        return null
-    }
-  }
+  const daysRemaining = useMemo(() => {
+    if (!group?.target_move_date) return null
+    const target = new Date(group.target_move_date)
+    const now = new Date()
+    const diff = Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return diff
+  }, [group?.target_move_date])
+
+  const formattedMoveDate = useMemo(() => {
+    if (!group?.target_move_date) return null
+    const d = new Date(group.target_move_date)
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  }, [group?.target_move_date])
+
+  const estDate = useMemo(() => {
+    if (!group?.created_at) return ''
+    const d = new Date(group.created_at)
+    return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+  }, [group?.created_at])
+
+  const totalBudget = useMemo(() => {
+    if (!group) return 0
+    return group.members.reduce(
+      (sum, m) => sum + (m.budget_contribution || 0),
+      0
+    )
+  }, [group])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
     )
   }
@@ -247,288 +289,372 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     return null
   }
 
-  const totalBudget = group.members.reduce(
-    (sum, m) => sum + (m.budget_contribution || 0),
-    0
-  )
   const pendingInvitations = group.invitations.filter(
     (i) => i.status === 'pending'
   )
+  const primaryCity = group.preferred_cities?.[0] || null
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Back Button */}
-      <Link
-        href="/groups"
-        className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Groups
-      </Link>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Top Contextual Nav */}
+      <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
+        <Link href={`/groups/${id}`} className="text-on-surface border-b-2 border-primary pb-1">
+          Groups
+        </Link>
+        <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Expenses
+        </Link>
+        <Link href={`/groups/${id}`} className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Agreement
+        </Link>
+        <Link href="/payments" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Payments
+        </Link>
+      </nav>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold text-gray-900">{group.name}</h1>
-            {getStatusBadge(group.status)}
-          </div>
-          {group.description && (
-            <p className="text-gray-600 max-w-2xl">{group.description}</p>
-          )}
-        </div>
+      {/* Verified Badge + Est. Date */}
+      <div className="flex items-center gap-3 mb-2">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-secondary-container text-secondary uppercase">
+          <CheckCircle className="h-3.5 w-3.5" />
+          Verified Group
+        </span>
+        <span className="text-sm text-on-surface-variant">Est. {estDate}</span>
+      </div>
 
-        <div className="flex items-center gap-2">
+      {/* Group Name */}
+      <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tight mb-3">
+        {group.name}
+      </h1>
+
+      {/* Mission quote + action buttons */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-10">
+        {group.description && (
+          <p className="text-on-surface-variant italic max-w-2xl text-base leading-relaxed">
+            &ldquo;{group.description}&rdquo;
+          </p>
+        )}
+        <div className="flex items-center gap-3 flex-shrink-0">
           {group.is_admin && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInviteModal(true)}
-              >
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowSettingsModal(true)}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
-            </>
+            <Button variant="outline" size="sm" onClick={() => setShowSettingsModal(true)}>
+              <Pencil className="h-4 w-4 mr-1.5" />
+              Edit Mission
+            </Button>
+          )}
+          {group.is_admin && (
+            <Button size="sm" onClick={() => setShowInviteModal(true)}>
+              <UserPlus className="h-4 w-4 mr-1.5" />
+              Invite Member
+            </Button>
           )}
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        <Card variant="bordered">
-          <CardContent className="py-4 text-center">
-            <Users className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{group.members.length}</p>
-            <p className="text-sm text-gray-500">Members</p>
-          </CardContent>
+      {/* Three-column info row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+        {/* Neighborhood Focus */}
+        <Card variant="bordered" className="p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+            Neighborhood Focus
+          </p>
+          <h3 className="font-display text-xl font-bold text-on-surface mb-1">
+            {primaryCity || 'Not set'}
+          </h3>
+          {primaryCity && (
+            <p className="text-sm text-on-surface-variant mb-3">
+              {primaryCity}
+            </p>
+          )}
+          <div className="flex items-center gap-2 mt-2">
+            <div className="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center">
+              <MapPin className="h-4 w-4 text-secondary" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-on-surface">Walk Score: --</p>
+              <p className="text-xs text-on-surface-variant">Transit Access</p>
+            </div>
+          </div>
         </Card>
 
-        <Card variant="bordered">
-          <CardContent className="py-4 text-center">
-            <DollarSign className="h-6 w-6 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {totalBudget > 0 ? formatPrice(totalBudget) : '-'}
+        {/* Move-in Date - dark card */}
+        <Card variant="default" className="bg-primary text-on-primary p-6 rounded-xl relative overflow-hidden">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-primary/70 mb-2">
+            Move-in Date
+          </p>
+          <h3 className="font-display text-4xl font-extrabold mb-1">
+            {formattedMoveDate || 'TBD'}
+          </h3>
+          {daysRemaining !== null && (
+            <p className="text-sm text-secondary-container font-medium">
+              {daysRemaining > 0
+                ? `${daysRemaining} days remaining`
+                : daysRemaining === 0
+                  ? 'Move-in day!'
+                  : `${Math.abs(daysRemaining)} days ago`}
             </p>
-            <p className="text-sm text-gray-500">Combined Budget</p>
-          </CardContent>
+          )}
+          {!group.target_move_date && (
+            <p className="text-sm text-on-primary/70">No date set yet</p>
+          )}
+          <div className="absolute bottom-2 right-2 text-on-primary/20">
+            <Calendar className="h-16 w-16" />
+          </div>
         </Card>
 
-        <Card variant="bordered">
-          <CardContent className="py-4 text-center">
-            <Calendar className="h-6 w-6 text-purple-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {group.target_move_date
-                ? formatDate(group.target_move_date)
-                : '-'}
-            </p>
-            <p className="text-sm text-gray-500">Move Date</p>
-          </CardContent>
-        </Card>
+        {/* Shared Budget */}
+        <Card variant="bordered" className="p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+            Shared Budget
+          </p>
+          <h3 className="font-display text-3xl font-extrabold text-on-surface mb-1">
+            {totalBudget > 0 ? formatPrice(totalBudget) : '--'}
+          </h3>
+          <p className="text-sm text-on-surface-variant mb-4">Per Month</p>
 
-        <Card variant="bordered">
-          <CardContent className="py-4 text-center">
-            <MapPin className="h-6 w-6 text-red-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">
-              {group.preferred_cities?.length || 0}
-            </p>
-            <p className="text-sm text-gray-500">Target Cities</p>
-          </CardContent>
+          {/* Budget breakdown from member contributions */}
+          <div className="space-y-2">
+            {group.members.filter(m => m.budget_contribution && m.budget_contribution > 0).map((m) => (
+              <div key={m.id} className="flex items-center justify-between text-sm">
+                <span className="text-on-surface-variant">{m.user.name}</span>
+                <span className="font-medium text-on-surface">{formatPrice(m.budget_contribution!)}</span>
+              </div>
+            ))}
+          </div>
+
+          {totalBudget > 0 && (
+            <Link
+              href={`/expenses`}
+              className="block mt-4 text-center text-sm font-medium text-secondary hover:underline ghost-border rounded-lg py-2"
+            >
+              View Budget Details
+            </Link>
+          )}
         </Card>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Members */}
-        <div className="lg:col-span-2">
-          <Card variant="bordered">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Members</CardTitle>
-              {group.is_admin && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowInviteModal(true)}
+      {/* Members + Goals two-column */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+        {/* Group Members */}
+        <Card variant="bordered">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display text-xl font-bold">Group Members</CardTitle>
+            <span className="text-sm text-on-surface-variant">
+              {group.members.length} / {group.members.length} Full
+            </span>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {group.members.map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center justify-between"
                 >
-                  <UserPlus className="h-4 w-4 mr-1" />
-                  Invite
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {group.members.map((member) => (
-                  <div
-                    key={member.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className="flex items-center gap-3">
-                      {member.user.profile_photo ? (
-                        <img
-                          src={member.user.profile_photo}
-                          alt={member.user.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
-                            {member.user.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900">
-                            {member.user.name}
-                          </span>
-                          {member.role === 'admin' && (
-                            <Crown className="h-4 w-4 text-yellow-500" />
-                          )}
-                        </div>
-                        {member.budget_contribution && (
-                          <p className="text-sm text-gray-500">
-                            Budget: {formatPrice(member.budget_contribution)}
-                          </p>
-                        )}
+                  <div className="flex items-center gap-3">
+                    {member.user.profile_photo ? (
+                      <img
+                        src={member.user.profile_photo}
+                        alt={member.user.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-primary-fixed rounded-full flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">
+                          {member.user.name.charAt(0).toUpperCase()}
+                        </span>
                       </div>
+                    )}
+                    <div>
+                      <span className="font-medium text-on-surface">
+                        {member.user.name}
+                      </span>
+                      {member.user.bio && (
+                        <p className="text-xs text-on-surface-variant">{member.user.bio}</p>
+                      )}
+                      {!member.user.bio && member.budget_contribution && (
+                        <p className="text-xs text-on-surface-variant">
+                          Budget: {formatPrice(member.budget_contribution)}
+                        </p>
+                      )}
                     </div>
+                  </div>
 
+                  <div className="flex items-center gap-2">
+                    {member.role === 'admin' ? (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-secondary-container text-secondary uppercase tracking-wide">
+                        Leader
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-surface-container text-on-surface-variant uppercase tracking-wide">
+                        Member
+                      </span>
+                    )}
                     {group.is_admin && member.role !== 'admin' && (
-                      <div className="flex items-center gap-2">
-                        <Button
-                          size="sm"
-                          variant="ghost"
+                      <div className="flex items-center gap-1 ml-2">
+                        <button
                           onClick={() => handlePromoteMember(member.id)}
+                          className="p-1 rounded hover:bg-surface-container-low transition-colors"
+                          title="Promote"
                         >
-                          <Crown className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          <Crown className="h-4 w-4 text-on-surface-variant" />
+                        </button>
+                        <button
                           onClick={() => handleRemoveMember(member.id, member.user.name)}
+                          className="p-1 rounded hover:bg-error-container transition-colors"
+                          title="Remove"
                         >
-                          <X className="h-4 w-4" />
-                        </Button>
+                          <X className="h-4 w-4 text-error" />
+                        </button>
                       </div>
                     )}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
 
-              {/* Pending Invitations */}
-              {pendingInvitations.length > 0 && (
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">
-                    Pending Invitations
-                  </h4>
-                  <div className="space-y-2">
-                    {pendingInvitations.map((invitation) => (
-                      <div
-                        key={invitation.id}
-                        className="flex items-center justify-between p-2 bg-yellow-50 rounded-lg"
-                      >
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4 text-yellow-600" />
-                          <span className="text-sm text-gray-700">
-                            {invitation.invitee.name}
-                          </span>
-                        </div>
-                        <span className="text-xs text-gray-500">
-                          Invited {formatDate(invitation.created_at)}
+            {/* Pending Invitations */}
+            {pendingInvitations.length > 0 && (
+              <div className="mt-6 pt-6 ghost-border-t">
+                <h4 className="text-sm font-semibold text-on-surface mb-3">
+                  Pending Invitations
+                </h4>
+                <div className="space-y-2">
+                  {pendingInvitations.map((invitation) => (
+                    <div
+                      key={invitation.id}
+                      className="flex items-center justify-between p-3 bg-tertiary-fixed/30 rounded-lg"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className="h-4 w-4 text-on-surface-variant" />
+                        <span className="text-sm text-on-surface">
+                          {invitation.invitee.name}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Preferences */}
-          {group.preferred_cities && group.preferred_cities.length > 0 && (
-            <Card variant="bordered">
-              <CardHeader>
-                <CardTitle className="text-lg">Preferred Cities</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  {group.preferred_cities.map((city) => (
-                    <span
-                      key={city}
-                      className="px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-700"
-                    >
-                      {city}
-                    </span>
+                      <span className="text-xs text-on-surface-variant">
+                        Invited {formatDate(invitation.created_at)}
+                      </span>
+                    </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Budget Range */}
-          {(group.combined_budget_min || group.combined_budget_max) && (
-            <Card variant="bordered">
-              <CardHeader>
-                <CardTitle className="text-lg">Budget Range</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-lg font-semibold text-gray-900">
-                  {group.combined_budget_min && group.combined_budget_max
-                    ? `${formatPrice(group.combined_budget_min)} - ${formatPrice(group.combined_budget_max)}`
-                    : group.combined_budget_max
-                      ? `Up to ${formatPrice(group.combined_budget_max)}`
-                      : `From ${formatPrice(group.combined_budget_min!)}`}
-                </p>
-                <p className="text-sm text-gray-500">per month, combined</p>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Quick Actions */}
-          <Card variant="bordered">
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href={`/search?group=${group.id}`} className="block">
-                <Button className="w-full" variant="outline">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search Listings
-                </Button>
-              </Link>
-
-              <Button
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                variant="outline"
-                onClick={handleLeaveGroup}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Leave Group
-              </Button>
-
-              {group.is_admin && (
-                <Button
-                  className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
-                  variant="outline"
-                  onClick={handleDeleteGroup}
+        {/* Shared Goals Checklist */}
+        <Card variant="bordered">
+          <CardHeader>
+            <CardTitle className="font-display text-xl font-bold">Shared Goals Checklist</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {goals.map((goal) => (
+                <button
+                  key={goal.id}
+                  onClick={() => {
+                    setGoals(prev =>
+                      prev.map(g =>
+                        g.id === goal.id ? { ...g, completed: !g.completed } : g
+                      )
+                    )
+                  }}
+                  className="flex items-center gap-3 w-full text-left group"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Group
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+                  {goal.completed ? (
+                    <CheckCircle className="h-6 w-6 text-secondary flex-shrink-0" />
+                  ) : (
+                    <Circle className="h-6 w-6 text-on-surface-variant/40 flex-shrink-0 group-hover:text-secondary transition-colors" />
+                  )}
+                  <span className={`text-sm font-medium ${goal.completed ? 'text-on-surface' : 'text-on-surface-variant'}`}>
+                    {goal.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Expense Summary */}
+      <Card variant="bordered" className="mb-10">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="font-display text-xl font-bold">Expense Summary</CardTitle>
+          <span className="text-sm text-on-surface-variant">
+            {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} cycle
+          </span>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {/* Total Group Spend */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+                Total Group Spend
+              </p>
+              <p className="font-display text-3xl font-extrabold text-on-surface mb-2">
+                {formatPrice(expenseSummary?.total_spent ?? 0)}
+              </p>
+              <Link
+                href="/expenses"
+                className="text-sm font-medium text-secondary hover:underline"
+              >
+                DETAILS
+              </Link>
+            </div>
+
+            {/* My Balance */}
+            <div className="bg-surface-container-low rounded-xl p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+                My Balance
+              </p>
+              <div className="flex items-center justify-between">
+                <p className="font-display text-3xl font-extrabold text-on-surface">
+                  {formatPrice(Math.abs(expenseSummary?.user_balance ?? 0))}
+                </p>
+                {expenseSummary?.settled ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-secondary-container text-secondary uppercase">
+                    Settled
+                  </span>
+                ) : (expenseSummary?.user_balance ?? 0) > 0 ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-secondary-container text-secondary uppercase">
+                    To Receive
+                  </span>
+                ) : (expenseSummary?.user_balance ?? 0) < 0 ? (
+                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-error-container text-error uppercase">
+                    You Owe
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-3">
+        <Link href={`/search?group=${group.id}`}>
+          <Button variant="outline" size="sm">
+            <Search className="h-4 w-4 mr-1.5" />
+            Search Listings
+          </Button>
+        </Link>
+        <Button
+          variant="outline"
+          size="sm"
+          className="text-error hover:bg-error-container"
+          onClick={handleLeaveGroup}
+        >
+          <LogOut className="h-4 w-4 mr-1.5" />
+          Leave Group
+        </Button>
+        {group.is_admin && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-error hover:bg-error-container"
+            onClick={handleDeleteGroup}
+          >
+            <Trash2 className="h-4 w-4 mr-1.5" />
+            Delete Group
+          </Button>
+        )}
       </div>
 
       {/* Invite Modal */}

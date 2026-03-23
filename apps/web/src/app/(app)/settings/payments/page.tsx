@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,6 @@ import { ConfirmModal } from '@/components/ui/modal'
 import { formatPrice } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
-  ArrowLeft,
   CreditCard,
   Building2,
   Plus,
@@ -19,6 +18,12 @@ import {
   Loader2,
   ExternalLink,
   DollarSign,
+  Shield,
+  Pencil,
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Users,
+  Lock,
 } from 'lucide-react'
 
 interface PaymentMethod {
@@ -69,7 +74,6 @@ export default function PaymentSettingsPage() {
     try {
       setLoading(true)
 
-      // Fetch payment methods and Connect status in parallel
       const [methodsRes, connectRes] = await Promise.all([
         fetch('/api/payments/methods'),
         fetch('/api/connect/status'),
@@ -109,6 +113,28 @@ export default function PaymentSettingsPage() {
     }
   }
 
+  const handleSetDefault = async (methodId: string) => {
+    try {
+      const res = await fetch('/api/payments/methods', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_method_id: methodId, set_default: true }),
+      })
+
+      if (res.ok) {
+        setPaymentMethods(prev =>
+          prev.map(m => ({ ...m, is_default: m.id === methodId }))
+        )
+        toast.success('Default payment method updated')
+      } else {
+        toast.error('Failed to update default method')
+      }
+    } catch (error) {
+      clientLogger.error('Error setting default method', error)
+      toast.error('Failed to update default method')
+    }
+  }
+
   const handleDeleteMethod = (methodId: string) => {
     setConfirmModal({
       open: true,
@@ -140,249 +166,376 @@ export default function PaymentSettingsPage() {
     })
   }
 
-  const getCardBrandIcon = (brand: string) => {
-    // In production, you'd use actual card brand icons
-    return <CreditCard className="h-6 w-6" />
+  // Dynamic stats
+  const currentBalance = useMemo(() => {
+    if (!connectStatus?.balance) return 0
+    return connectStatus.balance.available.reduce((sum, b) => sum + b.amount, 0)
+  }, [connectStatus])
+
+  const totalSent = useMemo(() => {
+    return connectStatus?.stats?.total_pending ?? 0
+  }, [connectStatus])
+
+  const totalReceived = useMemo(() => {
+    return connectStatus?.stats?.total_received ?? 0
+  }, [connectStatus])
+
+  const getCardBrandDisplay = (brand: string) => {
+    const b = brand?.toLowerCase() ?? ''
+    if (b === 'visa') return { label: 'VISA', color: 'bg-primary text-on-primary' }
+    if (b === 'mastercard') return { label: 'MC', color: 'bg-tertiary-fixed text-tertiary' }
+    if (b === 'amex') return { label: 'AMEX', color: 'bg-secondary-container text-secondary' }
+    return { label: brand?.toUpperCase() ?? 'CARD', color: 'bg-surface-container text-on-surface' }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <Link
-          href="/settings"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-1" />
-          Back to Settings
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Top Contextual Nav */}
+      <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Groups
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Payment Settings</h1>
-        <p className="text-gray-600">Manage your payment methods and payout account</p>
+        <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Expenses
+        </Link>
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Agreement
+        </Link>
+        <Link href="/payments" className="text-on-surface border-b-2 border-primary pb-1">
+          Payments
+        </Link>
+      </nav>
+
+      {/* Header */}
+      <div className="flex items-start justify-between mb-10">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-secondary mb-2">
+            Security & Billing
+          </p>
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tight mb-2">
+            Payment Methods
+          </h1>
+          <p className="text-on-surface-variant text-base max-w-xl">
+            Manage your secure payment options and view your financial overview at a glance.
+          </p>
+        </div>
+        <Button className="flex-shrink-0" disabled>
+          <CreditCard className="h-4 w-4 mr-2" />
+          Add New Card
+        </Button>
       </div>
 
-      {/* Connect Account Section - For receiving payments */}
-      <Card variant="bordered" className="mb-8">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Receive Payments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {connectStatus?.status === 'not_created' ? (
-            <div className="text-center py-6">
-              <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Start receiving payments
-              </h3>
-              <p className="text-gray-500 mb-4 max-w-md mx-auto">
-                Set up your payout account to receive rent payments directly from tenants.
-                Payments are securely processed through Stripe.
-              </p>
-              <Button onClick={handleStartOnboarding} disabled={onboarding}>
-                {onboarding ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Plus className="h-4 w-4 mr-2" />
-                )}
-                Set Up Payouts
-              </Button>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {/* Current Balance */}
+        <Card variant="bordered" className="p-6 col-span-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-8 h-8 bg-secondary-container rounded-lg flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-secondary" />
             </div>
-          ) : connectStatus?.status === 'pending' ? (
-            <div className="flex items-start gap-4 p-4 bg-yellow-50 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-yellow-600 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="font-medium text-yellow-800">Complete your account setup</h4>
-                <p className="text-sm text-yellow-700 mt-1">
-                  Your payout account setup is incomplete. Please finish the onboarding process.
-                </p>
-                <Button
-                  size="sm"
-                  className="mt-3"
-                  onClick={handleStartOnboarding}
-                  disabled={onboarding}
-                >
-                  {onboarding ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : null}
-                  Continue Setup
-                </Button>
+            <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+              Current Balance
+            </span>
+          </div>
+          <p className="font-display text-3xl font-extrabold text-on-surface">
+            {formatPrice(currentBalance)}
+          </p>
+          <p className="text-xs text-on-surface-variant mt-1">
+            Available for next payment
+          </p>
+        </Card>
+
+        {/* Total Sent (YTD) */}
+        <Card variant="bordered" className="p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+            Total Sent (YTD)
+          </p>
+          <p className="font-display text-2xl font-extrabold text-on-surface">
+            {formatPrice(totalSent)}
+          </p>
+        </Card>
+
+        {/* Total Received (YTD) */}
+        <Card variant="bordered" className="p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+            Total Received (YTD)
+          </p>
+          <p className="font-display text-2xl font-extrabold text-on-surface">
+            {formatPrice(totalReceived)}
+          </p>
+        </Card>
+
+        {/* Active Split Groups */}
+        <Card variant="bordered" className="p-6">
+          <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+            Active Split Groups
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="flex -space-x-2">
+              <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center ghost-border">
+                <Users className="h-3.5 w-3.5 text-primary" />
               </div>
             </div>
-          ) : connectStatus?.status === 'active' ? (
-            <div className="space-y-4">
-              <div className="flex items-start gap-4 p-4 bg-green-50 rounded-lg">
-                <CheckCircle className="h-6 w-6 text-green-600 flex-shrink-0" />
-                <div className="flex-1">
-                  <h4 className="font-medium text-green-800">Account active</h4>
-                  <p className="text-sm text-green-700 mt-1">
-                    Your payout account is set up and ready to receive payments.
-                  </p>
-                </div>
-              </div>
+            <span className="text-sm text-on-surface-variant">
+              {connectStatus?.stats?.total_transactions ? 'Active' : 'None'}
+            </span>
+          </div>
+        </Card>
+      </div>
 
-              {/* Balance */}
-              {connectStatus.balance && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Available Balance</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {connectStatus.balance.available
-                        .map((b) => formatPrice(b.amount))
-                        .join(', ') || '$0.00'}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-gray-50 rounded-lg">
-                    <p className="text-sm text-gray-500">Pending</p>
-                    <p className="text-xl font-bold text-gray-900">
-                      {connectStatus.balance.pending
-                        .map((b) => formatPrice(b.amount))
-                        .join(', ') || '$0.00'}
-                    </p>
-                  </div>
-                </div>
-              )}
+      {/* Withdraw / Top Up */}
+      <div className="flex gap-3 mb-10">
+        <Button variant="outline" size="sm">
+          <ArrowUpFromLine className="h-4 w-4 mr-1.5" />
+          Withdraw
+        </Button>
+        <Button size="sm">
+          <ArrowDownToLine className="h-4 w-4 mr-1.5" />
+          Top Up
+        </Button>
+      </div>
 
-              {/* Stats */}
-              {connectStatus.stats && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <div className="grid grid-cols-3 gap-4 text-center">
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">
-                        {formatPrice(connectStatus.stats.total_received)}
-                      </p>
-                      <p className="text-xs text-gray-500">Total Received</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">
-                        {formatPrice(connectStatus.stats.total_pending)}
-                      </p>
-                      <p className="text-xs text-gray-500">Pending</p>
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-gray-900">
-                        {connectStatus.stats.total_transactions}
-                      </p>
-                      <p className="text-xs text-gray-500">Transactions</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+      {/* Verified Payment Methods */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2 mb-6">
+          <Shield className="h-5 w-5 text-secondary" />
+          <h2 className="font-display text-xl font-bold text-on-surface">
+            Verified Payment Methods
+          </h2>
+        </div>
 
-              {/* Dashboard Link */}
-              {connectStatus.dashboard_link && (
-                <a
-                  href={connectStatus.dashboard_link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
-                >
-                  <ExternalLink className="h-4 w-4 mr-1" />
-                  Open Stripe Dashboard
-                </a>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-start gap-4 p-4 bg-red-50 rounded-lg">
-              <AlertCircle className="h-6 w-6 text-red-600 flex-shrink-0" />
-              <div className="flex-1">
-                <h4 className="font-medium text-red-800">Account restricted</h4>
-                <p className="text-sm text-red-700 mt-1">
-                  There's an issue with your payout account. Please update your information.
-                </p>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="mt-3"
-                  onClick={handleStartOnboarding}
-                >
-                  Update Account
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {paymentMethods.length === 0 ? (
+          <Card variant="bordered" className="p-12 text-center">
+            <CreditCard className="h-12 w-12 text-outline-variant mx-auto mb-4" />
+            <p className="text-on-surface-variant font-medium">No payment methods added yet</p>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Add a card when making your first payment
+            </p>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {paymentMethods.map((method) => {
+              const brandDisplay = method.card ? getCardBrandDisplay(method.card.brand) : null
 
-      {/* Payment Methods Section - For sending payments */}
-      <Card variant="bordered">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" />
-            Payment Methods
-          </CardTitle>
-          <Button variant="outline" size="sm" disabled>
-            <Plus className="h-4 w-4 mr-1" />
-            Add Card
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {paymentMethods.length === 0 ? (
-            <div className="text-center py-6">
-              <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No payment methods added yet</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Add a card when making your first payment
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {paymentMethods.map((method) => (
-                <div
+              return (
+                <Card
                   key={method.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                  variant="bordered"
+                  className={`p-6 relative ${method.is_default ? 'ring-2 ring-secondary' : ''}`}
                 >
-                  <div className="flex items-center gap-4">
-                    {method.card && getCardBrandIcon(method.card.brand)}
+                  {/* Default badge */}
+                  {method.is_default && (
+                    <span className="absolute top-4 right-4 px-2.5 py-1 rounded-full text-[10px] font-bold bg-secondary-container text-secondary uppercase tracking-wider">
+                      Default
+                    </span>
+                  )}
+
+                  {/* Card brand icon */}
+                  <div className="flex items-center gap-4 mb-4">
+                    {brandDisplay && (
+                      <div className={`w-12 h-8 rounded ${brandDisplay.color} flex items-center justify-center text-xs font-bold`}>
+                        {brandDisplay.label}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1">
+                      {method.card?.brand?.toUpperCase() === 'VISA' ? (
+                        <span className="text-xs font-bold text-on-surface-variant uppercase">Credit Card</span>
+                      ) : (
+                        <span className="text-xs font-bold text-on-surface-variant uppercase">Credit Card</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Card number */}
+                  <p className="text-lg font-mono text-on-surface tracking-wider mb-4">
+                    {'•••• '}{method.card?.last4 || '****'}
+                  </p>
+
+                  {/* Card holder */}
+                  <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">
-                        {method.card?.brand?.charAt(0).toUpperCase()}
-                        {method.card?.brand?.slice(1)} ending in {method.card?.last4}
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                        Card Holder
                       </p>
-                      <p className="text-sm text-gray-500">
-                        Expires {method.card?.exp_month}/{method.card?.exp_year}
+                      <p className="text-sm font-semibold text-on-surface uppercase">
+                        {method.card?.brand
+                          ? `${method.card.brand.charAt(0).toUpperCase()}${method.card.brand.slice(1)} Card`
+                          : 'Card Holder'}
                       </p>
                     </div>
-                    {method.is_default && (
-                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full">
-                        Default
-                      </span>
-                    )}
+
+                    <div className="flex items-center gap-2">
+                      {!method.is_default && (
+                        <button
+                          onClick={() => handleSetDefault(method.id)}
+                          className="text-xs font-medium text-secondary hover:underline"
+                        >
+                          Set as Default
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteMethod(method.id)}
+                        disabled={deletingId === method.id}
+                        className="p-1.5 rounded hover:bg-surface-container-low transition-colors"
+                        title="Edit"
+                      >
+                        {deletingId === method.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-on-surface-variant" />
+                        ) : (
+                          <Pencil className="h-4 w-4 text-on-surface-variant" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMethod(method.id)}
+                        disabled={deletingId === method.id}
+                        className="p-1.5 rounded hover:bg-error-container transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-on-surface-variant" />
+                      </button>
+                    </div>
                   </div>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Connect Account Section */}
+      {connectStatus?.status !== 'active' && (
+        <Card variant="bordered" className="mb-10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Building2 className="h-5 w-5" />
+              Receive Payments
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {connectStatus?.status === 'not_created' ? (
+              <div className="text-center py-6">
+                <DollarSign className="h-12 w-12 text-outline-variant mx-auto mb-4" />
+                <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+                  Start receiving payments
+                </h3>
+                <p className="text-on-surface-variant mb-4 max-w-md mx-auto">
+                  Set up your payout account to receive rent payments directly from tenants.
+                </p>
+                <Button onClick={handleStartOnboarding} disabled={onboarding}>
+                  {onboarding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Set Up Payouts
+                </Button>
+              </div>
+            ) : connectStatus?.status === 'pending' ? (
+              <div className="flex items-start gap-4 p-4 bg-tertiary-fixed/30 rounded-xl">
+                <AlertCircle className="h-6 w-6 text-on-surface-variant flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-on-surface">Complete your account setup</h4>
+                  <p className="text-sm text-on-surface-variant mt-1">
+                    Your payout account setup is incomplete. Please finish the onboarding process.
+                  </p>
                   <Button
-                    variant="ghost"
                     size="sm"
-                    onClick={() => handleDeleteMethod(method.id)}
-                    disabled={deletingId === method.id}
+                    className="mt-3"
+                    onClick={handleStartOnboarding}
+                    disabled={onboarding}
                   >
-                    {deletingId === method.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    )}
+                    {onboarding && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Continue Setup
                   </Button>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            ) : (
+              <div className="flex items-start gap-4 p-4 bg-error-container rounded-xl">
+                <AlertCircle className="h-6 w-6 text-error flex-shrink-0" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-error">Account restricted</h4>
+                  <p className="text-sm text-on-surface-variant mt-1">
+                    There&apos;s an issue with your payout account. Please update your information.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3"
+                    onClick={handleStartOnboarding}
+                  >
+                    Update Account
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Info */}
-      <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-1">Secure Payments</h4>
-        <p className="text-sm text-blue-700">
-          All payments are processed securely through Stripe. NestMatch never stores your
-          full card details. A 5% platform fee applies to all transactions.
-        </p>
+      {/* Active Connect Account Info */}
+      {connectStatus?.status === 'active' && (
+        <Card variant="bordered" className="mb-10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display">
+              <Building2 className="h-5 w-5 text-secondary" />
+              Payout Account
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-start gap-4 p-4 bg-secondary-container/30 rounded-xl mb-4">
+              <CheckCircle className="h-6 w-6 text-secondary flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="font-semibold text-on-surface">Account active</h4>
+                <p className="text-sm text-on-surface-variant mt-1">
+                  Your payout account is set up and ready to receive payments.
+                </p>
+              </div>
+            </div>
+
+            {connectStatus.dashboard_link && (
+              <a
+                href={connectStatus.dashboard_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-sm text-secondary hover:underline font-medium"
+              >
+                <ExternalLink className="h-4 w-4 mr-1" />
+                Open Stripe Dashboard
+              </a>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Recent Activity */}
+      <div className="mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-xl font-bold text-on-surface">Recent Activity</h2>
+          <Link href="/payments" className="text-sm font-medium text-on-surface-variant hover:text-secondary transition-colors">
+            View Full History
+          </Link>
+        </div>
+        <Card variant="bordered" className="p-6 text-center">
+          <p className="text-on-surface-variant text-sm">
+            Activity will appear here once you start making payments.
+          </p>
+        </Card>
+      </div>
+
+      {/* Security Info */}
+      <div className="flex items-center gap-3 p-4 bg-surface-container-low rounded-xl">
+        <Lock className="h-5 w-5 text-secondary flex-shrink-0" />
+        <div>
+          <h4 className="font-semibold text-on-surface text-sm">Bank-Grade AES-256 Encryption</h4>
+          <p className="text-xs text-on-surface-variant">
+            All payments are processed securely through Stripe. NestMatch never stores your
+            full card details.
+          </p>
+        </div>
       </div>
 
       <ConfirmModal

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { FetchError } from '@/components/ui/fetch-error'
@@ -21,6 +22,11 @@ import {
   ChevronUp,
   DollarSign,
   Home,
+  Wifi,
+  ShoppingCart,
+  Filter,
+  Search,
+  ArrowRight,
 } from 'lucide-react'
 
 interface ExpenseShare {
@@ -101,6 +107,33 @@ export default function ExpensesPage() {
   const expenses = data?.expenses ?? []
   const summary = data?.summary ?? null
 
+  // Compute balance
+  const balance = (summary?.total_owing ?? 0) - (summary?.total_owed ?? 0)
+  const totalGroupSpent = expenses.reduce((sum, e) => sum + e.total_amount, 0)
+
+  // Compute settlement flow - who owes whom
+  const settlementMap = new Map<string, { name: string; photo: string | null; amount: number }>()
+  expenses.forEach(expense => {
+    expense.shares.forEach(share => {
+      if (share.status !== 'paid' && share.user_id !== expense.created_by) {
+        const existing = settlementMap.get(share.user_id)
+        if (existing) {
+          existing.amount -= share.amount
+        } else {
+          settlementMap.set(share.user_id, {
+            name: share.user?.name || 'Unknown',
+            photo: share.user?.profile_photo || null,
+            amount: -share.amount,
+          })
+        }
+      }
+    })
+  })
+  const settlements = Array.from(settlementMap.entries()).map(([id, data]) => ({
+    id,
+    ...data,
+  }))
+
   const resetForm = () => {
     setTitle('')
     setTotalAmount('')
@@ -155,11 +188,15 @@ export default function ExpensesPage() {
   const getCategoryIcon = (cat: string | null) => {
     switch (cat) {
       case 'rent':
-        return <Home className="h-4 w-4" />
+        return <Home className="h-5 w-5" />
       case 'utilities':
-        return <Receipt className="h-4 w-4" />
+        return <Receipt className="h-5 w-5" />
+      case 'internet':
+        return <Wifi className="h-5 w-5" />
+      case 'groceries':
+        return <ShoppingCart className="h-5 w-5" />
       default:
-        return <DollarSign className="h-4 w-4" />
+        return <DollarSign className="h-5 w-5" />
     }
   }
 
@@ -167,22 +204,19 @@ export default function ExpensesPage() {
     switch (status) {
       case 'completed':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-800">
-            <CheckCircle className="h-3 w-3" />
-            Paid
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-surface-container text-on-surface-variant">
+            Settled
           </span>
         )
       case 'pending':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-yellow-100 text-yellow-800">
-            <Clock className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-secondary-container text-secondary">
             Pending
           </span>
         )
       case 'overdue':
         return (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-800">
-            <AlertCircle className="h-3 w-3" />
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-error-container text-error">
             Overdue
           </span>
         )
@@ -191,204 +225,278 @@ export default function ExpensesPage() {
     }
   }
 
+  const formatExpenseTime = (dateStr: string) => {
+    const d = new Date(dateStr)
+    const now = new Date()
+    const diffMs = now.getTime() - d.getTime()
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+      return `Today, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+    }
+    if (diffDays === 1) {
+      return `Yesterday, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+    }
+    return `${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`
+  }
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Top Contextual Nav */}
+      <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Groups
+        </Link>
+        <Link href="/expenses" className="text-on-surface border-b-2 border-primary pb-1">
+          Expenses
+        </Link>
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Agreement
+        </Link>
+        <Link href="/payments" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Payments
+        </Link>
+      </nav>
+
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-start justify-between mb-10">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Bill Splitting</h1>
-          <p className="text-gray-600">Manage shared expenses with roommates</p>
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tight mb-2">
+            House Expenses
+          </h1>
+          <p className="text-on-surface-variant text-base max-w-xl">
+            Track shared costs and settle balances without the awkward conversations.
+            Everything is clear, fair, and recorded.
+          </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
+        <Button onClick={() => setShowCreateModal(true)} className="flex-shrink-0">
           <Plus className="h-4 w-4 mr-2" />
-          New Expense
+          Add Expense
         </Button>
       </div>
 
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">You Owe</p>
-                  <p className="text-xl font-bold text-red-600">
-                    {formatPrice(summary.total_owed)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Owed to You</p>
-                  <p className="text-xl font-bold text-green-600">
-                    {formatPrice(summary.total_owing)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
-        {(['all', 'pending', 'completed'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === f
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {/* Expenses List */}
-      {error ? (
-        <FetchError message={error} onRetry={refetch} />
-      ) : isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      ) : expenses.length === 0 ? (
-        <Card variant="bordered">
-          <CardContent className="py-12 text-center">
-            <Receipt className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No expenses yet
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Create your first shared expense to start splitting bills with roommates.
+      {/* Main content grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left sidebar */}
+        <div className="lg:col-span-4 space-y-6">
+          {/* Your Balance */}
+          <Card variant="bordered" className="p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-on-surface-variant mb-2">
+              Your Balance
             </p>
-            <Button onClick={() => setShowCreateModal(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create First Expense
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {expenses.map((expense) => {
-            const isExpanded = expandedId === expense.id
-            const paidCount = expense.shares.filter((s) => s.status === 'paid').length
-            const totalShares = expense.shares.length
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className={`font-display text-4xl font-extrabold ${balance >= 0 ? 'text-secondary' : 'text-error'}`}>
+                {formatPrice(Math.abs(balance))}
+              </span>
+              <span className={`text-sm font-medium ${balance >= 0 ? 'text-secondary' : 'text-error'}`}>
+                {balance >= 0 ? 'to receive' : 'you owe'}
+              </span>
+            </div>
+            <div className="ghost-border-t mt-4 pt-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-on-surface-variant">Total group spent</span>
+                <span className="text-sm font-semibold text-on-surface">
+                  {formatPrice(totalGroupSpent)}
+                </span>
+              </div>
+            </div>
+          </Card>
 
-            return (
-              <Card key={expense.id} variant="bordered">
-                <CardContent className="py-4">
-                  {/* Main Row */}
-                  <div
-                    className="flex items-center justify-between cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : expense.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="p-2 bg-gray-100 rounded-lg">
-                        {getCategoryIcon(expense.category)}
+          {/* Settlement Flow */}
+          {settlements.length > 0 && (
+            <Card variant="bordered" className="p-6">
+              <h3 className="font-display text-lg font-bold text-on-surface mb-4">
+                Settlement Flow
+              </h3>
+              <div className="space-y-4">
+                {settlements.map((s) => (
+                  <div key={s.id} className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-primary">
+                        {s.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-on-surface">{s.name}</span>
+                      <div className="mt-1 h-2 rounded-full bg-surface-container overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${s.amount < 0 ? 'bg-error' : 'bg-secondary'}`}
+                          style={{ width: `${Math.min(Math.abs(s.amount) / (totalGroupSpent || 1) * 100, 100)}%` }}
+                        />
                       </div>
-                      <div>
-                        <h3 className="font-medium text-gray-900">{expense.title}</h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <span>By {expense.creator?.name || 'Unknown'}</span>
-                          {expense.listing && (
-                            <>
-                              <span>•</span>
-                              <span>{expense.listing.title}</span>
-                            </>
-                          )}
+                    </div>
+                    <span className={`text-sm font-bold ${s.amount < 0 ? 'text-error' : 'text-secondary'}`}>
+                      {s.amount < 0 ? '-' : '+'}{formatPrice(Math.abs(s.amount))}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <Link
+                href="/payments"
+                className="block mt-4 text-sm font-medium text-secondary hover:underline"
+              >
+                View Detailed History
+              </Link>
+            </Card>
+          )}
+        </div>
+
+        {/* Right content - Recent Activity */}
+        <div className="lg:col-span-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-2xl font-bold text-on-surface">Recent Activity</h2>
+            <div className="flex items-center gap-2">
+              <button className="p-2 rounded-lg hover:bg-surface-container-low transition-colors">
+                <Filter className="h-4 w-4 text-on-surface-variant" />
+              </button>
+              <button className="p-2 rounded-lg hover:bg-surface-container-low transition-colors">
+                <Search className="h-4 w-4 text-on-surface-variant" />
+              </button>
+            </div>
+          </div>
+
+          {error ? (
+            <FetchError message={error} onRetry={refetch} />
+          ) : isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-secondary" />
+            </div>
+          ) : expenses.length === 0 ? (
+            <Card variant="bordered" className="p-12 text-center">
+              <Receipt className="h-12 w-12 text-outline-variant mx-auto mb-4" />
+              <h3 className="font-display text-lg font-bold text-on-surface mb-2">
+                No expenses yet
+              </h3>
+              <p className="text-on-surface-variant mb-6">
+                Create your first shared expense to start splitting bills with roommates.
+              </p>
+              <Button onClick={() => setShowCreateModal(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Expense
+              </Button>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {expenses.map((expense) => {
+                const isExpanded = expandedId === expense.id
+                const paidCount = expense.shares.filter((s) => s.status === 'paid').length
+                const totalShares = expense.shares.length
+                const splitLabel = expense.split_type === 'equal'
+                  ? `Split equally (${totalShares} people)`
+                  : `${paidCount}/${totalShares} paid`
+
+                return (
+                  <Card key={expense.id} variant="bordered">
+                    <CardContent className="py-5">
+                      {/* Main Row */}
+                      <div
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => setExpandedId(isExpanded ? null : expense.id)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 bg-surface-container-low rounded-xl flex items-center justify-center text-on-surface-variant">
+                            {getCategoryIcon(expense.category)}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-on-surface">{expense.title}</h3>
+                            <p className="text-sm text-on-surface-variant">
+                              Paid by <span className="font-medium">{expense.creator?.name || 'Unknown'}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-on-surface">
+                              {formatPrice(expense.total_amount)}
+                            </p>
+                            {getStatusBadge(expense.status)}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
-                        <p className="text-lg font-bold text-gray-900">
-                          {formatPrice(expense.total_amount)}
-                        </p>
-                        <p className="text-sm text-gray-500">
-                          {paidCount}/{totalShares} paid
-                        </p>
-                      </div>
-                      {getStatusBadge(expense.status)}
-                      {isExpanded ? (
-                        <ChevronUp className="h-5 w-5 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Expanded Details */}
-                  {isExpanded && (
-                    <div className="mt-4 pt-4 border-t border-gray-100">
-                      {expense.description && (
-                        <p className="text-sm text-gray-600 mb-4">{expense.description}</p>
-                      )}
-
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                        <span>Created: {formatDate(expense.created_at)}</span>
-                        {expense.due_date && (
-                          <span>Due: {formatDate(expense.due_date)}</span>
-                        )}
-                        <span className="capitalize">Split: {expense.split_type}</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-medium text-gray-700">Shares</h4>
-                        {expense.shares.map((share) => (
-                          <div
-                            key={share.id}
-                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <Users className="h-4 w-4 text-blue-600" />
-                              </div>
-                              <span className="text-gray-900">
-                                {share.user?.name || 'Unknown'}
+                      {/* Split info + time row */}
+                      <div className="flex items-center justify-between mt-3 pl-14">
+                        <div className="flex items-center gap-2">
+                          {expense.shares.slice(0, 3).map((share) => (
+                            <div
+                              key={share.id}
+                              className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center -ml-1 first:ml-0"
+                              title={share.user?.name}
+                            >
+                              <span className="text-[10px] font-bold text-primary">
+                                {(share.user?.name || '?').charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <div className="flex items-center gap-4">
-                              <span className="font-medium">
-                                {formatPrice(share.amount)}
-                              </span>
-                              {getStatusBadge(share.status)}
-                            </div>
+                          ))}
+                          <span className="text-xs text-on-surface-variant ml-1">{splitLabel}</span>
+                        </div>
+                        <span className="text-xs text-on-surface-variant">
+                          {formatExpenseTime(expense.created_at)}
+                        </span>
+                      </div>
+
+                      {/* Expanded Details */}
+                      {isExpanded && (
+                        <div className="mt-4 pt-4 ghost-border-t">
+                          {expense.description && (
+                            <p className="text-sm text-on-surface-variant mb-4">{expense.description}</p>
+                          )}
+
+                          <div className="flex items-center gap-4 text-sm text-on-surface-variant mb-4">
+                            <span>Created: {formatDate(expense.created_at)}</span>
+                            {expense.due_date && (
+                              <span>Due: {formatDate(expense.due_date)}</span>
+                            )}
+                            <span className="capitalize">Split: {expense.split_type}</span>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      )}
 
-      {/* Info */}
-      <div className="mt-8 p-4 bg-blue-50 rounded-lg">
-        <h4 className="font-medium text-blue-900 mb-1">How Bill Splitting Works</h4>
-        <p className="text-sm text-blue-700">
-          Create shared expenses for rent, utilities, groceries, or other costs. Roommates
-          can pay their share directly through the app, and you'll receive the money in your
-          payout account.
-        </p>
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-semibold text-on-surface">Shares</h4>
+                            {expense.shares.map((share) => (
+                              <div
+                                key={share.id}
+                                className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg"
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center">
+                                    <span className="text-xs font-bold text-primary">
+                                      {(share.user?.name || '?').charAt(0).toUpperCase()}
+                                    </span>
+                                  </div>
+                                  <span className="text-on-surface text-sm">
+                                    {share.user?.name || 'Unknown'}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-medium text-sm text-on-surface">
+                                    {formatPrice(share.amount)}
+                                  </span>
+                                  {getStatusBadge(share.status)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })}
+
+              {/* Show all activity link */}
+              <div className="text-center pt-2">
+                <Link
+                  href="/payments"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-on-surface hover:text-secondary transition-colors"
+                >
+                  Show all activity
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Create Expense Modal */}
@@ -404,7 +512,7 @@ export default function ExpensesPage() {
         <ModalContent>
           <div className="space-y-4">
             <div>
-              <label htmlFor="expense-title" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="expense-title" className="block text-sm font-medium text-on-surface mb-1">
                 Title *
               </label>
               <input
@@ -413,14 +521,14 @@ export default function ExpensesPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="e.g., February Rent, Groceries, Internet Bill"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 maxLength={255}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="expense-amount" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="expense-amount" className="block text-sm font-medium text-on-surface mb-1">
                   Amount (CAD) *
                 </label>
                 <input
@@ -431,19 +539,19 @@ export default function ExpensesPage() {
                   placeholder="0.00"
                   min="0.01"
                   step="0.01"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
                 />
               </div>
 
               <div>
-                <label htmlFor="expense-category" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="expense-category" className="block text-sm font-medium text-on-surface mb-1">
                   Category
                 </label>
                 <select
                   id="expense-category"
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-3 py-2.5 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest text-on-surface appearance-none"
                 >
                   <option value="rent">Rent</option>
                   <option value="utilities">Utilities</option>
@@ -455,7 +563,7 @@ export default function ExpensesPage() {
             </div>
 
             <div>
-              <label htmlFor="expense-due" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="expense-due" className="block text-sm font-medium text-on-surface mb-1">
                 Due Date
               </label>
               <input
@@ -463,12 +571,12 @@ export default function ExpensesPage() {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2.5 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest text-on-surface"
               />
             </div>
 
             <div>
-              <label htmlFor="expense-desc" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="expense-desc" className="block text-sm font-medium text-on-surface mb-1">
                 Description
               </label>
               <textarea
@@ -477,7 +585,7 @@ export default function ExpensesPage() {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Optional details about the expense"
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                className="w-full px-3 py-2.5 ghost-border rounded-lg focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant resize-none"
               />
             </div>
           </div>

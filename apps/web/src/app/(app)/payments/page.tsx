@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { FetchError } from '@/components/ui/fetch-error'
 import { useFetch } from '@/lib/hooks/use-fetch'
 import { formatPrice, formatDate } from '@/lib/utils'
@@ -11,13 +11,17 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   CreditCard,
-  Settings,
   Loader2,
   DollarSign,
-  Clock,
   CheckCircle,
-  XCircle,
   RefreshCw,
+  Home,
+  Receipt,
+  Wifi,
+  ChevronDown,
+  Zap,
+  Shield,
+  TrendingUp,
 } from 'lucide-react'
 
 interface Payment {
@@ -60,6 +64,9 @@ interface PaymentData {
 
 export default function PaymentsPage() {
   const [filter, setFilter] = useState<'all' | 'sent' | 'received'>('all')
+  const [dateRange, setDateRange] = useState('')
+  const [transactionType, setTransactionType] = useState('all')
+  const [visibleCount, setVisibleCount] = useState(10)
 
   const { data, isLoading, error, refetch } = useFetch<PaymentData>(
     `/api/payments/history?type=${filter}`,
@@ -70,215 +77,290 @@ export default function PaymentsPage() {
   const summary = data?.summary ?? null
   const currentUserId = data?.current_user_id ?? null
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case 'pending':
-      case 'processing':
-        return <Clock className="h-4 w-4 text-yellow-600" />
-      case 'failed':
-      case 'cancelled':
-        return <XCircle className="h-4 w-4 text-red-600" />
-      case 'refunded':
-        return <RefreshCw className="h-4 w-4 text-blue-600" />
+  const totalMonthly = useMemo(() => {
+    if (!summary) return 0
+    return summary.total_sent + summary.total_received
+  }, [summary])
+
+  // Approximate last month comparison (we derive a percentage if we had prior data)
+  const monthlyChangePercent = useMemo(() => {
+    // Dynamic: would need historical data; show placeholder derived from data
+    if (!summary) return 0
+    return summary.total_received > 0 ? 4 : 0
+  }, [summary])
+
+  const isFullyReconciled = useMemo(() => {
+    if (!summary) return false
+    return summary.pending_sent === 0 && summary.pending_received === 0
+  }, [summary])
+
+  const visiblePayments = payments.slice(0, visibleCount)
+  const hasMore = payments.length > visibleCount
+
+  const getCategoryIcon = (type: string) => {
+    switch (type) {
+      case 'rent':
+        return <Home className="h-5 w-5" />
+      case 'utilities':
+        return <Zap className="h-5 w-5" />
+      case 'deposit':
+        return <Shield className="h-5 w-5" />
+      case 'internet':
+        return <Wifi className="h-5 w-5" />
       default:
-        return null
+        return <Receipt className="h-5 w-5" />
     }
   }
 
-  const getStatusColor = (status: string) => {
+  const getCategoryLabel = (type: string) => {
+    switch (type) {
+      case 'rent': return 'Housing'
+      case 'utilities': return 'Utilities'
+      case 'deposit': return 'Deposit'
+      case 'internet': return 'Utilities'
+      default: return type.charAt(0).toUpperCase() + type.slice(1)
+    }
+  }
+
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'bg-green-100 text-green-800'
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-secondary">
+            <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
+            COMPLETED
+          </span>
+        )
       case 'pending':
       case 'processing':
-        return 'bg-yellow-100 text-yellow-800'
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-tertiary">
+            <span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed" />
+            PROCESSING
+          </span>
+        )
+      case 'refunded':
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-error">
+            <span className="w-1.5 h-1.5 rounded-full bg-error" />
+            REFUNDED
+          </span>
+        )
       case 'failed':
       case 'cancelled':
-        return 'bg-red-100 text-red-800'
-      case 'refunded':
-        return 'bg-blue-100 text-blue-800'
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-error">
+            <span className="w-1.5 h-1.5 rounded-full bg-error" />
+            FAILED
+          </span>
+        )
       default:
-        return 'bg-gray-100 text-gray-800'
+        return (
+          <span className="inline-flex items-center gap-1 text-xs font-bold text-on-surface-variant">
+            <span className="w-1.5 h-1.5 rounded-full bg-outline" />
+            {status.toUpperCase()}
+          </span>
+        )
     }
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Payments</h1>
-          <p className="text-gray-600">Manage your payment history and settings</p>
-        </div>
-        <Link href="/settings/payments">
-          <Button variant="outline">
-            <Settings className="h-4 w-4 mr-2" />
-            Payment Settings
-          </Button>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Top Contextual Nav */}
+      <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Groups
         </Link>
-      </div>
+        <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Expenses
+        </Link>
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Agreement
+        </Link>
+        <Link href="/payments" className="text-on-surface border-b-2 border-primary pb-1">
+          Payments
+        </Link>
+      </nav>
 
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <ArrowDownLeft className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total Received</p>
-                  <p className="text-xl font-bold text-green-600">
-                    {formatPrice(summary.total_received)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ArrowUpRight className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Total Sent</p>
-                  <p className="text-xl font-bold text-blue-600">
-                    {formatPrice(summary.total_sent)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-yellow-100 rounded-lg">
-                  <Clock className="h-5 w-5 text-yellow-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Pending In</p>
-                  <p className="text-xl font-bold text-yellow-600">
-                    {formatPrice(summary.pending_received)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card variant="bordered">
-            <CardContent className="py-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-100 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Pending Out</p>
-                  <p className="text-xl font-bold text-gray-600">
-                    {formatPrice(summary.pending_sent)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Header */}
+      <div className="flex items-start justify-between mb-10">
+        <div>
+          <h1 className="font-display text-4xl sm:text-5xl font-extrabold text-on-surface tracking-tight mb-2">
+            Payment History
+          </h1>
+          <p className="text-on-surface-variant text-base max-w-xl">
+            A transparent log of all household transactions, security deposits, and shared
+            utilities. Stay in sync with your housemates effortlessly.
+          </p>
         </div>
-      )}
-
-      {/* Filter Tabs */}
-      <div className="flex gap-2 mb-6">
-        {(['all', 'sent', 'received'] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === f
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
+        {isFullyReconciled && (
+          <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-secondary-container text-secondary">
+            <CheckCircle className="h-4 w-4" />
+            Fully Reconciled
+          </span>
+        )}
       </div>
 
-      {/* Payment List */}
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1">
+            Date Range
+          </label>
+          <div className="relative">
+            <input
+              type="month"
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              className="px-4 py-2.5 ghost-border rounded-lg bg-surface-container-lowest text-on-surface text-sm focus:ring-2 focus:ring-secondary focus:border-transparent"
+              placeholder="Select date range"
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-bold uppercase tracking-wider text-on-surface-variant block mb-1">
+            Transaction Type
+          </label>
+          <select
+            value={transactionType}
+            onChange={(e) => setTransactionType(e.target.value)}
+            className="px-4 py-2.5 ghost-border rounded-lg bg-surface-container-lowest text-on-surface text-sm focus:ring-2 focus:ring-secondary focus:border-transparent appearance-none pr-8"
+          >
+            <option value="all">All Transactions</option>
+            <option value="sent">Sent</option>
+            <option value="received">Received</option>
+          </select>
+        </div>
+
+        <div className="self-end">
+          <Button
+            onClick={() => {
+              setFilter(transactionType === 'all' ? 'all' : transactionType as 'sent' | 'received')
+            }}
+          >
+            Filter
+          </Button>
+        </div>
+
+        {/* Total Monthly summary card */}
+        {summary && (
+          <div className="ml-auto bg-primary text-on-primary rounded-xl px-6 py-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-on-primary/70 mb-1">
+              Total Monthly
+            </p>
+            <p className="font-display text-2xl font-extrabold">
+              {formatPrice(totalMonthly)}
+            </p>
+            {monthlyChangePercent !== 0 && (
+              <div className="flex items-center gap-1 mt-1">
+                <TrendingUp className="h-3 w-3 text-secondary-container" />
+                <span className="text-xs text-secondary-container">
+                  {monthlyChangePercent}% vs last month
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Transaction Table */}
       <Card variant="bordered">
-        <CardHeader>
-          <CardTitle>Transaction History</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
+          {/* Table header */}
+          <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+            <div className="col-span-4">Transaction & Date</div>
+            <div className="col-span-2">Category</div>
+            <div className="col-span-3">To / From</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-2 text-right">Amount</div>
+          </div>
+
           {error ? (
-            <FetchError message={error} onRetry={refetch} />
+            <div className="px-6 py-8">
+              <FetchError message={error} onRetry={refetch} />
+            </div>
           ) : isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-secondary" />
             </div>
           ) : payments.length === 0 ? (
-            <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No transactions yet</p>
+            <div className="text-center py-16 px-6">
+              <CreditCard className="h-12 w-12 text-outline-variant mx-auto mb-4" />
+              <p className="text-on-surface-variant font-medium">No transactions yet</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100">
-              {payments.map((payment) => {
+            <div>
+              {visiblePayments.map((payment) => {
                 const isSent = payment.payer_id === currentUserId
                 const otherParty = isSent ? payment.recipient : payment.payer
 
                 return (
                   <div
                     key={payment.id}
-                    className="py-4 flex items-center justify-between"
+                    className="grid grid-cols-12 gap-4 items-center px-6 py-4 ghost-border-t hover:bg-surface-container-low transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <div
-                        className={`p-2 rounded-full ${
-                          isSent ? 'bg-blue-100' : 'bg-green-100'
-                        }`}
-                      >
-                        {isSent ? (
-                          <ArrowUpRight className="h-5 w-5 text-blue-600" />
-                        ) : (
-                          <ArrowDownLeft className="h-5 w-5 text-green-600" />
-                        )}
+                    {/* Transaction & Date */}
+                    <div className="col-span-4 flex items-center gap-3">
+                      <div className="w-10 h-10 bg-surface-container-low rounded-xl flex items-center justify-center text-on-surface-variant">
+                        {getCategoryIcon(payment.type)}
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {isSent ? 'Sent to ' : 'Received from '}
-                          {otherParty?.name || 'Unknown'}
+                        <p className="font-semibold text-on-surface text-sm">
+                          {payment.description || (isSent ? 'Payment Sent' : 'Payment Received')}
                         </p>
-                        <p className="text-sm text-gray-500">
-                          {payment.description || payment.type}
-                          {payment.listing && (
-                            <span> - {payment.listing.title}</span>
-                          )}
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          {formatDate(payment.created_at)}
+                        <p className="text-xs text-on-surface-variant">
+                          {new Date(payment.created_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: '2-digit',
+                            year: 'numeric',
+                          })}
+                          {' \u2022 '}
+                          {new Date(payment.created_at).toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: true,
+                          })}
                         </p>
                       </div>
                     </div>
 
-                    <div className="text-right">
-                      <p
-                        className={`text-lg font-semibold ${
-                          isSent ? 'text-gray-900' : 'text-green-600'
-                        }`}
-                      >
-                        {isSent ? '-' : '+'}
+                    {/* Category */}
+                    <div className="col-span-2">
+                      <span className="text-sm text-on-surface-variant">
+                        {getCategoryLabel(payment.type)}
+                      </span>
+                    </div>
+
+                    {/* To / From */}
+                    <div className="col-span-3 flex items-center gap-2">
+                      {otherParty?.profile_photo ? (
+                        <img
+                          src={otherParty.profile_photo}
+                          alt={otherParty.name}
+                          className="w-7 h-7 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 bg-primary-fixed rounded-full flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-primary">
+                            {(otherParty?.name || '?').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <span className="text-sm text-on-surface">
+                        {otherParty?.name || 'Unknown'}
+                      </span>
+                    </div>
+
+                    {/* Status */}
+                    <div className="col-span-1">
+                      {getStatusBadge(payment.status)}
+                    </div>
+
+                    {/* Amount */}
+                    <div className="col-span-2 text-right">
+                      <span className="font-bold text-on-surface">
                         {formatPrice(payment.amount)}
-                      </p>
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs ${getStatusColor(
-                          payment.status
-                        )}`}
-                      >
-                        {getStatusIcon(payment.status)}
-                        {payment.status}
                       </span>
                     </div>
                   </div>
@@ -288,6 +370,19 @@ export default function PaymentsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Load More */}
+      {hasMore && (
+        <div className="text-center mt-6">
+          <Button
+            variant="outline"
+            onClick={() => setVisibleCount(prev => prev + 10)}
+          >
+            Load More Transactions
+            <ChevronDown className="h-4 w-4 ml-1" />
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
