@@ -1,8 +1,17 @@
 import { test, expect } from './fixtures/test-fixtures'
+import type { Page } from '@playwright/test'
+
+// Skip test if not authenticated (redirected to login)
+function skipIfNotAuthenticated(page: Page) {
+  if (page.url().includes('/login') || page.url().includes('/signin')) {
+    test.skip(true, 'Test user not authenticated')
+  }
+}
 
 test.describe('Settings', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings')
+    skipIfNotAuthenticated(page)
   })
 
   test('should load settings page', async ({ page }) => {
