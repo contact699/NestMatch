@@ -2,53 +2,65 @@
 
 /* ============================================
    NestMatch Design System
-   Modern, Trust-First Aesthetic
+   Curated Sanctuary Aesthetic
    ============================================ */
 
 :root {
-  /* Brand Colors */
-  --primary-50: #eff6ff;
-  --primary-100: #dbeafe;
-  --primary-200: #bfdbfe;
-  --primary-300: #93c5fd;
-  --primary-400: #60a5fa;
-  --primary-500: #3b82f6;
-  --primary-600: #2563eb;
-  --primary-700: #1d4ed8;
-  --primary-800: #1e40af;
-  --primary-900: #1e3a8a;
+  /* === Sanctuary Design System === */
 
-  /* Accent Colors */
-  --accent-green: #10b981;
-  --accent-purple: #8b5cf6;
-  --accent-orange: #f59e0b;
-  --accent-pink: #ec4899;
+  /* Primary - Navy */
+  --primary: #002045;
+  --on-primary: #ffffff;
+  --primary-container: #1a365d;
+  --primary-fixed: #d6e3ff;
+  --primary-fixed-dim: #adc7f7;
 
-  /* Neutral Colors */
-  --gray-50: #f9fafb;
-  --gray-100: #f3f4f6;
-  --gray-200: #e5e7eb;
-  --gray-300: #d1d5db;
-  --gray-400: #9ca3af;
-  --gray-500: #6b7280;
-  --gray-600: #4b5563;
-  --gray-700: #374151;
-  --gray-800: #1f2937;
-  --gray-900: #111827;
+  /* Secondary - Teal */
+  --secondary: #006a60;
+  --on-secondary: #ffffff;
+  --secondary-container: #8cf5e4;
+  --secondary-fixed: #b0f0e4;
+
+  /* Tertiary - Warm */
+  --tertiary: #371800;
+  --tertiary-container: #562a00;
+  --tertiary-fixed: #ffdcc4;
+
+  /* Surfaces (No-Line Rule: use these instead of borders) */
+  --background: #f8f9fa;
+  --surface: #f8f9fa;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f3f4f5;
+  --surface-container: #edeeef;
+  --surface-container-high: #e7e8e9;
+  --surface-container-highest: #e1e3e4;
+  --surface-variant: #e1e3e4;
+  --surface-tint: #455f88;
+
+  /* Text */
+  --on-surface: #191c1d;
+  --on-surface-variant: #43474e;
+  --outline: #74777f;
+  --outline-variant: #c4c6cf;
+
+  /* Error */
+  --error: #ba1a1a;
+  --error-container: #ffdad6;
+  --on-error: #ffffff;
 
   /* Gradients */
-  --gradient-primary: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-  --gradient-hero: linear-gradient(135deg, #eff6ff 0%, #f5f3ff 50%, #fdf4ff 100%);
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-container) 100%);
+  --gradient-hero: linear-gradient(135deg, #f8f9fa 0%, #edf2f7 50%, #f0f4f8 100%);
   --gradient-card: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,1) 100%);
-  --gradient-glow: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(59, 130, 246, 0.1), transparent 40%);
+  --gradient-glow: radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 32, 69, 0.08), transparent 40%);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-glow: 0 0 40px rgba(59, 130, 246, 0.3);
-  --shadow-glow-lg: 0 0 80px rgba(59, 130, 246, 0.4);
+  /* Shadows - Ambient (tinted with on-surface, NOT pure black) */
+  --shadow-sm: 0 1px 2px 0 rgba(25, 28, 29, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(25, 28, 29, 0.06), 0 2px 4px -2px rgba(25, 28, 29, 0.04);
+  --shadow-lg: 0 10px 24px -4px rgba(25, 28, 29, 0.06);
+  --shadow-xl: 0 20px 40px -8px rgba(25, 28, 29, 0.06);
+  --shadow-glow: 0 0 40px rgba(0, 32, 69, 0.15);
+  --shadow-glow-lg: 0 0 80px rgba(0, 32, 69, 0.2);
 
   /* Animation Timings */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -60,22 +72,50 @@
   --section-padding: clamp(4rem, 10vw, 8rem);
 
   /* Border Radius */
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.5rem;
-  --radius-2xl: 2rem;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
   --radius-full: 9999px;
 
   /* Background */
-  --background: #ffffff;
-  --foreground: #111827;
+  --background: #f8f9fa;
+  --foreground: #191c1d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-surface: var(--surface);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-variant: var(--surface-variant);
+  --color-surface-tint: var(--surface-tint);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-error: var(--error);
+  --color-error-container: var(--error-container);
+  --color-on-error: var(--on-error);
+  --color-tertiary: var(--tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-tertiary-fixed: var(--tertiary-fixed);
   --font-sans: var(--font-inter);
+  --font-display: var(--font-manrope);
 }
 
 /* ============================================
@@ -100,8 +140,8 @@ body {
 }
 
 ::selection {
-  background: var(--primary-200);
-  color: var(--primary-900);
+  background: var(--primary-fixed);
+  color: var(--primary);
 }
 
 /* ============================================
@@ -429,6 +469,12 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.glass-nav {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
 /* ============================================
    Hero Section Styles
    ============================================ */
@@ -447,9 +493,9 @@ body {
   right: 0;
   bottom: 0;
   background:
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(59, 130, 246, 0.15), transparent),
-    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(139, 92, 246, 0.1), transparent),
-    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(236, 72, 153, 0.08), transparent);
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0, 32, 69, 0.1), transparent),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(26, 54, 93, 0.08), transparent),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(0, 106, 96, 0.06), transparent);
   pointer-events: none;
 }
 
@@ -465,7 +511,7 @@ body {
 .gradient-orb-1 {
   width: 600px;
   height: 600px;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4) 0%, rgba(139, 92, 246, 0.3) 100%);
+  background: linear-gradient(135deg, rgba(0, 32, 69, 0.2) 0%, rgba(26, 54, 93, 0.15) 100%);
   top: -200px;
   right: -100px;
   animation-delay: 0s;
@@ -474,7 +520,7 @@ body {
 .gradient-orb-2 {
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.3) 0%, rgba(249, 115, 22, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(0, 106, 96, 0.15) 0%, rgba(0, 106, 96, 0.1) 100%);
   bottom: -100px;
   left: -100px;
   animation-delay: -5s;
@@ -483,7 +529,7 @@ body {
 .gradient-orb-3 {
   width: 300px;
   height: 300px;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(59, 130, 246, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(0, 106, 96, 0.15) 0%, rgba(0, 32, 69, 0.1) 100%);
   top: 50%;
   left: 50%;
   animation-delay: -10s;
@@ -501,7 +547,7 @@ body {
 }
 
 .text-gradient-animated {
-  background: linear-gradient(135deg, #3b82f6, #8b5cf6, #ec4899, #3b82f6);
+  background: linear-gradient(135deg, #002045, #1a365d, #006a60, #002045);
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -523,7 +569,7 @@ body {
   border-radius: var(--radius-xl);
   padding: 2rem;
   transition: all 0.4s var(--ease-out-expo);
-  border: 1px solid var(--gray-100);
+  border: 1px solid rgba(196, 198, 207, 0.15);
   overflow: hidden;
 }
 
@@ -544,7 +590,7 @@ body {
 .feature-card:hover {
   transform: translateY(-8px);
   box-shadow: var(--shadow-xl);
-  border-color: var(--primary-200);
+  border-color: var(--primary-fixed);
 }
 
 .feature-icon {
@@ -616,9 +662,9 @@ body {
 .skeleton {
   background: linear-gradient(
     90deg,
-    var(--gray-200) 0%,
-    var(--gray-100) 50%,
-    var(--gray-200) 100%
+    var(--surface-container-high) 0%,
+    var(--surface-container-low) 50%,
+    var(--surface-container-high) 100%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
@@ -635,17 +681,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--gray-100);
+  background: var(--surface-container-low);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--gray-300);
+  background: var(--outline-variant);
   border-radius: var(--radius-full);
-  border: 2px solid var(--gray-100);
+  border: 2px solid var(--surface-container-low);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--gray-400);
+  background: var(--outline);
 }
 
 /* ============================================
@@ -653,7 +699,7 @@ body {
    ============================================ */
 
 :focus-visible {
-  outline: 2px solid var(--primary-500);
+  outline: 2px solid var(--surface-tint);
   outline-offset: 2px;
 }
 
@@ -744,6 +790,26 @@ body {
   to {
     transform: translateX(-100%);
   }
+}
+
+/* ============================================
+   Sanctuary Utility Classes
+   ============================================ */
+
+/* Tonal transition for surface changes */
+.tonal-transition {
+  transition: background-color 0.3s ease;
+}
+
+/* Editorial grid */
+.editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* Ghost border (accessibility fallback - 15% opacity max) */
+.ghost-border {
+  border: 1px solid rgba(196, 198, 207, 0.15);
 }
 
 /* Noise texture overlay */
