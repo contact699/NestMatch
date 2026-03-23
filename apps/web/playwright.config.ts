@@ -17,10 +17,17 @@ export default defineConfig({
   },
 
   projects: [
+    // Unauthenticated tests run without any setup
+    {
+      name: 'public',
+      testMatch: /\/(landing|auth)\.spec\.ts/,
+    },
+    // Auth setup — logs in and saves storageState
     {
       name: 'setup',
       testMatch: /.*\.setup\.ts/,
     },
+    // Authenticated tests depend on setup
     {
       name: 'chromium',
       use: {
@@ -28,9 +35,9 @@ export default defineConfig({
         storageState: './e2e/.auth/user.json',
       },
       dependencies: ['setup'],
-      testIgnore: /.*\.setup\.ts/,
+      testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts)/,
     },
-    // Only run multi-browser in CI
+    // Multi-browser in CI only
     ...(process.env.CI ? [
       {
         name: 'firefox',
@@ -39,7 +46,7 @@ export default defineConfig({
           storageState: './e2e/.auth/user.json',
         },
         dependencies: ['setup'],
-        testIgnore: /.*\.setup\.ts/,
+        testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts)/,
       },
     ] : []),
   ],

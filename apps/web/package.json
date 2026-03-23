@@ -11,8 +11,8 @@
     "seed:resources": "npx tsx scripts/seed-resources.ts"
   },
   "dependencies": {
-    "@nestmatch/shared": "*",
     "@hookform/resolvers": "^5.2.2",
+    "@nestmatch/shared": "*",
     "@react-google-maps/api": "^2.20.8",
     "@react-pdf/renderer": "^4.3.2",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
@@ -32,6 +32,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",

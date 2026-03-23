@@ -16,8 +16,8 @@ export class AuthHelper {
 
   async signIn(email: string, password: string) {
     await this.page.goto('/login')
-    await this.page.getByPlaceholder(/email/i).fill(email)
-    await this.page.getByPlaceholder(/password/i).fill(password)
+    await this.page.locator('#login-email').fill(email)
+    await this.page.locator('#login-password').fill(password)
     await this.page.getByRole('button', { name: /sign in/i }).click()
     await this.page.waitForURL(/\/(dashboard|discover|profile|quiz)/, { timeout: 15000 })
   }
