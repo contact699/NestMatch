@@ -6,8 +6,6 @@ import {
   HeroSection,
   TrustFeaturesSection,
   HowItWorksSection,
-  TopMatchesSection,
-  VerifiedListingsSection,
   CTASection,
   Footer,
 } from '@/components/landing'
@@ -42,8 +40,6 @@ export default function HomePage() {
         <HeroSection />
         <TrustFeaturesSection />
         <HowItWorksSection />
-        <TopMatchesSection />
-        <VerifiedListingsSection />
         <FeaturedListingsSection />
         <CTASection />
       </main>

@@ -10,7 +10,7 @@ export const GET = withPublicHandler(
   async (req, { requestId }) => {
     const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-    // Fetch active listings with basic host info
+    // Fetch active listings (no profile join — the relationship isn't in the schema cache)
     const { data: listings, error } = await supabase
       .from('listings')
       .select(`
@@ -27,12 +27,7 @@ export const GET = withPublicHandler(
         utilities_included,
         available_date,
         created_at,
-        user_id,
-        profiles!listings_user_id_fkey (
-          name,
-          verification_level,
-          profile_photo
-        )
+        user_id
       `)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
