@@ -32,6 +32,7 @@ export interface Database {
           is_admin: boolean
           is_online: boolean
           last_seen_at: string | null
+          show_verification_badges: boolean
           created_at: string
           updated_at: string
         }
@@ -57,6 +58,7 @@ export interface Database {
           is_admin?: boolean
           is_online?: boolean
           last_seen_at?: string | null
+          show_verification_badges?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -82,6 +84,7 @@ export interface Database {
           is_admin?: boolean
           is_online?: boolean
           last_seen_at?: string | null
+          show_verification_badges?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -443,6 +446,8 @@ export interface Database {
           result: Json | null
           completed_at: string | null
           expires_at: string | null
+          stripe_payment_id: string | null
+          paid_by: string | null
           created_at: string
         }
         Insert: {
@@ -455,6 +460,8 @@ export interface Database {
           result?: Json | null
           completed_at?: string | null
           expires_at?: string | null
+          stripe_payment_id?: string | null
+          paid_by?: string | null
           created_at?: string
         }
         Update: {
@@ -467,6 +474,8 @@ export interface Database {
           result?: Json | null
           completed_at?: string | null
           expires_at?: string | null
+          stripe_payment_id?: string | null
+          paid_by?: string | null
           created_at?: string
         }
         Relationships: []

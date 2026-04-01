@@ -36,15 +36,12 @@ interface BlockedUser {
 export default function SettingsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([])
   const [isUnblocking, setIsUnblocking] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [showPasswordForm, setShowPasswordForm] = useState(false)
-  const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' })
-  const [passwordLoading, setPasswordLoading] = useState(false)
-  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [showVerificationBadges, setShowVerificationBadges] = useState(true)
+
   useEffect(() => {
     async function loadSettings() {
       const supabase = createClient()
@@ -58,7 +55,16 @@ export default function SettingsPage() {
         return
       }
 
-      setUserEmail(user.email || null)
+      // Load profile settings
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('show_verification_badges')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profile) {
+        setShowVerificationBadges(profile.show_verification_badges ?? true)
+      }
 
       // Load blocked users
       const response = await fetch('/api/blocked-users')
@@ -81,72 +87,6 @@ export default function SettingsPage() {
     router.refresh()
   }
 
-  const handleChangePassword = async () => {
-    setPasswordError(null)
-
-    if (!passwordForm.current) {
-      setPasswordError('Current password is required')
-      return
-    }
-    if (passwordForm.new.length < 8) {
-      setPasswordError('New password must be at least 8 characters')
-      return
-    }
-    if (!/[A-Z]/.test(passwordForm.new)) {
-      setPasswordError('Password must contain at least one uppercase letter')
-      return
-    }
-    if (!/[a-z]/.test(passwordForm.new)) {
-      setPasswordError('Password must contain at least one lowercase letter')
-      return
-    }
-    if (!/[0-9]/.test(passwordForm.new)) {
-      setPasswordError('Password must contain at least one number')
-      return
-    }
-    if (passwordForm.new !== passwordForm.confirm) {
-      setPasswordError('Passwords do not match')
-      return
-    }
-
-    setPasswordLoading(true)
-
-    try {
-      const supabase = createClient()
-
-      // Verify current password
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: userEmail!,
-        password: passwordForm.current,
-      })
-
-      if (signInError) {
-        setPasswordError('Current password is incorrect')
-        setPasswordLoading(false)
-        return
-      }
-
-      // Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: passwordForm.new,
-      })
-
-      if (updateError) {
-        setPasswordError(updateError.message)
-        setPasswordLoading(false)
-        return
-      }
-
-      toast.success('Password updated successfully')
-      setPasswordForm({ current: '', new: '', confirm: '' })
-      setShowPasswordForm(false)
-    } catch {
-      setPasswordError('Something went wrong. Please try again.')
-    } finally {
-      setPasswordLoading(false)
-    }
-  }
-
   const handleUnblock = async (userId: string) => {
     setIsUnblocking(userId)
 
@@ -164,37 +104,51 @@ export default function SettingsPage() {
     setIsUnblocking(null)
   }
 
+  const handleToggleVerificationBadges = async (checked: boolean) => {
+    setShowVerificationBadges(checked)
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ show_verification_badges: checked })
+      .eq('user_id', user.id)
+
+    if (error) {
+      setShowVerificationBadges(!checked)
+      toast.error('Failed to update setting')
+    } else {
+      toast.success(checked ? 'Verification badges visible' : 'Verification badges hidden')
+    }
+  }
+
   const handleDeleteAccount = async () => {
     setIsDeleting(true)
 
-    try {
-      const response = await fetch('/api/account/delete', {
-        method: 'DELETE',
-      })
+    // Note: Account deletion would typically involve:
+    // 1. Soft delete or anonymize user data
+    // 2. Cancel any active listings
+    // 3. Close conversations
+    // 4. Delete auth user
 
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Failed to delete account')
-      }
+    // For MVP, we'll just show a message
+    // In production, implement proper account deletion
 
-      // Sign out locally after successful deletion
-      const supabase = createClient()
-      await supabase.auth.signOut()
-
-      toast.success('Your account has been deleted.')
-      router.push('/')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete account')
-    } finally {
+    setTimeout(() => {
       setIsDeleting(false)
       setShowDeleteConfirm(false)
-    }
+      toast.info('Account deletion is not yet implemented. Please contact support.')
+    }, 1000)
   }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     )
   }
@@ -204,7 +158,7 @@ export default function SettingsPage() {
       <div className="mb-6">
         <Link
           href="/dashboard"
-          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+          className="inline-flex items-center text-sm text-on-surface-variant hover:text-on-surface"
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to dashboard
@@ -212,8 +166,8 @@ export default function SettingsPage() {
       </div>
 
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-gray-600">Manage your account preferences</p>
+        <h1 className="text-2xl font-bold font-display text-on-surface">Settings</h1>
+        <p className="text-on-surface-variant">Manage your account preferences</p>
       </div>
 
       <div className="space-y-6">
@@ -224,129 +178,59 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="py-0">
             <Link href="/profile/edit">
-              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Edit Profile</p>
-                    <p className="text-sm text-gray-500">Update your personal information</p>
+                    <p className="font-medium text-on-surface">Edit Profile</p>
+                    <p className="text-sm text-on-surface-variant">Update your personal information</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
 
             <Link href="/verify">
-              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-gray-400" />
+                  <Shield className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Verification</p>
-                    <p className="text-sm text-gray-500">Verify your identity and build trust</p>
+                    <p className="font-medium text-on-surface">Verification</p>
+                    <p className="text-sm text-on-surface-variant">Verify your identity and build trust</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
 
             <Link href="/quiz">
-              <div className="flex items-center justify-between py-4 border-b border-gray-100 hover:bg-gray-50 -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
-                  <Users className="h-5 w-5 text-gray-400" />
+                  <Users className="h-5 w-5 text-outline" />
                   <div>
-                    <p className="font-medium text-gray-900">Lifestyle Quiz</p>
-                    <p className="text-sm text-gray-500">Update your compatibility preferences</p>
+                    <p className="font-medium text-on-surface">Lifestyle Quiz</p>
+                    <p className="text-sm text-on-surface-variant">Update your compatibility preferences</p>
                   </div>
                 </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
+                <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
 
-            <div>
-              <button
-                onClick={() => {
-                  setShowPasswordForm(!showPasswordForm)
-                  setPasswordError(null)
-                }}
-                className="flex items-center justify-between py-4 hover:bg-gray-50 -mx-6 px-6 transition-colors w-[calc(100%+3rem)]"
-              >
-                <div className="flex items-center gap-3">
-                  <Lock className="h-5 w-5 text-gray-400" />
-                  <div className="text-left">
-                    <p className="font-medium text-gray-900">Change Password</p>
-                    <p className="text-sm text-gray-500">Update your account password</p>
-                  </div>
+            <label className="flex items-center justify-between py-4 -mx-6 px-6">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-outline" />
+                <div>
+                  <p className="font-medium text-on-surface">Show verification badges on profile</p>
+                  <p className="text-sm text-on-surface-variant">Display your verification badges publicly on your profile and listings</p>
                 </div>
-                <ChevronRight className={`h-5 w-5 text-gray-400 transition-transform ${showPasswordForm ? 'rotate-90' : ''}`} />
-              </button>
-
-              {showPasswordForm && (
-                <div className="pb-4 space-y-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Current Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordForm.current}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, current: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="Enter current password"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordForm.new}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, new: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="At least 8 characters, uppercase, lowercase, number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Confirm New Password
-                    </label>
-                    <input
-                      type="password"
-                      value={passwordForm.confirm}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirm: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      placeholder="Re-enter new password"
-                    />
-                  </div>
-
-                  {passwordError && (
-                    <p className="text-sm text-red-600">{passwordError}</p>
-                  )}
-
-                  <div className="flex gap-3 pt-1">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setShowPasswordForm(false)
-                        setPasswordForm({ current: '', new: '', confirm: '' })
-                        setPasswordError(null)
-                      }}
-                      disabled={passwordLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleChangePassword}
-                      isLoading={passwordLoading}
-                    >
-                      Update Password
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={showVerificationBadges}
+                onChange={(e) => handleToggleVerificationBadges(e.target.checked)}
+                className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
+              />
+            </label>
           </CardContent>
         </Card>
 
@@ -360,7 +244,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent>
             {blockedUsers.length === 0 ? (
-              <p className="text-sm text-gray-500">You haven't blocked anyone</p>
+              <p className="text-sm text-on-surface-variant">You haven't blocked anyone</p>
             ) : (
               <div className="space-y-3">
                 {blockedUsers.map((blocked) => (
@@ -369,7 +253,7 @@ export default function SettingsPage() {
                     className="flex items-center justify-between py-2"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center overflow-hidden">
+                      <div className="w-10 h-10 bg-surface-container-low rounded-full flex items-center justify-center overflow-hidden">
                         {blocked.profile?.profile_photo ? (
                           <img
                             src={blocked.profile.profile_photo}
@@ -377,10 +261,10 @@ export default function SettingsPage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <User className="h-5 w-5 text-gray-400" />
+                          <User className="h-5 w-5 text-outline" />
                         )}
                       </div>
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-on-surface">
                         {blocked.profile?.name || 'Unknown User'}
                       </span>
                     </div>
@@ -403,32 +287,49 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Notifications */}
+        {/* Notifications - Placeholder for future */}
         <Card variant="bordered">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5" />
-              Notifications
-            </CardTitle>
+          <CardHeader className="py-4">
+            <CardTitle className="text-base">Notifications</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-gray-600">
-              Email notifications are sent for new messages, group invitations, and join requests.
-              Notification preferences will be customizable in a future update.
-            </p>
+            <div className="space-y-4">
+              <label className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-on-surface">Email notifications</p>
+                  <p className="text-sm text-on-surface-variant">Receive updates via email</p>
+                </div>
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
+                />
+              </label>
+              <label className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium text-on-surface">New message alerts</p>
+                  <p className="text-sm text-on-surface-variant">Get notified of new messages</p>
+                </div>
+                <input
+                  type="checkbox"
+                  defaultChecked
+                  className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
+                />
+              </label>
+            </div>
           </CardContent>
         </Card>
 
         {/* Danger Zone */}
-        <Card variant="bordered" className="border-red-200">
+        <Card variant="bordered" className="border-error/30">
           <CardHeader className="py-4">
-            <CardTitle className="text-base text-red-600">Danger Zone</CardTitle>
+            <CardTitle className="text-base text-error">Danger Zone</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-gray-900">Sign out</p>
-                <p className="text-sm text-gray-500">Sign out of your account</p>
+                <p className="font-medium text-on-surface">Sign out</p>
+                <p className="text-sm text-on-surface-variant">Sign out of your account</p>
               </div>
               <Button variant="outline" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-2" />
@@ -436,11 +337,11 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            <div className="pt-4 border-t border-gray-100">
+            <div className="pt-4 border-t border-outline-variant/15">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">Delete account</p>
-                  <p className="text-sm text-gray-500">
+                  <p className="font-medium text-on-surface">Delete account</p>
+                  <p className="text-sm text-on-surface-variant">
                     Permanently delete your account and all data
                   </p>
                 </div>
@@ -460,12 +361,12 @@ export default function SettingsPage() {
       {/* Delete confirmation modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md mx-4">
-            <div className="flex items-center gap-3 text-red-600 mb-4">
+          <div className="bg-surface-container-lowest rounded-xl p-6 max-w-md mx-4">
+            <div className="flex items-center gap-3 text-error mb-4">
               <AlertCircle className="h-6 w-6" />
               <h3 className="text-lg font-semibold">Delete Account?</h3>
             </div>
-            <p className="text-gray-600 mb-4">
+            <p className="text-on-surface-variant mb-4">
               This will permanently delete your account, listings, messages, and all associated data. This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">

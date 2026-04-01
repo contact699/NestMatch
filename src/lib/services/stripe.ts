@@ -9,7 +9,7 @@ function getStripe(): Stripe {
       throw new Error('STRIPE_SECRET_KEY is not set')
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: '2025-12-15.clover',
+      apiVersion: '2026-01-28.clover',
     })
   }
   return _stripe
@@ -382,6 +382,54 @@ export async function getConnectAccountBalance(
   return getStripe().balance.retrieve({
     stripeAccount: connectAccountId,
   })
+}
+
+// ============================================
+// CHECKOUT SESSIONS (For verification purchases)
+// ============================================
+
+/**
+ * Create a Stripe Checkout Session for verification purchases.
+ */
+export async function createVerificationCheckoutSession({
+  customerId,
+  productName,
+  priceInCents,
+  metadata,
+  successUrl,
+  cancelUrl,
+}: {
+  customerId: string
+  productName: string
+  priceInCents: number
+  metadata: Record<string, string>
+  successUrl: string
+  cancelUrl: string
+}): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.create({
+    customer: customerId,
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency: 'cad',
+        product_data: { name: productName },
+        unit_amount: priceInCents,
+      },
+      quantity: 1,
+    }],
+    metadata,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  })
+}
+
+/**
+ * Retrieve a Stripe Checkout Session by ID.
+ */
+export async function getCheckoutSession(
+  sessionId: string
+): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.retrieve(sessionId)
 }
 
 // Export types for use in API routes
