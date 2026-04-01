@@ -6,7 +6,7 @@ export const GET = withApiHandler(
     // Get profile verification status
     const { data: profile } = await supabase
       .from('profiles')
-      .select('email_verified, phone_verified, verification_level, verified_at')
+      .select('name, profile_photo, city, province, occupation, email_verified, phone, phone_verified, verification_level, verified_at, created_at')
       .eq('user_id', userId!)
       .single()
 
@@ -33,10 +33,17 @@ export const GET = withApiHandler(
 
     return apiResponse({
       profile: {
+        name: profile?.name || null,
+        profile_photo: profile?.profile_photo || null,
+        city: profile?.city || null,
+        province: profile?.province || null,
+        occupation: profile?.occupation || null,
         email_verified: profile?.email_verified || false,
+        phone: profile?.phone || null,
         phone_verified: profile?.phone_verified || false,
         verification_level: profile?.verification_level || 'basic',
-        verified_at: profile?.verified_at,
+        verified_at: profile?.verified_at || null,
+        created_at: profile?.created_at || null,
       },
       verifications: verifications || [],
     }, 200, requestId)

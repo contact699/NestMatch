@@ -70,6 +70,14 @@ export default function VerifyPage() {
   const [isInitiatingId, setIsInitiatingId] = useState(false)
   const [idError, setIdError] = useState<string | null>(null)
 
+  // Criminal check state
+  const [isInitiatingCriminal, setIsInitiatingCriminal] = useState(false)
+  const [criminalError, setCriminalError] = useState<string | null>(null)
+
+  // Credit check state
+  const [isInitiatingCredit, setIsInitiatingCredit] = useState(false)
+  const [creditError, setCreditError] = useState<string | null>(null)
+
   const loadStatus = async () => {
     const response = await fetch('/api/verify/status')
     const data = await response.json()
@@ -193,6 +201,60 @@ export default function VerifyPage() {
       )
     } finally {
       setIsInitiatingId(false)
+    }
+  }
+
+  const handleInitiateCriminalCheck = async () => {
+    setIsInitiatingCriminal(true)
+    setCriminalError(null)
+
+    try {
+      const response = await fetch('/api/verify/criminal/initiate', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate criminal check')
+      }
+
+      await loadStatus()
+    } catch (err) {
+      setCriminalError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to initiate criminal check'
+      )
+    } finally {
+      setIsInitiatingCriminal(false)
+    }
+  }
+
+  const handleInitiateCreditCheck = async () => {
+    setIsInitiatingCredit(true)
+    setCreditError(null)
+
+    try {
+      const response = await fetch('/api/verify/credit/initiate', {
+        method: 'POST',
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to initiate credit check')
+      }
+
+      await loadStatus()
+    } catch (err) {
+      setCreditError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to initiate credit check'
+      )
+    } finally {
+      setIsInitiatingCredit(false)
     }
   }
 
@@ -389,29 +451,60 @@ export default function VerifyPage() {
               icon={<TrendingUp className="h-6 w-6 text-primary" />}
               title="Credit Standing"
               verified={creditVerification?.status === 'completed'}
+              pending={creditVerification?.status === 'pending'}
               description={
                 creditVerification?.status === 'completed'
-                  ? 'Direct integration with Equifax. Financial reliability score shared with matched hosts.'
-                  : 'Verify your credit standing through our Equifax integration.'
+                  ? 'Credit check completed. Results shared with matched hosts.'
+                  : creditVerification?.status === 'pending'
+                    ? 'Your credit check is in progress. Check your email for instructions from Certn.'
+                    : 'Verify your credit standing through our Equifax integration.'
               }
               footer={
                 creditVerification?.status === 'completed' ? (
                   <div className="flex items-center justify-between w-full">
                     <div className="flex items-center gap-1.5 text-secondary text-xs font-semibold">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                      EXCELLENT RANGE
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      CHECK COMPLETE
                     </div>
                     <span className="text-xs text-on-surface-variant">
-                      Updated{' '}
                       {creditVerification.completed_at
                         ? `${Math.floor((Date.now() - new Date(creditVerification.completed_at).getTime()) / 86400000)}d ago`
                         : 'recently'}
                     </span>
                   </div>
-                ) : (
-                  <Button variant="outline" size="sm" disabled>
-                    Coming Soon
+                ) : creditVerification?.status === 'pending' ? (
+                  <Button
+                    onClick={loadStatus}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Check Status
                   </Button>
+                ) : (
+                  <>
+                    {creditError && (
+                      <div className="p-2 bg-error-container rounded-lg flex items-center gap-2 text-error text-xs mb-2">
+                        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        {creditError}
+                      </div>
+                    )}
+                    <Button
+                      onClick={handleInitiateCreditCheck}
+                      disabled={isInitiatingCredit}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {isInitiatingCredit ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          Initiating...
+                        </>
+                      ) : (
+                        'Start Check'
+                      )}
+                    </Button>
+                  </>
                 )
               }
             />
@@ -501,26 +594,58 @@ export default function VerifyPage() {
               }
             />
 
-            {/* Criminal History */}
+            {/* Background Check (Softcheck) */}
             <TrustCard
               icon={<Scale className="h-6 w-6 text-primary" />}
-              title="Criminal History"
+              title="Background Check"
               verified={criminalVerification?.status === 'completed'}
+              pending={criminalVerification?.status === 'pending'}
               description={
                 criminalVerification?.status === 'completed'
-                  ? 'Enhanced background check completed. No records found in national databases.'
-                  : 'Complete a criminal background check to boost trust.'
+                  ? 'Background screening completed. Results available to matched hosts.'
+                  : criminalVerification?.status === 'pending'
+                    ? 'Your background check is in progress. Check your email for instructions from Certn.'
+                    : 'Screen against criminal, fraud, sanctions, and watchlist databases.'
               }
               footer={
                 criminalVerification?.status === 'completed' ? (
-                  <button className="text-xs font-semibold text-secondary hover:underline inline-flex items-center gap-1">
-                    VIEW CERTIFICATE
-                    <ChevronRight className="h-3 w-3" />
-                  </button>
-                ) : (
-                  <Button variant="outline" size="sm" disabled>
-                    Coming Soon
+                  <div className="flex items-center gap-1.5 text-secondary text-xs font-semibold">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    CHECK COMPLETE
+                  </div>
+                ) : criminalVerification?.status === 'pending' ? (
+                  <Button
+                    onClick={loadStatus}
+                    variant="outline"
+                    size="sm"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Check Status
                   </Button>
+                ) : (
+                  <>
+                    {criminalError && (
+                      <div className="p-2 bg-error-container rounded-lg flex items-center gap-2 text-error text-xs mb-2">
+                        <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                        {criminalError}
+                      </div>
+                    )}
+                    <Button
+                      onClick={handleInitiateCriminalCheck}
+                      disabled={isInitiatingCriminal}
+                      variant="outline"
+                      size="sm"
+                    >
+                      {isInitiatingCriminal ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          Initiating...
+                        </>
+                      ) : (
+                        'Start Check'
+                      )}
+                    </Button>
+                  </>
                 )
               }
             />
