@@ -20,6 +20,7 @@ import {
   Languages,
 } from 'lucide-react'
 import { formatDate, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
+import { VerificationBadges } from '@/components/verification-badges'
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>
@@ -170,6 +171,16 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 {profile.occupation && (
                   <p className="text-on-surface-variant mt-1">{profile.occupation}</p>
                 )}
+
+                <div className="mt-2 flex justify-center">
+                  <VerificationBadges
+                    emailVerified={profile.email_verified}
+                    phoneVerified={profile.phone_verified}
+                    verificationLevel={profile.verification_level}
+                    variant="full"
+                    showPublic={profile.show_verification_badges}
+                  />
+                </div>
 
                 {/* Rating Display */}
                 {reviewCount > 0 && averageRating ? (

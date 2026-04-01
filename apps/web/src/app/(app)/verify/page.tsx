@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,7 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react'
+import { VERIFICATION_CHECKS, VERIFICATION_PACKAGES, formatPrice } from '@/lib/verification-pricing'
 
 interface VerificationStatus {
   profile: {
@@ -55,6 +56,8 @@ interface VerificationStatus {
 
 export default function VerifyPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const paymentStatus = searchParams.get('payment')
   const [status, setStatus] = useState<VerificationStatus | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -177,84 +180,25 @@ export default function VerifyPage() {
     }
   }
 
-  const handleInitiateIdVerification = async () => {
-    setIsInitiatingId(true)
-    setIdError(null)
-
+  const handleCheckout = async (type: string) => {
     try {
-      const response = await fetch('/api/verify/id/initiate', {
+      const response = await fetch('/api/verify/checkout', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type }),
       })
-
       const data = await response.json()
-
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate verification')
+        throw new Error(data.error || 'Failed to start checkout')
       }
-
-      await loadStatus()
-    } catch (err) {
-      setIdError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to initiate verification'
-      )
-    } finally {
-      setIsInitiatingId(false)
-    }
-  }
-
-  const handleInitiateCriminalCheck = async () => {
-    setIsInitiatingCriminal(true)
-    setCriminalError(null)
-
-    try {
-      const response = await fetch('/api/verify/criminal/initiate', {
-        method: 'POST',
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate criminal check')
+      if (data.url) {
+        window.location.href = data.url
       }
-
-      await loadStatus()
     } catch (err) {
-      setCriminalError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to initiate criminal check'
-      )
-    } finally {
-      setIsInitiatingCriminal(false)
-    }
-  }
-
-  const handleInitiateCreditCheck = async () => {
-    setIsInitiatingCredit(true)
-    setCreditError(null)
-
-    try {
-      const response = await fetch('/api/verify/credit/initiate', {
-        method: 'POST',
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to initiate credit check')
-      }
-
-      await loadStatus()
-    } catch (err) {
-      setCreditError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to initiate credit check'
-      )
-    } finally {
-      setIsInitiatingCredit(false)
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout'
+      if (type === 'id') setIdError(msg)
+      else if (type === 'criminal') setCriminalError(msg)
+      else if (type === 'credit') setCreditError(msg)
     }
   }
 
@@ -320,6 +264,15 @@ export default function VerifyPage() {
           digital trust anchors.
         </p>
       </div>
+
+      {paymentStatus === 'success' && (
+        <div className="p-4 bg-secondary/10 border border-secondary/20 rounded-lg flex items-center gap-3 mb-6">
+          <ShieldCheck className="h-5 w-5 text-secondary flex-shrink-0" />
+          <p className="text-sm text-on-surface">
+            Payment received! Your verification check has been initiated. Check your email for instructions from Certn.
+          </p>
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-4 gap-8">
         {/* Left Sidebar */}
@@ -427,19 +380,11 @@ export default function VerifyPage() {
                       </div>
                     )}
                     <Button
-                      onClick={handleInitiateIdVerification}
-                      disabled={isInitiatingId}
+                      onClick={() => handleCheckout('id')}
                       variant="outline"
                       size="sm"
                     >
-                      {isInitiatingId ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          Initiating...
-                        </>
-                      ) : (
-                        'Start Verification'
-                      )}
+                      {`Start Verification — ${formatPrice(VERIFICATION_CHECKS.id.price)}`}
                     </Button>
                   </>
                 )
@@ -490,19 +435,11 @@ export default function VerifyPage() {
                       </div>
                     )}
                     <Button
-                      onClick={handleInitiateCreditCheck}
-                      disabled={isInitiatingCredit}
+                      onClick={() => handleCheckout('credit')}
                       variant="outline"
                       size="sm"
                     >
-                      {isInitiatingCredit ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          Initiating...
-                        </>
-                      ) : (
-                        'Start Check'
-                      )}
+                      {`Start Check — ${formatPrice(VERIFICATION_CHECKS.credit.price)}`}
                     </Button>
                   </>
                 )
@@ -631,24 +568,48 @@ export default function VerifyPage() {
                       </div>
                     )}
                     <Button
-                      onClick={handleInitiateCriminalCheck}
-                      disabled={isInitiatingCriminal}
+                      onClick={() => handleCheckout('criminal')}
                       variant="outline"
                       size="sm"
                     >
-                      {isInitiatingCriminal ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
-                          Initiating...
-                        </>
-                      ) : (
-                        'Start Check'
-                      )}
+                      {`Start Check — ${formatPrice(VERIFICATION_CHECKS.criminal.price)}`}
                     </Button>
                   </>
                 )
               }
             />
+          </div>
+
+          {/* Packages */}
+          <div className="mt-6">
+            <h3 className="font-display font-semibold text-on-surface mb-3">Save with Packages</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              {Object.entries(VERIFICATION_PACKAGES).map(([key, pkg]) => (
+                <Card key={key} variant="bordered">
+                  <CardContent className="py-5">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h4 className="font-display font-semibold text-on-surface">{pkg.name}</h4>
+                        <p className="text-sm text-on-surface-variant">{pkg.description}</p>
+                      </div>
+                      <Badge variant="success">Save {formatPrice(pkg.savings)}</Badge>
+                    </div>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-2xl font-display font-bold text-on-surface">
+                        {formatPrice(pkg.price)}
+                      </span>
+                      <Button
+                        onClick={() => handleCheckout(key)}
+                        variant="primary"
+                        size="sm"
+                      >
+                        Buy Package
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
 
           {/* Need more trust? CTA */}

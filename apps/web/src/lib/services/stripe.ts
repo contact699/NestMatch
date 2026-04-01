@@ -384,6 +384,54 @@ export async function getConnectAccountBalance(
   })
 }
 
+// ============================================
+// CHECKOUT SESSIONS (For verification purchases)
+// ============================================
+
+/**
+ * Create a Stripe Checkout Session for verification purchases.
+ */
+export async function createVerificationCheckoutSession({
+  customerId,
+  productName,
+  priceInCents,
+  metadata,
+  successUrl,
+  cancelUrl,
+}: {
+  customerId: string
+  productName: string
+  priceInCents: number
+  metadata: Record<string, string>
+  successUrl: string
+  cancelUrl: string
+}): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.create({
+    customer: customerId,
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency: 'cad',
+        product_data: { name: productName },
+        unit_amount: priceInCents,
+      },
+      quantity: 1,
+    }],
+    metadata,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  })
+}
+
+/**
+ * Retrieve a Stripe Checkout Session by ID.
+ */
+export async function getCheckoutSession(
+  sessionId: string
+): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.retrieve(sessionId)
+}
+
 // Export types for use in API routes
 export type {
   Stripe,

@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { constructWebhookEvent } from '@/lib/services/stripe'
 import { withWebhookHandler, apiResponse, getWebhookBody } from '@/lib/api/with-handler'
 import { logger } from '@/lib/logger'
+import { initiateVerification, type CertnVerificationType } from '@/lib/services/certn'
+import { createServiceClient } from '@/lib/supabase/service'
 import type Stripe from 'stripe'
 
 // Lazy initialization of Supabase admin client
@@ -80,6 +82,10 @@ export async function POST(request: NextRequest) {
 
       case 'transfer.created':
         await handleTransferCreated(event.data.object as Stripe.Transfer, requestId)
+        break
+
+      case 'checkout.session.completed':
+        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, requestId)
         break
 
       default:
@@ -206,6 +212,121 @@ async function handleTransferCreated(transfer: Stripe.Transfer, requestId: strin
 
     if (error) {
       logger.error('Error updating payment with transfer', error, { requestId, resourceId: transfer.id })
+    }
+  }
+}
+
+async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, requestId: string) {
+  const metadata = session.metadata || {}
+  const { verification_type, subject_user_id, paid_by, checks_needed } = metadata
+
+  // Not a verification checkout — could be another Stripe purchase
+  if (!verification_type) {
+    logger.info('checkout.session.completed without verification_type metadata, skipping', {
+      requestId,
+      resourceId: session.id,
+    })
+    return
+  }
+
+  logger.info('Processing verification checkout.session.completed', {
+    requestId,
+    resourceId: session.id,
+    verification_type,
+    subject_user_id,
+    paid_by,
+  })
+
+  let checkTypes: string[]
+  try {
+    checkTypes = JSON.parse(checks_needed || '[]')
+  } catch {
+    logger.error('Failed to parse checks_needed metadata', new Error(`Invalid JSON: ${checks_needed}`), {
+      requestId,
+      resourceId: session.id,
+    })
+    return
+  }
+
+  if (checkTypes.length === 0) {
+    logger.info('No checks_needed in metadata, skipping', { requestId, resourceId: session.id })
+    return
+  }
+
+  const supabase = createServiceClient()
+
+  // Get subject user's email for Certn invites
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('email')
+    .eq('user_id', subject_user_id!)
+    .single()
+
+  if (profileError || !profile) {
+    logger.error('Could not find profile for subject user', profileError || new Error('Profile not found'), {
+      requestId,
+      resourceId: session.id,
+      subject_user_id,
+    })
+    return
+  }
+
+  for (const checkType of checkTypes) {
+    // Idempotency: check if a verification row with this stripe_payment_id already exists
+    const { data: existing } = await supabase
+      .from('verifications')
+      .select('id')
+      .eq('stripe_payment_id', session.id)
+      .eq('type', checkType as any)
+      .single()
+
+    if (existing) {
+      logger.info(`Verification already exists for ${checkType}, skipping`, {
+        requestId,
+        resourceId: session.id,
+        verificationId: existing.id,
+      })
+      continue
+    }
+
+    // Initiate the check with Certn
+    const result = await initiateVerification(checkType as CertnVerificationType, profile.email)
+
+    if (!result.success) {
+      logger.error(`Failed to initiate ${checkType} verification via webhook`, new Error(result.error || 'Unknown error'), {
+        requestId,
+        resourceId: session.id,
+        checkType,
+      })
+      continue
+    }
+
+    // Insert verification record
+    const { error: insertError } = await supabase
+      .from('verifications')
+      .insert({
+        user_id: subject_user_id!,
+        type: checkType as any,
+        provider: 'certn',
+        external_id: result.caseId || null,
+        status: 'pending',
+        stripe_payment_id: session.id,
+        paid_by: paid_by || null,
+      })
+
+    if (insertError) {
+      logger.error(`Failed to insert verification record for ${checkType}`, insertError, {
+        requestId,
+        resourceId: session.id,
+        checkType,
+      })
+    } else {
+      logger.info(`Verification initiated for ${checkType} via webhook fallback`, {
+        requestId,
+        resourceId: session.id,
+        checkType,
+        caseId: result.caseId,
+      })
     }
   }
 }

@@ -28,6 +28,7 @@ import {
   DollarSign,
 } from 'lucide-react'
 import { HOUSEHOLD_SITUATIONS } from '@/lib/utils'
+import { VerificationBadges } from '@/components/verification-badges'
 
 export const metadata = {
   title: 'Profile',
@@ -165,6 +166,12 @@ export default async function ProfilePage() {
                         </span>
                       )}
                     </div>
+                    <VerificationBadges
+                      emailVerified={profile?.email_verified}
+                      phoneVerified={profile?.phone_verified}
+                      verificationLevel={profile?.verification_level}
+                      variant="full"
+                    />
                     {profile?.occupation && (
                       <p className="text-on-surface-variant mt-1">{profile.occupation}</p>
                     )}
