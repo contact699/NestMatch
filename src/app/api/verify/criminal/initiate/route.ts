@@ -14,24 +14,24 @@ export const POST = withApiHandler(
       throw new NotFoundError('Profile not found')
     }
 
-    // Check if already has pending or completed ID verification
+    // Check if already has pending or completed criminal background check
     const { data: existingVerification } = await supabase
       .from('verifications')
       .select('id, status')
       .eq('user_id', userId!)
-      .eq('type', 'id')
+      .eq('type', 'criminal')
       .in('status', ['pending', 'completed'])
       .single()
 
     if (existingVerification) {
       if (existingVerification.status === 'completed') {
-        return apiResponse({ error: 'ID verification already completed' }, 409, requestId)
+        return apiResponse({ error: 'Criminal background check already completed' }, 409, requestId)
       }
-      return apiResponse({ error: 'ID verification already in progress' }, 409, requestId)
+      return apiResponse({ error: 'Criminal background check already in progress' }, 409, requestId)
     }
 
     // Initiate verification with Certn
-    const result = await initiateVerification('id', profile.email)
+    const result = await initiateVerification('criminal', profile.email)
 
     if (!result.success) {
       return apiResponse({ error: result.error }, 400, requestId)
@@ -42,7 +42,7 @@ export const POST = withApiHandler(
       .from('verifications')
       .insert({
         user_id: userId!,
-        type: 'id',
+        type: 'criminal',
         provider: 'certn',
         external_id: result.caseId,
         status: 'pending',
@@ -55,14 +55,14 @@ export const POST = withApiHandler(
     return apiResponse({
       success: true,
       verification_id: verification.id,
-      message: 'ID verification initiated. You will receive an email from Certn to complete the process.',
+      message: 'Background check initiated. You will receive an email from Certn to complete the process.',
     }, 200, requestId)
   },
   {
-    rateLimit: 'idVerify',
+    rateLimit: 'criminalCheck',
     audit: {
       action: 'verification_start',
-      resourceType: 'id_verification',
+      resourceType: 'criminal_check',
       getResourceId: (_req, res) => res?.verification_id,
     },
   }

@@ -25,6 +25,8 @@ export const RATE_LIMITS = {
   // Verification
   phoneVerify: { maxRequests: 3, windowSeconds: 3600 },    // 3 per hour
   idVerify: { maxRequests: 2, windowSeconds: 86400 },      // 2 per day
+  criminalCheck: { maxRequests: 2, windowSeconds: 86400 }, // 2 per day
+  creditCheck: { maxRequests: 2, windowSeconds: 86400 },   // 2 per day
 
   // Messaging
   messageSend: { maxRequests: 60, windowSeconds: 60 },     // 60 per minute
