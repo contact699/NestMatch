@@ -57,10 +57,10 @@ export default function ToolsPage() {
         ))}
       </div>
 
-      {/* More tools coming soon */}
+      {/* Suggestion prompt */}
       <div className="mt-12 text-center">
         <p className="text-on-surface-variant">
-          More tools coming soon! Have a suggestion?{' '}
+          Have a suggestion for a new tool?{' '}
           <Link href="/resources/submit-question" className="text-primary hover:underline">
             Let us know
           </Link>

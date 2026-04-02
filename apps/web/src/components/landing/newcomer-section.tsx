@@ -8,7 +8,7 @@ const BENEFITS = [
   'Filter for "No Canadian credit history required"',
   'Find "Newcomer Friendly" hosts',
   'Connect with settlement agencies',
-  'Multi-language support coming soon',
+  'Multi-language support',
 ]
 
 const CITIES = [

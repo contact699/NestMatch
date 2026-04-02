@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
 const inter = Inter({
@@ -80,6 +81,7 @@ export default function RootLayout({
         <GoogleAnalytics />
         {children}
         <Toaster position="bottom-right" richColors closeButton />
+        <CookieConsent />
       </body>
     </html>
   );

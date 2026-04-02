@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Modal, ModalHeader, ModalTitle, ModalContent } from '@/components/ui/modal'
 import { Loader2, Search } from 'lucide-react'
@@ -24,14 +25,30 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
 
     setLoading(true)
     setError(null)
+    setSearchResults([])
 
     try {
-      // In a real app, you'd have a user search endpoint
-      // For now, we'll show a placeholder
-      setSearchResults([])
-      setError('User search functionality coming soon. Ask users to share their profile link.')
+      const supabase = createClient()
+      const term = searchQuery.trim()
+
+      // Search profiles by name or email
+      const { data, error: searchError } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, profile_photo')
+        .or(`name.ilike.%${term}%,email.ilike.%${term}%`)
+        .limit(10)
+
+      if (searchError) {
+        throw searchError
+      }
+
+      if (!data || data.length === 0) {
+        setError('No users found. Try a different name or email.')
+      } else {
+        setSearchResults(data)
+      }
     } catch (err) {
-      setError('Failed to search for users')
+      setError('Failed to search for users. Try sharing the invite link instead.')
     } finally {
       setLoading(false)
     }
@@ -105,12 +122,25 @@ export function InviteModal({ groupId, isOpen = true, onClose, onSuccess }: Invi
                   className="flex items-center justify-between p-3 bg-surface-container-low rounded-lg"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center">
-                      <span className="text-sm font-medium text-primary">
-                        {user.name.charAt(0).toUpperCase()}
-                      </span>
+                    {user.profile_photo ? (
+                      <img
+                        src={user.profile_photo}
+                        alt={user.name || 'User'}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 bg-primary-fixed rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary">
+                          {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-medium block">{user.name || 'Unnamed'}</span>
+                      {user.email && (
+                        <span className="text-xs text-on-surface-variant">{user.email}</span>
+                      )}
                     </div>
-                    <span className="font-medium">{user.name}</span>
                   </div>
                   <Button
                     size="sm"
