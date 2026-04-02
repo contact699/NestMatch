@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
 import { Toaster } from "sonner";
+import { GoogleAnalytics } from "@/components/google-analytics";
 import "./globals.css";
 
 const inter = Inter({
@@ -13,6 +14,12 @@ const manrope = Manrope({
   weight: ["400", "500", "600", "700", "800"],
   variable: "--font-manrope",
 });
+
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: {
@@ -37,10 +44,18 @@ export const metadata: Metadata = {
     title: "NestMatch - Find Your Perfect Roommate in Canada",
     description:
       "The only roommate platform where every user is verified, every listing is real, and compatibility is based on how you actually live.",
-    url: "https://nestmatch.ca",
+    url: "https://www.nestmatch.app",
     siteName: "NestMatch",
     locale: "en_CA",
     type: "website",
+    images: [
+      {
+        url: "https://www.nestmatch.app/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "NestMatch - Find Your Perfect Roommate in Canada",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
@@ -62,6 +77,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${manrope.variable} font-sans antialiased`}>
+        <GoogleAnalytics />
         {children}
         <Toaster position="bottom-right" richColors closeButton />
       </body>
