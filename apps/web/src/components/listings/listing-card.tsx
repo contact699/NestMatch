@@ -182,11 +182,13 @@ export function ListingCard({
                 <p className="text-sm font-medium text-on-surface">
                   {listing.profiles.name || 'Anonymous'}
                 </p>
-                <VerificationBadge
-                  level={listing.profiles.verification_level}
-                  size="sm"
-                  showLabel={false}
-                />
+                {listing.profiles.show_verification_badges !== false && (
+                  <VerificationBadge
+                    level={listing.profiles.verification_level}
+                    size="sm"
+                    showLabel={false}
+                  />
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1 text-xs text-on-surface-variant">
