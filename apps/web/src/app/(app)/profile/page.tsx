@@ -120,6 +120,13 @@ export default async function ProfilePage() {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
+  // Fetch completed verifications for badge display
+  const { data: verifications } = await supabase
+    .from('verifications')
+    .select('type, status')
+    .eq('user_id', user.id)
+    .eq('status', 'completed') as { data: Array<{ type: string; status: string }> | null }
+
   const isFullyVerified = profile?.verification_level === 'trusted'
 
   return (
@@ -169,6 +176,7 @@ export default async function ProfilePage() {
                     <VerificationBadges
                       emailVerified={profile?.email_verified}
                       phoneVerified={profile?.phone_verified}
+                      verifications={verifications || []}
                       verificationLevel={profile?.verification_level}
                       variant="full"
                     />

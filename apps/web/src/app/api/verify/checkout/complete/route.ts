@@ -44,6 +44,9 @@ export const GET = withApiHandler(
     }
 
     // Initiate each check and create verification records
+    let successCount = 0
+    let failCount = 0
+
     for (const checkType of checksNeeded) {
       // Check if already exists (idempotency — webhook may have beaten us)
       const { data: existing } = await supabase
@@ -54,30 +57,51 @@ export const GET = withApiHandler(
         .eq('stripe_payment_id', sessionId)
         .single()
 
-      if (existing) continue
+      if (existing) {
+        successCount++
+        continue
+      }
 
       const result = await initiateVerification(checkType, subjectProfile.email)
 
-      if (result.success) {
-        await supabase
-          .from('verifications')
-          .insert({
-            user_id: subjectUserId,
-            type: checkType,
-            provider: 'certn',
-            external_id: result.caseId,
-            status: 'pending',
-            stripe_payment_id: sessionId,
-            paid_by: paidBy || subjectUserId,
-          })
-      } else {
+      if (!result.success) {
+        failCount++
         logger.error(`Failed to initiate ${checkType} after payment`, undefined, {
           requestId,
           sessionId,
           checkType,
           error: result.error,
         })
+        continue
       }
+
+      const { error: insertError } = await supabase
+        .from('verifications')
+        .insert({
+          user_id: subjectUserId,
+          type: checkType,
+          provider: 'certn',
+          external_id: result.caseId,
+          status: 'pending',
+          stripe_payment_id: sessionId,
+          paid_by: paidBy || subjectUserId,
+        })
+
+      if (insertError) {
+        failCount++
+        logger.error(`Failed to save ${checkType} verification after payment`, undefined, {
+          requestId,
+          sessionId,
+          checkType,
+          error: insertError.message,
+        })
+      } else {
+        successCount++
+      }
+    }
+
+    if (successCount === 0 && failCount > 0) {
+      return NextResponse.redirect(new URL('/verify?payment=error', req.url))
     }
 
     return NextResponse.redirect(new URL('/verify?payment=success', req.url))

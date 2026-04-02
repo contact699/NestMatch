@@ -115,6 +115,13 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     .eq('is_active', true)
     .limit(3)) as { data: any[] }
 
+  // Fetch completed verifications for badge display
+  const { data: verifications } = await supabase
+    .from('verifications')
+    .select('type, status')
+    .eq('user_id', userId)
+    .eq('status', 'completed') as { data: Array<{ type: string; status: string }> | null }
+
   const firstName = profile.name?.split(' ')[0] || 'User'
 
   // Lifestyle quiz tabs
@@ -176,6 +183,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                   <VerificationBadges
                     emailVerified={profile.email_verified}
                     phoneVerified={profile.phone_verified}
+                    verifications={verifications || []}
                     verificationLevel={profile.verification_level}
                     variant="full"
                     showPublic={profile.show_verification_badges}

@@ -53,9 +53,24 @@ export function getProduct(type: VerificationProductType): VerificationProduct |
   return null
 }
 
+/**
+ * Get the CERTN check types to initiate for a product.
+ *
+ * Note: The criminal CERTN case already includes IDENTITY_VERIFICATION_1
+ * as a waterfall dependency. When criminal is in the list, we skip standalone
+ * id to avoid a redundant CERTN case. The criminal case's webhook handler
+ * derives an id verification row on completion.
+ */
 export function getCheckTypes(type: VerificationProductType): VerificationCheckType[] {
   if (isCheckType(type)) return [type]
-  if (isPackageType(type)) return [...VERIFICATION_PACKAGES[type].includes]
+  if (isPackageType(type)) {
+    const checks = [...VERIFICATION_PACKAGES[type].includes]
+    // Criminal already bundles identity — don't order a redundant standalone ID case
+    if (checks.includes('criminal')) {
+      return checks.filter(c => c !== 'id')
+    }
+    return checks
+  }
   return []
 }
 
