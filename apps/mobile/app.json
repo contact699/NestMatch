@@ -2,6 +2,7 @@
   "expo": {
     "name": "NestMatch",
     "slug": "nestmatch",
+    "owner": "patrob316",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,7 +20,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "NestMatch needs camera access to take photos for your profile and listings.",
         "NSPhotoLibraryUsageDescription": "NestMatch needs photo library access to upload photos for your profile and listings.",
-        "NSLocationWhenInUseUsageDescription": "NestMatch uses your location to find nearby listings and roommates."
+        "NSLocationWhenInUseUsageDescription": "NestMatch uses your location to find nearby listings and roommates.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,7 +31,11 @@
       },
       "package": "com.nestmatch.app",
       "edgeToEdgeEnabled": true,
-      "permissions": ["CAMERA", "READ_EXTERNAL_STORAGE", "ACCESS_FINE_LOCATION"]
+      "permissions": [
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -37,6 +43,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fd37f25d-5e31-441a-9406-512081552465"
+      }
+    }
   }
 }

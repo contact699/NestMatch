@@ -1,0 +1,25 @@
+{
+  "cli": {
+    "version": ">= 18.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://pmczeilurjuktvzmkice.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtY3plaWx1cmp1a3R2em1raWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3OTY1MDksImV4cCI6MjA4NTM3MjUwOX0.XpofVs6WHmuG9Gv6CL0sE634TNhxCz6Jw-kP7CymGmU"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://pmczeilurjuktvzmkice.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtY3plaWx1cmp1a3R2em1raWNlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk3OTY1MDksImV4cCI6MjA4NTM3MjUwOX0.XpofVs6WHmuG9Gv6CL0sE634TNhxCz6Jw-kP7CymGmU"
+      }
+    }
+  }
+}
