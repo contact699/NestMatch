@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Manrope } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
+import { PostHogPageview } from "@/components/posthog-provider";
 import { CookieConsent } from "@/components/cookie-consent";
 import "./globals.css";
 
@@ -79,6 +81,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${manrope.variable} font-sans antialiased`}>
         <GoogleAnalytics />
+        <Suspense fallback={null}>
+          <PostHogPageview />
+        </Suspense>
         {children}
         <Toaster position="bottom-right" richColors closeButton />
         <CookieConsent />
