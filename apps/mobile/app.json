@@ -8,7 +8,7 @@
     "icon": "./assets/icon.png",
     "scheme": "nestmatch",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -30,7 +30,7 @@
         "backgroundColor": "#3b82f6"
       },
       "package": "com.nestmatch.app",
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": false,
       "permissions": [
         "CAMERA",
         "READ_EXTERNAL_STORAGE",
