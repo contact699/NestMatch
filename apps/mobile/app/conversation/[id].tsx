@@ -119,6 +119,46 @@ export default function ConversationScreen() {
     }
   }, [messages, user, queryClient])
 
+  // Real-time subscription for new messages
+  useEffect(() => {
+    if (!id || !user) return
+
+    const channel = supabase
+      .channel(`messages:${id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${id}`,
+        },
+        (payload) => {
+          // Only process messages from other users to avoid duplicating our own
+          if (payload.new.sender_id !== user.id) {
+            queryClient.setQueryData<Message[]>(['messages', id], (old) => {
+              if (!old) return [payload.new as Message]
+              if (old.some((m) => m.id === payload.new.id)) return old
+              return [...old, payload.new as Message]
+            })
+            // Mark as read immediately since user is viewing the conversation
+            supabase
+              .from('messages')
+              .update({ read_at: new Date().toISOString(), status: 'read' as const })
+              .eq('id', payload.new.id)
+              .then(() => {
+                queryClient.invalidateQueries({ queryKey: ['conversations'] })
+              })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [id, user, queryClient])
+
   // Send message mutation
   const sendMutation = useMutation({
     mutationFn: async (content: string) => {
@@ -142,8 +182,12 @@ export default function ConversationScreen() {
 
       return data
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['messages', id] })
+    onSuccess: (newMessage) => {
+      queryClient.setQueryData<Message[]>(['messages', id], (old) => {
+        if (!old) return [newMessage as Message]
+        if (old.some((m) => m.id === newMessage.id)) return old
+        return [...old, newMessage as Message]
+      })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },
   })

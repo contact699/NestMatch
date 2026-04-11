@@ -123,7 +123,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Auth routes - redirect to dashboard if already authenticated
-  const authRoutes = ['/login', '/signup']
+  const authRoutes = ['/login', '/signup', '/forgot-password', '/reset-password']
   const isAuthRoute = authRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   )

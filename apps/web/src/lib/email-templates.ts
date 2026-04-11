@@ -117,7 +117,7 @@ export function questionReceivedEmail({
   }
 }
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://nestmatch.com'
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.nestmatch.app'
 
 export function welcomeEmail(name: string) {
   return {

@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -17,6 +18,7 @@ import { ChevronLeft } from 'lucide-react-native'
 import { useAuth } from '../src/providers/auth-provider'
 import { supabase } from '../src/lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
+import * as ImagePicker from 'expo-image-picker'
 
 type ProfileFields = {
   name: string
@@ -34,6 +36,7 @@ export default function EditProfileScreen() {
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [photoUri, setPhotoUri] = useState<string | null>(null)
   const [fields, setFields] = useState<ProfileFields>({
     name: '',
     bio: '',
@@ -47,21 +50,25 @@ export default function EditProfileScreen() {
     if (!user) return
     supabase
       .from('profiles')
-      .select('name, bio, occupation, city, province, phone')
-      .eq('id', user.id)
+      .select('name, bio, occupation, city, province, phone, profile_photo')
+      .eq('user_id', user.id)
       .single()
       .then(({ data, error }) => {
         if (error) {
           Alert.alert('Error', 'Failed to load profile.')
         } else if (data) {
+          const d = data as Record<string, unknown>
           setFields({
-            name: (data as Record<string, unknown>).name as string ?? '',
-            bio: (data as Record<string, unknown>).bio as string ?? '',
-            occupation: (data as Record<string, unknown>).occupation as string ?? '',
-            city: (data as Record<string, unknown>).city as string ?? '',
-            province: (data as Record<string, unknown>).province as string ?? '',
-            phone: (data as Record<string, unknown>).phone as string ?? '',
+            name: d.name as string ?? '',
+            bio: d.bio as string ?? '',
+            occupation: d.occupation as string ?? '',
+            city: d.city as string ?? '',
+            province: d.province as string ?? '',
+            phone: d.phone as string ?? '',
           })
+          if (d.profile_photo) {
+            setPhotoUri(d.profile_photo as string)
+          }
         }
         setLoading(false)
       })
@@ -71,9 +78,39 @@ export default function EditProfileScreen() {
     setFields((prev) => ({ ...prev, [key]: value }))
   }
 
+  const pickProfilePhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    })
+    if (!result.canceled && result.assets[0]) {
+      setPhotoUri(result.assets[0].uri)
+    }
+  }
+
+  const uploadProfilePhoto = async (): Promise<string | null> => {
+    if (!photoUri || !user || photoUri.startsWith('http')) return photoUri
+    const ext = photoUri.split('.').pop() || 'jpg'
+    const fileName = `${user.id}/${Date.now()}.${ext}`
+    const response = await fetch(photoUri)
+    const blob = await response.blob()
+    const arrayBuffer = await new Response(blob).arrayBuffer()
+    const { error } = await supabase.storage
+      .from('profile-photos')
+      .upload(fileName, arrayBuffer, { contentType: `image/${ext}`, upsert: true })
+    if (error) return null
+    const { data: urlData } = supabase.storage
+      .from('profile-photos')
+      .getPublicUrl(fileName)
+    return urlData.publicUrl
+  }
+
   const handleSave = async () => {
     if (!user) return
     setSaving(true)
+    const newPhotoUrl = await uploadProfilePhoto()
     const { error } = await supabase
       .from('profiles')
       .update({
@@ -83,8 +120,9 @@ export default function EditProfileScreen() {
         city: fields.city || null,
         province: fields.province || null,
         phone: fields.phone || null,
+        profile_photo: newPhotoUrl,
       } as Record<string, unknown>)
-      .eq('id', user.id)
+      .eq('user_id', user.id)
 
     setSaving(false)
     if (error) {
@@ -138,6 +176,19 @@ export default function EditProfileScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <TouchableOpacity onPress={pickProfilePhoto} style={{ alignItems: 'center', marginBottom: 20 }}>
+            {photoUri ? (
+              <Image source={{ uri: photoUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
+            ) : (
+              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 36, color: '#94a3b8' }}>+</Text>
+              </View>
+            )}
+            <Text style={{ fontSize: 13, color: '#2563eb', fontWeight: '600', marginTop: 8 }}>
+              Change Photo
+            </Text>
+          </TouchableOpacity>
+
           {fieldConfig.map(({ key, label, placeholder, multiline }) => (
             <View key={key} style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>{label}</Text>

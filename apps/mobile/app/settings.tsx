@@ -39,11 +39,15 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     if (!user) return
-    AsyncStorage.getItem(`@settings:show_badges:${user.id}`)
-      .then((val) => {
-        if (val !== null) {
-          setShowBadges(val === 'true')
-        }
+    Promise.all([
+      AsyncStorage.getItem(`@settings:show_badges:${user.id}`),
+      AsyncStorage.getItem(`@settings:push_enabled:${user.id}`),
+      AsyncStorage.getItem(`@settings:email_enabled:${user.id}`),
+    ])
+      .then(([badges, push, email]) => {
+        if (badges !== null) setShowBadges(badges === 'true')
+        if (push !== null) setPushEnabled(push === 'true')
+        if (email !== null) setEmailEnabled(email === 'true')
       })
       .finally(() => setLoadingPrivacy(false))
   }, [user])
@@ -56,6 +60,28 @@ export default function SettingsScreen() {
     } catch {
       setShowBadges(!value)
       Alert.alert('Error', 'Failed to update privacy setting.')
+    }
+  }
+
+  const togglePushEnabled = async (value: boolean) => {
+    setPushEnabled(value)
+    if (!user) return
+    try {
+      await AsyncStorage.setItem(`@settings:push_enabled:${user.id}`, String(value))
+    } catch {
+      setPushEnabled(!value)
+      Alert.alert('Error', 'Failed to update notification setting.')
+    }
+  }
+
+  const toggleEmailEnabled = async (value: boolean) => {
+    setEmailEnabled(value)
+    if (!user) return
+    try {
+      await AsyncStorage.setItem(`@settings:email_enabled:${user.id}`, String(value))
+    } catch {
+      setEmailEnabled(!value)
+      Alert.alert('Error', 'Failed to update notification setting.')
     }
   }
 
@@ -161,7 +187,7 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={pushEnabled}
-              onValueChange={setPushEnabled}
+              onValueChange={togglePushEnabled}
               trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
               thumbColor={pushEnabled ? '#2563eb' : '#94a3b8'}
             />
@@ -178,7 +204,7 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={emailEnabled}
-              onValueChange={setEmailEnabled}
+              onValueChange={toggleEmailEnabled}
               trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
               thumbColor={emailEnabled ? '#2563eb' : '#94a3b8'}
             />

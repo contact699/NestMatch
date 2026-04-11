@@ -250,7 +250,7 @@ export async function createPaymentIntent({
   if (paymentMethodId) {
     paymentIntentParams.payment_method = paymentMethodId
     paymentIntentParams.confirm = true
-    paymentIntentParams.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/payments/complete`
+    paymentIntentParams.return_url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/complete`
   }
 
   return getStripe().paymentIntents.create(paymentIntentParams)
@@ -264,7 +264,7 @@ export async function confirmPaymentIntent(
   paymentMethodId?: string
 ): Promise<Stripe.PaymentIntent> {
   const params: Stripe.PaymentIntentConfirmParams = {
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/complete`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/complete`,
   }
 
   if (paymentMethodId) {

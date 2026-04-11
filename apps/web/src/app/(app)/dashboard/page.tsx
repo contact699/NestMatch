@@ -8,7 +8,6 @@ import {
   Heart,
   Bookmark,
   ShieldCheck,
-  Video,
   ChevronRight,
   MessageCircle,
   Home,
@@ -316,14 +315,6 @@ export default async function DashboardPage() {
                   <ChevronRight className="w-4 h-4 text-outline-variant" />
                 </Link>
               )}
-              <div className="flex items-center p-3 rounded-xl bg-surface-container-low opacity-60 cursor-default">
-                <Video className="w-4 h-4 text-secondary mr-3" />
-                <span className="text-xs font-medium text-on-surface flex-1">
-                  Add Profile Video
-                </span>
-                <span className="text-[10px] text-on-surface-variant mr-1">Soon</span>
-                <ChevronRight className="w-4 h-4 text-outline-variant" />
-              </div>
             </div>
           </div>
         </section>

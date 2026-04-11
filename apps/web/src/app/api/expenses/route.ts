@@ -161,7 +161,11 @@ export const POST = withApiHandler(
     const writeClient = (() => {
       try {
         return createServiceClient()
-      } catch {
+      } catch (e) {
+        logger.warn('Service client creation failed, falling back to authenticated client', {
+          requestId,
+          error: e instanceof Error ? e.message : String(e),
+        })
         return supabase
       }
     })()

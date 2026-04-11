@@ -24,7 +24,6 @@ import {
   FileCheck,
   Smartphone,
   Scale,
-  UserPlus,
   ChevronRight,
   TrendingUp,
 } from 'lucide-react'
@@ -612,27 +611,6 @@ export default function VerifyPage() {
             </div>
           </div>
 
-          {/* Need more trust? CTA */}
-          <Card variant="bordered" className="mt-6">
-            <CardContent className="py-5">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <UserPlus className="h-6 w-6 text-on-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-display font-semibold text-on-surface">
-                    Need more trust?
-                  </h3>
-                  <p className="text-sm text-on-surface-variant">
-                    Request a peer-reference verification to boost your score.
-                  </p>
-                </div>
-                <Button variant="primary" size="sm">
-                  Add Reference
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

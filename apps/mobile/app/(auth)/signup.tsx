@@ -163,11 +163,11 @@ export default function SignupScreen() {
             <Text style={styles.termsText}>
               By creating an account, you agree to our{' '}
             </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://nestmatch.com/terms')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.nestmatch.app/terms')}>
               <Text style={styles.termsLink}>Terms of Service</Text>
             </TouchableOpacity>
             <Text style={styles.termsText}> and </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://nestmatch.com/privacy')}>
+            <TouchableOpacity onPress={() => Linking.openURL('https://www.nestmatch.app/privacy')}>
               <Text style={styles.termsLink}>Privacy Policy</Text>
             </TouchableOpacity>
             <Text style={styles.termsText}>.</Text>

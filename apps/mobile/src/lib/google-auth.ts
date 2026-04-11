@@ -1,11 +1,9 @@
-import * as AuthSession from 'expo-auth-session'
+import * as WebBrowser from 'expo-web-browser'
+import { makeRedirectUri } from 'expo-auth-session'
 import { supabase } from './supabase'
 
-const GOOGLE_CLIENT_ID = '193808460097-qsn1f0g64mshdatco53suov5nhppbosl.apps.googleusercontent.com'
-
-// Use Supabase's OAuth flow via the browser
 export async function signInWithGoogle() {
-  const redirectUri = AuthSession.makeRedirectUri({ scheme: 'nestmatch' })
+  const redirectUri = makeRedirectUri({ scheme: 'nestmatch' })
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -19,29 +17,38 @@ export async function signInWithGoogle() {
     return { error: error ? new Error(error.message) : new Error('Failed to start Google sign-in') }
   }
 
-  // Open the OAuth URL in the browser
-  const result = await AuthSession.startAsync({
-    authUrl: data.url,
-    returnUrl: redirectUri,
-  })
+  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectUri)
 
-  if (result.type === 'success' && result.params?.access_token) {
-    // Exchange the tokens with Supabase
-    const { error: sessionError } = await supabase.auth.setSession({
-      access_token: result.params.access_token,
-      refresh_token: result.params.refresh_token,
-    })
+  if (result.type !== 'success') {
+    return { error: result.type === 'cancel' ? null : new Error('Google sign-in failed') }
+  }
 
+  const url = new URL(result.url)
+
+  // Handle PKCE code exchange
+  const code = url.searchParams.get('code')
+  if (code) {
+    const { error: sessionError } = await supabase.auth.exchangeCodeForSession(code)
     if (sessionError) {
       return { error: new Error(sessionError.message) }
     }
-
     return { error: null }
   }
 
-  if (result.type === 'cancel' || result.type === 'dismiss') {
-    return { error: null } // User cancelled, not an error
+  // Handle implicit flow tokens in fragment
+  const fragmentParams = new URLSearchParams(url.hash.substring(1))
+  const accessToken = fragmentParams.get('access_token')
+  const refreshToken = fragmentParams.get('refresh_token')
+  if (accessToken) {
+    const { error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken || '',
+    })
+    if (sessionError) {
+      return { error: new Error(sessionError.message) }
+    }
+    return { error: null }
   }
 
-  return { error: new Error('Google sign-in failed') }
+  return { error: new Error('No authentication data received') }
 }

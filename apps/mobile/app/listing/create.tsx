@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native'
 import { useRouter, Stack } from 'expo-router'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -17,6 +18,7 @@ import { supabase } from '../../src/lib/supabase'
 import { useAuth } from '../../src/providers/auth-provider'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ChevronLeft, Camera } from 'lucide-react-native'
+import * as ImagePicker from 'expo-image-picker'
 
 type ListingType = 'room' | 'shared_room' | 'entire_place'
 
@@ -90,12 +92,49 @@ export default function CreateListingScreen() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState<FormData>(INITIAL_FORM)
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({})
+  const [photos, setPhotos] = useState<string[]>([])
 
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
     if (errors[key]) {
       setErrors((prev) => ({ ...prev, [key]: undefined }))
     }
+  }
+
+  const pickImages = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      selectionLimit: 10 - photos.length,
+      quality: 0.8,
+    })
+    if (!result.canceled) {
+      setPhotos((prev) => [...prev, ...result.assets.map((a) => a.uri)])
+    }
+  }
+
+  const uploadPhotos = async (listingId: string): Promise<{ urls: string[]; failed: number }> => {
+    const urls: string[] = []
+    let failed = 0
+    for (const uri of photos) {
+      const ext = uri.split('.').pop() || 'jpg'
+      const fileName = `${listingId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      const arrayBuffer = await new Response(blob).arrayBuffer()
+      const { error } = await supabase.storage
+        .from('listing-photos')
+        .upload(fileName, arrayBuffer, { contentType: `image/${ext}` })
+      if (!error) {
+        const { data: urlData } = supabase.storage
+          .from('listing-photos')
+          .getPublicUrl(fileName)
+        urls.push(urlData.publicUrl)
+      } else {
+        failed++
+      }
+    }
+    return { urls, failed }
   }
 
   const toggleAmenity = (amenity: string) => {
@@ -154,7 +193,7 @@ export default function CreateListingScreen() {
     mutationFn: async () => {
       if (!user) throw new Error('Not authenticated')
 
-      const { error } = await supabase.from('listings').insert({
+      const { data, error } = await supabase.from('listings').insert({
         user_id: user.id,
         type: form.type,
         title: form.title.trim(),
@@ -172,14 +211,32 @@ export default function CreateListingScreen() {
         no_credit_history_ok: form.no_credit_history_ok,
         utilities_included: form.utilities_included,
         photos: [],
-      })
+      }).select().single()
 
       if (error) throw error
+
+      // Upload photos if any
+      let photosFailed = 0
+      if (photos.length > 0) {
+        const { urls: photoUrls, failed } = await uploadPhotos((data as Record<string, unknown>).id as string)
+        photosFailed = failed
+        if (photoUrls.length > 0) {
+          await supabase
+            .from('listings')
+            .update({ photos: photoUrls } as Record<string, unknown>)
+            .eq('id', (data as Record<string, unknown>).id as string)
+        }
+      }
+
+      return { photosFailed }
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['listings'] })
       queryClient.invalidateQueries({ queryKey: ['listings-count'] })
-      Alert.alert('Success', 'Your listing has been created!', [
+      const message = result.photosFailed > 0
+        ? `Your listing has been created, but ${result.photosFailed} photo${result.photosFailed > 1 ? 's' : ''} failed to upload. You can add them later from the web app.`
+        : 'Your listing has been created!'
+      Alert.alert('Success', message, [
         { text: 'OK', onPress: () => router.replace('/(tabs)') },
       ])
     },
@@ -545,13 +602,30 @@ export default function CreateListingScreen() {
         Add photos of your space to attract more interest
       </Text>
 
-      <TouchableOpacity style={styles.photoUploadArea}>
+      <TouchableOpacity style={styles.photoUploadArea} onPress={pickImages} disabled={photos.length >= 10}>
         <Camera color="#94a3b8" size={40} />
         <Text style={styles.photoUploadText}>Tap to add photos</Text>
         <Text style={styles.photoUploadHint}>
-          Photo upload coming soon. You can add photos later from the web app.
+          Add up to 10 photos ({10 - photos.length} remaining)
         </Text>
       </TouchableOpacity>
+
+      {photos.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+          {photos.map((uri, i) => (
+            <TouchableOpacity
+              key={uri}
+              onPress={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
+              style={{ marginRight: 8 }}
+            >
+              <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
+              <Text style={{ textAlign: 'center', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+                Remove
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Review Summary */}
       <View style={styles.reviewSection}>
