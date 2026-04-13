@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -106,7 +107,8 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md space-y-8">
         {/* Logo */}
         <div className="text-center">
-          <Link href="/">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <Image src="/logo.png" alt="NestMatch" width={36} height={36} />
             <span className="font-display text-2xl font-extrabold text-primary tracking-tighter">
               NestMatch
             </span>
