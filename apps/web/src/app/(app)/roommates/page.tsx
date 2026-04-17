@@ -15,7 +15,7 @@ import {
   SlidersHorizontal,
   Sparkles,
 } from 'lucide-react'
-import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE } from '@/lib/utils'
+import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES } from '@/lib/utils'
 
 interface Profile {
   id: string
@@ -37,18 +37,29 @@ interface ProfileWithScore extends Profile {
   compatibilityScore: number
 }
 
+interface LifestyleSummary {
+  smoking: string | null
+  pets_preference: string | null
+}
+
+const EMPTY_FILTERS = {
+  city: '',
+  province: '',
+  search: '',
+  verificationLevel: '',
+  minCompatibility: '',
+  gender: '',
+  language: '',
+  smoking: '',
+  petsPreference: '',
+}
+
 export default function RoommatesPage() {
   const [profiles, setProfiles] = useState<ProfileWithScore[]>([])
+  const [lifestyleByUser, setLifestyleByUser] = useState<Record<string, LifestyleSummary>>({})
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
-  const [filters, setFilters] = useState({
-    city: '',
-    province: '',
-    search: '',
-    verificationLevel: '',
-    minCompatibility: '',
-    gender: '',
-  })
+  const [filters, setFilters] = useState(EMPTY_FILTERS)
   const [showFilters, setShowFilters] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -117,19 +128,35 @@ export default function RoommatesPage() {
       return
     }
 
-    // Get compatibility scores in batch
+    // Get compatibility scores + lifestyle responses in parallel
     const userIds = profilesData.map(p => p.user_id)
-    const response = await fetch('/api/compatibility', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userIds }),
-    })
+    const [scoresRes, lifestyleRes] = await Promise.all([
+      fetch('/api/compatibility', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds }),
+      }),
+      supabase
+        .from('lifestyle_responses')
+        .select('user_id, smoking, pets_preference')
+        .in('user_id', userIds),
+    ])
 
     let scores: Record<string, number> = {}
-    if (response.ok) {
-      const data = await response.json()
+    if (scoresRes.ok) {
+      const data = await scoresRes.json()
       scores = data.scores || {}
     }
+
+    const lifestyleMap: Record<string, LifestyleSummary> = {}
+    for (const row of (lifestyleRes.data || []) as Array<{
+      user_id: string
+      smoking: string | null
+      pets_preference: string | null
+    }>) {
+      lifestyleMap[row.user_id] = { smoking: row.smoking, pets_preference: row.pets_preference }
+    }
+    setLifestyleByUser(lifestyleMap)
 
     // Combine profiles with scores and sort by compatibility
     const profilesWithScores: ProfileWithScore[] = profilesData.map(profile => ({
@@ -171,6 +198,21 @@ export default function RoommatesPage() {
     }
     if (filters.gender && profile.gender !== filters.gender) {
       return false
+    }
+    if (filters.language) {
+      const langs = (profile.languages || []).map((l) => l.toLowerCase())
+      if (!langs.includes(filters.language.toLowerCase())) {
+        return false
+      }
+    }
+    if (filters.smoking || filters.petsPreference) {
+      const lifestyle = lifestyleByUser[profile.user_id]
+      if (filters.smoking && lifestyle?.smoking !== filters.smoking) {
+        return false
+      }
+      if (filters.petsPreference && lifestyle?.pets_preference !== filters.petsPreference) {
+        return false
+      }
     }
     return true
   })
@@ -269,7 +311,7 @@ export default function RoommatesPage() {
               <option value="">All Profiles</option>
               <option value="trusted">Trusted</option>
               <option value="verified">ID Verified</option>
-              <option value="basic">Basic</option>
+              <option value="basic">Unverified</option>
             </select>
 
             {/* More filters toggle */}
@@ -286,7 +328,7 @@ export default function RoommatesPage() {
         </div>
 
         {/* Expanded filters */}
-        <div className={`overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'}`}>
+        <div className={`overflow-hidden transition-all duration-300 ${showFilters ? 'max-h-[32rem] opacity-100' : 'max-h-0 opacity-0'}`}>
           <div className="p-4 bg-surface-container-low rounded-2xl">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {/* Gender */}
@@ -319,11 +361,60 @@ export default function RoommatesPage() {
                 </select>
               </div>
 
+              {/* Language */}
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Language</label>
+                <select
+                  value={filters.language}
+                  onChange={(e) => setFilters({ ...filters, language: e.target.value })}
+                  className="w-full px-3 py-2 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary transition-all hover:bg-surface-container bg-surface-container-lowest text-on-surface"
+                >
+                  <option value="">Any Language</option>
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang} value={lang}>
+                      {lang}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Smoking */}
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Smoking</label>
+                <select
+                  value={filters.smoking}
+                  onChange={(e) => setFilters({ ...filters, smoking: e.target.value })}
+                  className="w-full px-3 py-2 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary transition-all hover:bg-surface-container bg-surface-container-lowest text-on-surface"
+                >
+                  <option value="">Any</option>
+                  <option value="never">Non-smoker</option>
+                  <option value="outside_only">Outside only</option>
+                  <option value="yes">Smoker</option>
+                </select>
+              </div>
+
+              {/* Pets */}
+              <div>
+                <label className="block text-sm font-medium text-on-surface-variant mb-1">Pets</label>
+                <select
+                  value={filters.petsPreference}
+                  onChange={(e) => setFilters({ ...filters, petsPreference: e.target.value })}
+                  className="w-full px-3 py-2 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary transition-all hover:bg-surface-container bg-surface-container-lowest text-on-surface"
+                >
+                  <option value="">Any</option>
+                  <option value="no_pets">No pets</option>
+                  <option value="cats_ok">Cats OK</option>
+                  <option value="dogs_ok">Dogs OK</option>
+                  <option value="all_pets_ok">All pets OK</option>
+                  <option value="have_pets">Has pets</option>
+                </select>
+              </div>
+
               {/* Clear filters */}
               <div className="flex items-end">
                 <Button
                   variant="ghost"
-                  onClick={() => setFilters({ city: '', province: '', search: '', verificationLevel: '', minCompatibility: '', gender: '' })}
+                  onClick={() => setFilters(EMPTY_FILTERS)}
                   className="text-sm"
                 >
                   Clear filters
@@ -360,10 +451,10 @@ export default function RoommatesPage() {
           <p className="text-on-surface-variant mb-4">
             Try adjusting your filters or check back later.
           </p>
-          {(filters.city || filters.province || filters.search || filters.verificationLevel || filters.minCompatibility || filters.gender) && (
+          {Object.values(filters).some((v) => v !== '') && (
             <Button
               variant="outline"
-              onClick={() => setFilters({ city: '', province: '', search: '', verificationLevel: '', minCompatibility: '', gender: '' })}
+              onClick={() => setFilters(EMPTY_FILTERS)}
             >
               Clear filters
             </Button>

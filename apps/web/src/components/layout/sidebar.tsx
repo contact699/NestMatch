@@ -15,12 +15,16 @@ import {
   Plus,
   Settings,
   HelpCircle,
+  Users,
+  UsersRound,
 } from 'lucide-react'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/search', label: 'Discover', icon: Search },
+  { href: '/search', label: 'Search listings', icon: Search },
+  { href: '/roommates', label: 'Find Roommates', icon: Users },
+  { href: '/groups', label: 'Co-Renter Groups', icon: UsersRound },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/my-listings', label: 'My Listings', icon: Home },
   { href: '/saved', label: 'Saved', icon: Bookmark },

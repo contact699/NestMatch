@@ -45,8 +45,8 @@ export function VerificationBadge({
   const config = {
     basic: {
       icon: Shield,
-      label: 'Basic',
-      tooltip: 'Basic profile - email verified',
+      label: 'Unverified',
+      tooltip: 'Unverified profile — email only',
       className: 'bg-surface-container text-on-surface-variant border-outline-variant/15',
       prominentClassName: 'bg-surface-container-low text-on-surface border-outline-variant/30 shadow-sm',
     },

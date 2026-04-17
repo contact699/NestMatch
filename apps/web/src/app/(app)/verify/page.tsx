@@ -194,7 +194,12 @@ export default function VerifyPage() {
         window.location.href = data.url
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to start checkout'
+      const raw = err instanceof Error ? err.message : ''
+      const isStripeConnectionIssue =
+        /stripe/i.test(raw) && /(connection|retried|network|timeout)/i.test(raw)
+      const msg = isStripeConnectionIssue
+        ? 'Payments are temporarily unavailable. Please try again in a moment, or contact support@nestmatch.ca if the issue persists.'
+        : raw || 'Failed to start checkout'
       if (type === 'id') setIdError(msg)
       else if (type === 'criminal') setCriminalError(msg)
       else if (type === 'credit') setCreditError(msg)

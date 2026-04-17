@@ -38,8 +38,8 @@ export function GroupTrustIndicator({
     description = 'Most members have verified their identity'
   } else {
     aggregateLevel = 'basic'
-    label = 'Basic'
-    description = 'Members have basic profiles'
+    label = 'Unverified'
+    description = 'Members have unverified profiles'
   }
 
   const config = {
