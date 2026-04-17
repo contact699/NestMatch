@@ -12,7 +12,7 @@ export const listingSchema = z.object({
   city: z.string().min(1, 'City is required'),
   province: z.string().min(1, 'Province is required'),
   postal_code: z.string().optional(),
-  photos: z.array(z.string()),
+  photos: z.array(z.string()).min(1, 'Please add at least one photo'),
   amenities: z.array(z.string()),
   bathroom_type: z.enum(['ensuite', 'private', 'shared']),
   bathroom_size: z.enum(['full', 'three_quarter', 'half']).nullable().optional(),

@@ -297,15 +297,35 @@ export default function RentCalculatorPage() {
 
             <div className="mt-4 flex gap-2">
               <Button
+                type="button"
                 variant="outline"
                 className="flex-1 bg-white/10 border-white/20 text-on-primary hover:bg-white/20"
+                onClick={async () => {
+                  const url = window.location.href
+                  if (navigator.share) {
+                    try {
+                      await navigator.share({ title: 'NestMatch rent split', url })
+                      return
+                    } catch {
+                      // user cancelled; fall through to clipboard
+                    }
+                  }
+                  try {
+                    await navigator.clipboard.writeText(url)
+                  } catch {
+                    // clipboard unavailable; silently no-op
+                  }
+                }}
               >
                 <Share2 className="h-4 w-4 mr-1" />
+                Share
               </Button>
-              <Button className="flex-1 bg-white text-primary hover:bg-white/90">
-                <FileText className="h-4 w-4 mr-2" />
-                Create Split Agreement
-              </Button>
+              <Link href="/resources/agreement" className="flex-1">
+                <Button className="w-full bg-white text-primary hover:bg-white/90">
+                  <FileText className="h-4 w-4 mr-2" />
+                  Create Split Agreement
+                </Button>
+              </Link>
             </div>
           </div>
 

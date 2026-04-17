@@ -40,6 +40,7 @@ export default function SettingsPage() {
   const [isUnblocking, setIsUnblocking] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [showVerificationBadges, setShowVerificationBadges] = useState(true)
 
   useEffect(() => {
     async function loadSettings() {
@@ -52,6 +53,17 @@ export default function SettingsPage() {
       if (!user) {
         router.push('/login?redirect=/settings')
         return
+      }
+
+      // Load profile settings
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('show_verification_badges')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profile) {
+        setShowVerificationBadges(profile.show_verification_badges ?? true)
       }
 
       // Load blocked users
@@ -90,6 +102,28 @@ export default function SettingsPage() {
     }
 
     setIsUnblocking(null)
+  }
+
+  const handleToggleVerificationBadges = async (checked: boolean) => {
+    setShowVerificationBadges(checked)
+    const supabase = createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ show_verification_badges: checked })
+      .eq('user_id', user.id)
+
+    if (error) {
+      setShowVerificationBadges(!checked)
+      toast.error('Failed to update setting')
+    } else {
+      toast.success(checked ? 'Verification badges visible' : 'Verification badges hidden')
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -170,7 +204,7 @@ export default function SettingsPage() {
             </Link>
 
             <Link href="/quiz">
-              <div className="flex items-center justify-between py-4 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
+              <div className="flex items-center justify-between py-4 border-b border-outline-variant/15 hover:bg-surface-container-low -mx-6 px-6 transition-colors">
                 <div className="flex items-center gap-3">
                   <Users className="h-5 w-5 text-outline" />
                   <div>
@@ -181,6 +215,22 @@ export default function SettingsPage() {
                 <ChevronRight className="h-5 w-5 text-outline" />
               </div>
             </Link>
+
+            <label className="flex items-center justify-between py-4 -mx-6 px-6">
+              <div className="flex items-center gap-3">
+                <Shield className="h-5 w-5 text-outline" />
+                <div>
+                  <p className="font-medium text-on-surface">Show verification badges on profile</p>
+                  <p className="text-sm text-on-surface-variant">Display your verification badges publicly on your profile and listings</p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={showVerificationBadges}
+                onChange={(e) => handleToggleVerificationBadges(e.target.checked)}
+                className="w-5 h-5 rounded border-outline-variant/15 text-primary focus:ring-surface-tint/20"
+              />
+            </label>
           </CardContent>
         </Card>
 

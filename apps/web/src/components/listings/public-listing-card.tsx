@@ -40,6 +40,7 @@ interface PublicListingCardProps {
       name: string | null
       verification_level: string
       profile_photo: string | null
+      show_verification_badges?: boolean
     } | null
   }
 }
@@ -176,11 +177,13 @@ export function PublicListingCard({ listing }: PublicListingCardProps) {
                 <p className="text-sm font-medium text-on-surface">
                   {listing.profiles.name || 'Anonymous'}
                 </p>
-                <VerificationBadge
-                  level={listing.profiles.verification_level as 'basic' | 'verified' | 'trusted'}
-                  size="sm"
-                  showLabel={false}
-                />
+                {listing.profiles.show_verification_badges !== false && (
+                  <VerificationBadge
+                    level={listing.profiles.verification_level as 'basic' | 'verified' | 'trusted'}
+                    size="sm"
+                    showLabel={false}
+                  />
+                )}
               </div>
             </div>
             <Link

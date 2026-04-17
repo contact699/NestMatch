@@ -250,7 +250,7 @@ export async function createPaymentIntent({
   if (paymentMethodId) {
     paymentIntentParams.payment_method = paymentMethodId
     paymentIntentParams.confirm = true
-    paymentIntentParams.return_url = `${process.env.NEXT_PUBLIC_APP_URL}/payments/complete`
+    paymentIntentParams.return_url = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/complete`
   }
 
   return getStripe().paymentIntents.create(paymentIntentParams)
@@ -264,7 +264,7 @@ export async function confirmPaymentIntent(
   paymentMethodId?: string
 ): Promise<Stripe.PaymentIntent> {
   const params: Stripe.PaymentIntentConfirmParams = {
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/payments/complete`,
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/complete`,
   }
 
   if (paymentMethodId) {
@@ -355,10 +355,13 @@ export function constructWebhookEvent(
   payload: string | Buffer,
   signature: string
 ): Stripe.Event {
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not configured')
+  }
   return getStripe().webhooks.constructEvent(
     payload,
     signature,
-    process.env.STRIPE_WEBHOOK_SECRET!
+    process.env.STRIPE_WEBHOOK_SECRET
   )
 }
 
@@ -382,6 +385,54 @@ export async function getConnectAccountBalance(
   return getStripe().balance.retrieve({
     stripeAccount: connectAccountId,
   })
+}
+
+// ============================================
+// CHECKOUT SESSIONS (For verification purchases)
+// ============================================
+
+/**
+ * Create a Stripe Checkout Session for verification purchases.
+ */
+export async function createVerificationCheckoutSession({
+  customerId,
+  productName,
+  priceInCents,
+  metadata,
+  successUrl,
+  cancelUrl,
+}: {
+  customerId: string
+  productName: string
+  priceInCents: number
+  metadata: Record<string, string>
+  successUrl: string
+  cancelUrl: string
+}): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.create({
+    customer: customerId,
+    mode: 'payment',
+    line_items: [{
+      price_data: {
+        currency: 'cad',
+        product_data: { name: productName },
+        unit_amount: priceInCents,
+      },
+      quantity: 1,
+    }],
+    metadata,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
+  })
+}
+
+/**
+ * Retrieve a Stripe Checkout Session by ID.
+ */
+export async function getCheckoutSession(
+  sessionId: string
+): Promise<Stripe.Checkout.Session> {
+  return getStripe().checkout.sessions.retrieve(sessionId)
 }
 
 // Export types for use in API routes

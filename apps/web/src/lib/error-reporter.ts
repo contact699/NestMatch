@@ -173,23 +173,81 @@ export function reportCustomError(
 // ============================================
 
 async function sendToSentry(error: ReportedError): Promise<void> {
-  // Sentry integration placeholder
-  // In production, use @sentry/nextjs package
   if (process.env.NODE_ENV === 'development') {
     logger.info(`[Sentry] Would send error: ${error.id}`)
     return
   }
 
-  try {
-    // Example Sentry API call (actual implementation would use SDK)
-    const sentryDsn = process.env.SENTRY_DSN
-    if (!sentryDsn) return
+  const sentryDsn = process.env.SENTRY_DSN
+  if (!sentryDsn) return
 
-    // The actual implementation would use Sentry SDK:
-    // Sentry.captureException(error, { contexts: { ... } })
+  try {
+    // Parse DSN: https://{public_key}@{host}/{project_id}
+    const dsnUrl = new URL(sentryDsn)
+    const publicKey = dsnUrl.username
+    const projectId = dsnUrl.pathname.replace('/', '')
+    const host = dsnUrl.hostname
+
+    const envelope = JSON.stringify({
+      event_id: error.id.replace('err_', '').replace(/_/g, ''),
+      sent_at: error.timestamp,
+      dsn: sentryDsn,
+    }) + '\n' +
+    JSON.stringify({ type: 'event' }) + '\n' +
+    JSON.stringify({
+      event_id: error.id.replace('err_', '').replace(/_/g, ''),
+      timestamp: error.timestamp,
+      platform: 'node',
+      level: error.severity === 'critical' ? 'fatal' : error.severity === 'high' ? 'error' : 'warning',
+      server_name: 'nestmatch-app',
+      environment: process.env.NODE_ENV || 'production',
+      exception: {
+        values: [{
+          type: error.name,
+          value: error.message,
+          stacktrace: error.stack ? { frames: parseStack(error.stack) } : undefined,
+        }],
+      },
+      tags: {
+        severity: error.severity,
+        path: error.context.path || undefined,
+        action: error.context.action || undefined,
+      },
+      user: error.context.userId ? { id: error.context.userId } : undefined,
+      request: {
+        url: error.context.path,
+      },
+    })
+
+    await fetch(`https://${host}/api/${projectId}/envelope/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-sentry-envelope',
+        'X-Sentry-Auth': `Sentry sentry_version=7, sentry_key=${publicKey}`,
+      },
+      body: envelope,
+    })
   } catch (e) {
     logger.error('Failed to send to Sentry', e instanceof Error ? e : new Error(String(e)))
   }
+}
+
+function parseStack(stack: string): Array<{ filename: string; function: string; lineno: number }> {
+  return stack
+    .split('\n')
+    .slice(1, 10)
+    .map(line => {
+      const match = line.match(/at\s+(.+?)\s+\((.+?):(\d+):\d+\)/)
+      if (match) {
+        return { function: match[1], filename: match[2], lineno: parseInt(match[3]) }
+      }
+      const match2 = line.match(/at\s+(.+?):(\d+):\d+/)
+      if (match2) {
+        return { function: '<anonymous>', filename: match2[1], lineno: parseInt(match2[2]) }
+      }
+      return { function: '<unknown>', filename: '<unknown>', lineno: 0 }
+    })
+    .filter(f => f.filename !== '<unknown>')
 }
 
 async function handleCriticalError(error: ReportedError): Promise<void> {

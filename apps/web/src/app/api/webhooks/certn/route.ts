@@ -2,7 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { withApiHandler, apiResponse, getWebhookBody } from '@/lib/api/with-handler'
 import { createServiceClient } from '@/lib/supabase/service'
 import { getCaseStatus, mapCertnStatus } from '@/lib/services/certn'
+import { sendEmail } from '@/lib/email'
+import { verificationCompleteEmail } from '@/lib/email-templates'
 import { logger } from '@/lib/logger'
+
+/** Map internal verification type codes to human-readable labels */
+const VERIFICATION_TYPE_LABELS: Record<string, string> = {
+  criminal: 'Criminal Background Check',
+  credit: 'Credit Check',
+  id: 'Identity Verification',
+  reference: 'Reference Check',
+}
 
 // ============================================
 // GET: Challenge-response verification
@@ -136,6 +146,14 @@ export const POST = withApiHandler(
     // On completion, update the user's profile verification_level
     if (newStatus === 'completed') {
       await updateVerificationLevel(serviceClient, verification.user_id, requestId)
+
+      // Send verification complete email (fire and forget)
+      void sendVerificationCompleteEmail(
+        serviceClient,
+        verification.user_id,
+        verification.type,
+        requestId
+      )
     }
 
     return apiResponse({ received: true }, 200, requestId)
@@ -273,4 +291,47 @@ async function updateVerificationLevel(
     verificationLevel,
     completedTypes: Array.from(completedTypes),
   })
+}
+
+/**
+ * Send a notification email when a verification check completes.
+ */
+async function sendVerificationCompleteEmail(
+  serviceClient: ReturnType<typeof createServiceClient>,
+  userId: string,
+  verificationType: string,
+  requestId: string
+): Promise<void> {
+  try {
+    const { data: profile } = await serviceClient
+      .from('profiles')
+      .select('email, name')
+      .eq('user_id', userId)
+      .single()
+
+    if (!profile?.email) {
+      logger.warn('Cannot send verification email — profile or email not found', {
+        requestId,
+        userId,
+      })
+      return
+    }
+
+    const typeLabel = VERIFICATION_TYPE_LABELS[verificationType] || verificationType
+    const { subject, html } = verificationCompleteEmail(profile.name || 'there', typeLabel)
+
+    await sendEmail({ to: profile.email, subject, html })
+
+    logger.info('Sent verification complete email', {
+      requestId,
+      userId,
+      verificationType: typeLabel,
+    })
+  } catch (error) {
+    logger.error(
+      'Failed to send verification complete email',
+      error instanceof Error ? error : new Error(String(error)),
+      { requestId, userId, verificationType }
+    )
+  }
 }

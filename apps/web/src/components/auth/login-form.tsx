@@ -17,10 +17,20 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>
 
+// Only allow same-origin relative paths. Rejects `//evil.com`, `http://evil.com`,
+// or any value containing `:` / `\` / newlines that could smuggle an absolute URL.
+function safeRedirect(path: string | null | undefined): string {
+  if (!path) return '/dashboard'
+  if (!path.startsWith('/')) return '/dashboard'
+  if (path.startsWith('//') || path.startsWith('/\\')) return '/dashboard'
+  if (/[\r\n\t]/.test(path)) return '/dashboard'
+  return path
+}
+
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const redirectTo = searchParams.get('redirect') || '/dashboard'
+  const redirectTo = safeRedirect(searchParams.get('redirect'))
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
@@ -59,7 +69,7 @@ export function LoginForm() {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?redirect=${redirectTo}`,
+        redirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(redirectTo)}`,
       },
     })
   }

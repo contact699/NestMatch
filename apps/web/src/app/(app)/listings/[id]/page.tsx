@@ -29,6 +29,7 @@ import {
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
+import { ListingJsonLd } from '@/components/json-ld'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -114,6 +115,19 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   return (
     <AnimatedPage>
+      <ListingJsonLd
+        id={id}
+        title={listing.title}
+        description={listing.description}
+        price={listing.price}
+        city={listing.city}
+        province={listing.province}
+        photos={listing.photos}
+        type={listing.type}
+        available_date={listing.available_date}
+        amenities={listing.amenities}
+        hostName={profile?.name}
+      />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button */}
         <div className="mb-6" data-animate>

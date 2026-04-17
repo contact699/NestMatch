@@ -1,10 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+// Only allow same-origin relative paths. Rejects `//evil.com`, absolute URLs,
+// or any value smuggling a protocol.
+function safeRedirect(path: string | null): string {
+  if (!path) return '/dashboard'
+  if (!path.startsWith('/')) return '/dashboard'
+  if (path.startsWith('//') || path.startsWith('/\\')) return '/dashboard'
+  if (/[\r\n\t]/.test(path)) return '/dashboard'
+  return path
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const redirect = searchParams.get('redirect') || '/dashboard'
+  const redirect = safeRedirect(searchParams.get('redirect'))
 
   if (code) {
     const supabase = await createClient()

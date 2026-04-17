@@ -10,6 +10,7 @@ import {
   Footer,
 } from '@/components/landing'
 import { FeaturedListingsSection } from '@/components/landing/featured-listings-section'
+import { OrganizationJsonLd } from '@/components/json-ld'
 
 export default function HomePage() {
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -35,6 +36,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
+      <OrganizationJsonLd />
       <LandingNav />
       <main className="pt-24">
         <HeroSection />

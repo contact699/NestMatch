@@ -133,13 +133,11 @@ export function ListingActions({
   }
 
   const handleReport = () => {
-    // For now, just redirect to a report page or show a modal
-    // This will be implemented in the save & block milestone
     if (!isLoggedIn) {
       router.push(`/login?redirect=/listings/${listingId}`)
       return
     }
-    alert('Report functionality coming soon')
+    window.location.href = `mailto:support@nestmatch.app?subject=Report Listing: ${listingId}&body=I would like to report this listing for the following reason:%0A%0A`
   }
 
   if (isOwner) {

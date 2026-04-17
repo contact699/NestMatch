@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Image from 'next/image'
 import { LoginForm } from '@/components/auth/login-form'
 import Link from 'next/link'
 import { ShieldCheck } from 'lucide-react'
@@ -48,7 +49,8 @@ export default function LoginPage() {
 
         {/* Logo overlay */}
         <div className="absolute top-12 left-16 z-20">
-          <Link href="/">
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/logo.png" alt="NestMatch" width={48} height={48} />
             <span className="font-display text-3xl font-extrabold text-on-primary tracking-tighter">
               NestMatch
             </span>
@@ -61,7 +63,8 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-10">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/">
+            <Link href="/" className="inline-flex items-center gap-2">
+              <Image src="/logo.png" alt="NestMatch" width={36} height={36} />
               <span className="font-display text-2xl font-extrabold text-primary tracking-tighter">
                 NestMatch
               </span>

@@ -28,7 +28,7 @@ export async function sendEmail({
   try {
     const resend = getResendClient()
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM || 'NestMatch <noreply@nestmatch.com>',
+      from: process.env.EMAIL_FROM || 'NestMatch <noreply@nestmatch.app>',
       to,
       subject,
       html,

@@ -523,7 +523,7 @@ export default function ChatPage() {
     let currentDate = ''
 
     messages.forEach((message) => {
-      const messageDate = new Date(message.created_at).toLocaleDateString()
+      const messageDate = new Date(message.created_at).toISOString().split('T')[0]
       if (messageDate !== currentDate) {
         currentDate = messageDate
         groups.push({ date: messageDate, messages: [message] })

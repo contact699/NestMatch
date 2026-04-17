@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { clientLogger } from '@/lib/client-logger'
 import { usePathname, useRouter } from 'next/navigation'
@@ -155,7 +156,14 @@ export function Navbar({ user }: NavbarProps) {
           {/* Logo */}
           <div className="flex items-center">
             <Link href={user ? '/dashboard' : '/'} className="flex items-center group">
-              <span className="font-display text-primary font-bold text-xl transition-transform duration-300 group-hover:scale-105">
+              <Image
+                src="/logo.png"
+                alt="NestMatch"
+                width={36}
+                height={36}
+                className="transition-transform duration-300 group-hover:scale-105"
+              />
+              <span className="ml-2 font-display text-primary font-bold text-xl transition-transform duration-300 group-hover:scale-105">
                 NestMatch
               </span>
             </Link>

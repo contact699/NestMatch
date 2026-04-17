@@ -21,7 +21,6 @@ import {
   ChevronDown,
   Zap,
   Shield,
-  TrendingUp,
 } from 'lucide-react'
 
 interface Payment {
@@ -60,42 +59,39 @@ interface PaymentData {
   payments: Payment[]
   summary: PaymentSummary
   current_user_id?: string
+  pagination?: {
+    total: number
+    limit: number
+    offset: number
+    has_more: boolean
+  }
 }
 
 export default function PaymentsPage() {
   const [filter, setFilter] = useState<'all' | 'sent' | 'received'>('all')
   const [dateRange, setDateRange] = useState('')
   const [transactionType, setTransactionType] = useState('all')
-  const [visibleCount, setVisibleCount] = useState(10)
+  const [limit, setLimit] = useState(20)
 
   const { data, isLoading, error, refetch } = useFetch<PaymentData>(
-    `/api/payments/history?type=${filter}`,
-    { deps: [filter] }
+    `/api/payments/history?type=${filter}&limit=${limit}`,
+    { deps: [filter, limit] }
   )
 
   const payments = data?.payments ?? []
   const summary = data?.summary ?? null
   const currentUserId = data?.current_user_id ?? null
+  const hasMore = data?.pagination?.has_more ?? false
 
   const totalMonthly = useMemo(() => {
     if (!summary) return 0
     return summary.total_sent + summary.total_received
   }, [summary])
 
-  // Approximate last month comparison (we derive a percentage if we had prior data)
-  const monthlyChangePercent = useMemo(() => {
-    // Dynamic: would need historical data; show placeholder derived from data
-    if (!summary) return 0
-    return summary.total_received > 0 ? 4 : 0
-  }, [summary])
-
   const isFullyReconciled = useMemo(() => {
     if (!summary) return false
     return summary.pending_sent === 0 && summary.pending_received === 0
   }, [summary])
-
-  const visiblePayments = payments.slice(0, visibleCount)
-  const hasMore = payments.length > visibleCount
 
   const getCategoryIcon = (type: string) => {
     switch (type) {
@@ -252,14 +248,6 @@ export default function PaymentsPage() {
             <p className="font-display text-2xl font-extrabold">
               {formatPrice(totalMonthly)}
             </p>
-            {monthlyChangePercent !== 0 && (
-              <div className="flex items-center gap-1 mt-1">
-                <TrendingUp className="h-3 w-3 text-secondary-container" />
-                <span className="text-xs text-secondary-container">
-                  {monthlyChangePercent}% vs last month
-                </span>
-              </div>
-            )}
           </div>
         )}
       </div>
@@ -291,7 +279,7 @@ export default function PaymentsPage() {
             </div>
           ) : (
             <div>
-              {visiblePayments.map((payment) => {
+              {payments.map((payment) => {
                 const isSent = payment.payer_id === currentUserId
                 const otherParty = isSent ? payment.recipient : payment.payer
 
@@ -376,7 +364,7 @@ export default function PaymentsPage() {
         <div className="text-center mt-6">
           <Button
             variant="outline"
-            onClick={() => setVisibleCount(prev => prev + 10)}
+            onClick={() => setLimit(prev => prev + 20)}
           >
             Load More Transactions
             <ChevronDown className="h-4 w-4 ml-1" />

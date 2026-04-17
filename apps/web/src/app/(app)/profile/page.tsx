@@ -28,6 +28,7 @@ import {
   DollarSign,
 } from 'lucide-react'
 import { HOUSEHOLD_SITUATIONS } from '@/lib/utils'
+import { VerificationBadges } from '@/components/verification-badges'
 
 export const metadata = {
   title: 'Profile',
@@ -119,6 +120,13 @@ export default async function ProfilePage() {
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
+  // Fetch completed verifications for badge display
+  const { data: verifications } = await supabase
+    .from('verifications')
+    .select('type, status')
+    .eq('user_id', user.id)
+    .eq('status', 'completed') as { data: Array<{ type: string; status: string }> | null }
+
   const isFullyVerified = profile?.verification_level === 'trusted'
 
   return (
@@ -165,6 +173,13 @@ export default async function ProfilePage() {
                         </span>
                       )}
                     </div>
+                    <VerificationBadges
+                      emailVerified={profile?.email_verified}
+                      phoneVerified={profile?.phone_verified}
+                      verifications={verifications || []}
+                      verificationLevel={profile?.verification_level}
+                      variant="full"
+                    />
                     {profile?.occupation && (
                       <p className="text-on-surface-variant mt-1">{profile.occupation}</p>
                     )}
@@ -331,8 +346,8 @@ export default async function ProfilePage() {
                   }
                 />
                 <PreferenceRow
-                  icon={<UtensilsCrossed className="h-4 w-4 text-on-surface-variant" />}
-                  label="Cooking Style"
+                  icon={<Briefcase className="h-4 w-4 text-on-surface-variant" />}
+                  label="Remote Work"
                   value={
                     lifestyleResponses?.remote_work_frequency
                       ? formatLifestyleValue('remote_work_frequency', lifestyleResponses.remote_work_frequency)

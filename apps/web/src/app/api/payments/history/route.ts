@@ -72,7 +72,25 @@ export const GET = withApiHandler(
 
     const { count: totalCount } = await countQuery
 
-    // Calculate summary stats
+    // Calculate summary stats from ALL user payments (not just the paginated slice)
+    let summaryQuery = supabase
+      .from('payments')
+      .select('payer_id, recipient_id, amount, status')
+
+    if (type === 'sent') {
+      summaryQuery = summaryQuery.eq('payer_id', userId!)
+    } else if (type === 'received') {
+      summaryQuery = summaryQuery.eq('recipient_id', userId!)
+    } else {
+      summaryQuery = summaryQuery.or(`payer_id.eq.${userId!},recipient_id.eq.${userId!}`)
+    }
+
+    if (status) {
+      summaryQuery = summaryQuery.eq('status', status)
+    }
+
+    const { data: allPayments } = await summaryQuery
+
     const summary = {
       total_sent: 0,
       total_received: 0,
@@ -80,8 +98,8 @@ export const GET = withApiHandler(
       pending_received: 0,
     }
 
-    if (payments) {
-      for (const payment of payments) {
+    if (allPayments) {
+      for (const payment of allPayments) {
         if (payment.payer_id === userId! && payment.status === 'completed') {
           summary.total_sent += payment.amount
         }
@@ -106,6 +124,7 @@ export const GET = withApiHandler(
         has_more: (offset + limit) < (totalCount || 0),
       },
       summary,
+      current_user_id: userId,
     }, 200, requestId)
   },
   { rateLimit: 'paymentCreate' }

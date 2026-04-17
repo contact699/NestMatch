@@ -3,6 +3,8 @@ import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { NotFoundError, AuthorizationError, ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
+import { sendEmail } from '@/lib/email'
+import { newMessageEmail } from '@/lib/email-templates'
 import { logger } from '@/lib/logger'
 
 const messageSchema = z.object({
@@ -115,6 +117,35 @@ export const POST = withApiHandler(
       throw new AuthorizationError('Not a participant in this conversation')
     }
 
+    // Enforce blocks between sender and any other participant.
+    // Conversation creation checks blocks, but a block added AFTER a
+    // conversation was created must also stop further messages.
+    const otherParticipants = (conversation.participant_ids || []).filter(
+      (pid) => pid !== userId!
+    )
+    if (otherParticipants.length > 0) {
+      const [senderBlocks, receivedBlocks] = await Promise.all([
+        supabase
+          .from('blocked_users')
+          .select('id')
+          .eq('user_id', userId!)
+          .in('blocked_user_id', otherParticipants)
+          .limit(1),
+        supabase
+          .from('blocked_users')
+          .select('id')
+          .in('user_id', otherParticipants)
+          .eq('blocked_user_id', userId!)
+          .limit(1),
+      ])
+      if (
+        (senderBlocks.data && senderBlocks.data.length > 0) ||
+        (receivedBlocks.data && receivedBlocks.data.length > 0)
+      ) {
+        throw new AuthorizationError('Messaging is blocked between these users')
+      }
+    }
+
     // Validate input
     let body: z.infer<typeof messageSchema>
     try {
@@ -222,6 +253,16 @@ export const POST = withApiHandler(
       .eq('id', conversationId)
       .then(() => {}, () => {})
 
+    // Send new message email notification to the recipient (fire and forget).
+    // Skip if the recipient was active within the last 5 minutes to avoid
+    // spamming users who are already in the conversation.
+    const recipientIds = (conversation.participant_ids || []).filter(
+      (pid: string) => pid !== userId!
+    )
+    if (recipientIds.length > 0) {
+      void notifyMessageRecipients(writeClient, recipientIds, userId!, requestId)
+    }
+
     return apiResponse({ message }, 201, requestId)
   },
   {
@@ -233,3 +274,74 @@ export const POST = withApiHandler(
     },
   }
 )
+
+// ============================================
+// HELPERS
+// ============================================
+
+/** Threshold in milliseconds — skip email if recipient was active within this window */
+const RECENTLY_ACTIVE_MS = 5 * 60 * 1000 // 5 minutes
+
+/**
+ * Send a new-message email notification to each recipient who hasn't been
+ * active in the last 5 minutes.
+ */
+async function notifyMessageRecipients(
+  client: ReturnType<typeof createServiceClient>,
+  recipientIds: string[],
+  senderId: string,
+  requestId: string
+): Promise<void> {
+  try {
+    // Fetch recipient profiles
+    const { data: recipients } = await client
+      .from('profiles')
+      .select('user_id, email, name, last_seen_at')
+      .in('user_id', recipientIds)
+
+    if (!recipients || recipients.length === 0) return
+
+    // Fetch sender name
+    const { data: senderProfile } = await client
+      .from('profiles')
+      .select('name')
+      .eq('user_id', senderId)
+      .single()
+
+    const senderName = senderProfile?.name || 'Someone'
+    const now = Date.now()
+
+    for (const recipient of recipients) {
+      if (!recipient.email) continue
+
+      // Skip if recipient was recently active
+      if (recipient.last_seen_at) {
+        const lastSeen = new Date(recipient.last_seen_at).getTime()
+        if (now - lastSeen < RECENTLY_ACTIVE_MS) {
+          logger.info('Skipping new message email — recipient recently active', {
+            requestId,
+            recipientId: recipient.user_id,
+          })
+          continue
+        }
+      }
+
+      const recipientName = recipient.name || 'there'
+      const { subject, html } = newMessageEmail(recipientName, senderName)
+
+      await sendEmail({ to: recipient.email, subject, html })
+
+      logger.info('Sent new message email notification', {
+        requestId,
+        recipientId: recipient.user_id,
+        senderId,
+      })
+    }
+  } catch (error) {
+    logger.error(
+      'Failed to send new message email notification',
+      error instanceof Error ? error : new Error(String(error)),
+      { requestId, senderId }
+    )
+  }
+}

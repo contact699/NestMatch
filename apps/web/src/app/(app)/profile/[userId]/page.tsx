@@ -20,6 +20,7 @@ import {
   Languages,
 } from 'lucide-react'
 import { formatDate, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
+import { VerificationBadges } from '@/components/verification-badges'
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>
@@ -114,6 +115,13 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     .eq('is_active', true)
     .limit(3)) as { data: any[] }
 
+  // Fetch completed verifications for badge display
+  const { data: verifications } = await supabase
+    .from('verifications')
+    .select('type, status')
+    .eq('user_id', userId)
+    .eq('status', 'completed') as { data: Array<{ type: string; status: string }> | null }
+
   const firstName = profile.name?.split(' ')[0] || 'User'
 
   // Lifestyle quiz tabs
@@ -170,6 +178,17 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 {profile.occupation && (
                   <p className="text-on-surface-variant mt-1">{profile.occupation}</p>
                 )}
+
+                <div className="mt-2 flex justify-center">
+                  <VerificationBadges
+                    emailVerified={profile.email_verified}
+                    phoneVerified={profile.phone_verified}
+                    verifications={verifications || []}
+                    verificationLevel={profile.verification_level}
+                    variant="full"
+                    showPublic={profile.show_verification_badges}
+                  />
+                </div>
 
                 {/* Rating Display */}
                 {reviewCount > 0 && averageRating ? (

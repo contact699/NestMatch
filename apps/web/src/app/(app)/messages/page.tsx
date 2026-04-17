@@ -116,9 +116,10 @@ export default function MessagesPage() {
   }, [searchParams, router])
 
   useEffect(() => {
-    async function loadConversations() {
-      const supabase = createClient()
+    const supabase = createClient()
+    let channel: ReturnType<typeof supabase.channel> | null = null
 
+    async function loadConversations() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
@@ -142,7 +143,7 @@ export default function MessagesPage() {
       setIsLoading(false)
 
       // Set up real-time subscription for new messages
-      const channel = supabase
+      channel = supabase
         .channel('messages-inbox')
         .on(
           'postgres_changes',
@@ -161,13 +162,15 @@ export default function MessagesPage() {
           }
         )
         .subscribe()
-
-      return () => {
-        supabase.removeChannel(channel)
-      }
     }
 
     loadConversations()
+
+    return () => {
+      if (channel) {
+        supabase.removeChannel(channel)
+      }
+    }
   }, [router])
 
   const filteredConversations = conversations.filter((conv) => {
@@ -212,7 +215,7 @@ export default function MessagesPage() {
               Filter
             </button>
             <Link
-              href="/messages?compose=true"
+              href="/search"
               className="flex items-center gap-2 px-4 py-2.5 bg-secondary text-on-secondary text-sm font-medium rounded-xl hover:bg-secondary/90 transition-colors"
             >
               <PenLine className="h-4 w-4" />
