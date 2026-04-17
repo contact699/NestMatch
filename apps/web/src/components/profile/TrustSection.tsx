@@ -18,8 +18,8 @@ export function TrustSection({ level, isOwner = false, className }: TrustSection
   const levels = [
     {
       id: 'basic' as const,
-      label: 'Basic',
-      description: 'Email verified',
+      label: 'Unverified',
+      description: 'Email only',
       icon: Shield,
       color: 'gray',
     },

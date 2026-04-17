@@ -14,6 +14,7 @@ import {
   BookOpen,
   User,
   Users,
+  UsersRound,
   Menu,
   X,
   LogOut,
@@ -37,8 +38,9 @@ interface NavbarProps {
 
 // Top navbar links (simplified — sidebar handles main nav)
 const topNavLinks = [
-  { href: '/search', label: 'Discover', icon: Search },
-  { href: '/my-listings', label: 'Listings', icon: Home },
+  { href: '/search', label: 'Search listings', icon: Search },
+  { href: '/roommates', label: 'Find Roommates', icon: Users },
+  { href: '/groups', label: 'Groups', icon: UsersRound },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/resources', label: 'Resources', icon: BookOpen },
 ]
@@ -46,7 +48,9 @@ const topNavLinks = [
 // Mobile sidebar nav items (mirror sidebar)
 const mobileNavItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/search', label: 'Discover', icon: Search },
+  { href: '/search', label: 'Search listings', icon: Search },
+  { href: '/roommates', label: 'Find Roommates', icon: Users },
+  { href: '/groups', label: 'Co-Renter Groups', icon: Users },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/my-listings', label: 'My Listings', icon: Home },
   { href: '/saved', label: 'Saved', icon: Bookmark },

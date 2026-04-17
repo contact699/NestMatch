@@ -4,16 +4,9 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { clientLogger } from '@/lib/client-logger'
 import {
-  BookOpen,
-  HelpCircle,
   ArrowRight,
-  Shield,
   Users,
-  DollarSign,
-  Truck,
   Scale,
-  Loader2,
-  Calculator,
   CheckSquare,
   ChevronDown,
   Sparkles,
@@ -28,14 +21,6 @@ import {
 import { Resource, ResourceCategory } from '@/types/database'
 
 const FEATURED_TOOLS = [
-  {
-    title: 'Affordability Calculator',
-    description: 'Calculate your budget based on Canadian tax brackets and regional cost of living indices.',
-    href: '/resources/tools/rent-calculator',
-    icon: Calculator,
-    badge: 'PRO TOOL',
-    prominent: true,
-  },
   {
     title: 'Moving Checklist',
     description: '48 essential steps for a stress-free move-in day across provinces.',
@@ -53,22 +38,10 @@ const KNOWLEDGE_BASE = [
     icon: Scale,
   },
   {
-    title: 'Home Insurance',
-    description: 'Compare rates and coverage options for renters.',
-    href: '/resources/guides?category=safety',
-    icon: Shield,
-  },
-  {
     title: 'Roommate Contracts',
     description: 'Downloadable templates for co-living agreements.',
     href: '/resources/agreement',
     icon: Users,
-  },
-  {
-    title: 'Credit Building',
-    description: 'How to report your rent to boost your credit score.',
-    href: '/resources/guides?category=finances',
-    icon: DollarSign,
   },
 ]
 
@@ -152,15 +125,6 @@ export default function ResourcesPage() {
                   : 'bg-surface-container-lowest ghost-border'
               }`}
             >
-              {tool.badge && (
-                <span className={`inline-block text-xs font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full mb-3 ${
-                  tool.prominent
-                    ? 'bg-white/20 text-on-primary'
-                    : 'bg-secondary-container text-secondary'
-                }`}>
-                  {tool.badge}
-                </span>
-              )}
               <h3 className={`text-xl font-display font-bold mb-2 ${
                 tool.prominent ? '' : 'text-on-surface'
               }`}>
@@ -176,7 +140,7 @@ export default function ResourcesPage() {
                   ? 'text-on-primary'
                   : 'text-secondary group-hover:gap-2 transition-all'
               }`}>
-                {tool.prominent ? 'Start Calculation' : 'View Guide'}
+                View Guide
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
