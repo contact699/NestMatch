@@ -21,7 +21,7 @@
         "NSCameraUsageDescription": "NestMatch needs camera access to take photos for your profile and listings.",
         "NSPhotoLibraryUsageDescription": "NestMatch needs photo library access to upload photos for your profile and listings.",
         "NSLocationWhenInUseUsageDescription": "NestMatch uses your location to find nearby listings and roommates.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": true
       }
     },
     "android": {
@@ -33,6 +33,7 @@
       "edgeToEdgeEnabled": false,
       "permissions": [
         "CAMERA",
+        "READ_MEDIA_IMAGES",
         "READ_EXTERNAL_STORAGE",
         "ACCESS_FINE_LOCATION"
       ]

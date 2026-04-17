@@ -53,7 +53,10 @@ export const POST = withApiHandler(
     const customer = await getOrCreateCustomer(payingUserId, payerProfile.email, payerProfile.name || undefined)
 
     // Build success/cancel URLs
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (!appUrl) {
+      throw new Error('NEXT_PUBLIC_APP_URL is not configured')
+    }
     const successUrl = `${appUrl}/api/verify/checkout/complete?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = `${appUrl}/verify`
 

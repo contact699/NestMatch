@@ -346,8 +346,8 @@ export default async function ProfilePage() {
                   }
                 />
                 <PreferenceRow
-                  icon={<UtensilsCrossed className="h-4 w-4 text-on-surface-variant" />}
-                  label="Cooking Style"
+                  icon={<Briefcase className="h-4 w-4 text-on-surface-variant" />}
+                  label="Remote Work"
                   value={
                     lifestyleResponses?.remote_work_frequency
                       ? formatLifestyleValue('remote_work_frequency', lifestyleResponses.remote_work_frequency)

@@ -80,7 +80,10 @@ export const POST = withApiHandler(
     }
 
     // Create account link for onboarding
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
+    if (!baseUrl) {
+      throw new Error('NEXT_PUBLIC_APP_URL is not configured')
+    }
     const accountLink = await createAccountLink(
       stripeAccountId,
       `${baseUrl}/settings/payments?refresh=true`,

@@ -117,6 +117,35 @@ export const POST = withApiHandler(
       throw new AuthorizationError('Not a participant in this conversation')
     }
 
+    // Enforce blocks between sender and any other participant.
+    // Conversation creation checks blocks, but a block added AFTER a
+    // conversation was created must also stop further messages.
+    const otherParticipants = (conversation.participant_ids || []).filter(
+      (pid) => pid !== userId!
+    )
+    if (otherParticipants.length > 0) {
+      const [senderBlocks, receivedBlocks] = await Promise.all([
+        supabase
+          .from('blocked_users')
+          .select('id')
+          .eq('user_id', userId!)
+          .in('blocked_user_id', otherParticipants)
+          .limit(1),
+        supabase
+          .from('blocked_users')
+          .select('id')
+          .in('user_id', otherParticipants)
+          .eq('blocked_user_id', userId!)
+          .limit(1),
+      ])
+      if (
+        (senderBlocks.data && senderBlocks.data.length > 0) ||
+        (receivedBlocks.data && receivedBlocks.data.length > 0)
+      ) {
+        throw new AuthorizationError('Messaging is blocked between these users')
+      }
+    }
+
     // Validate input
     let body: z.infer<typeof messageSchema>
     try {

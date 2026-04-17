@@ -30,9 +30,9 @@ export default function HomeScreen() {
     queryKey: ['messages-count', user?.id],
     queryFn: async () => {
       const { count, error } = await supabase
-        .from('messages')
+        .from('conversations')
         .select('*', { count: 'exact', head: true })
-        .or(`sender_id.eq.${user!.id},receiver_id.eq.${user!.id}`)
+        .contains('participant_ids', [user!.id])
 
       if (error) throw error
       return count ?? 0

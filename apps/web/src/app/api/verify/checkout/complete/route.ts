@@ -100,8 +100,22 @@ export const GET = withApiHandler(
       }
     }
 
-    if (successCount === 0 && failCount > 0) {
-      return NextResponse.redirect(new URL('/verify?payment=error', req.url))
+    if (failCount > 0) {
+      logger.error('Verification partial-failure after payment', undefined, {
+        requestId,
+        sessionId,
+        successCount,
+        failCount,
+        checksNeeded,
+      })
+      // Any check failing after a successful payment is user-visible — send them
+      // to an error state so they can reach support instead of silently showing
+      // an incomplete verification list.
+      const url = new URL('/verify', req.url)
+      url.searchParams.set('payment', successCount === 0 ? 'error' : 'partial')
+      url.searchParams.set('succeeded', String(successCount))
+      url.searchParams.set('failed', String(failCount))
+      return NextResponse.redirect(url)
     }
 
     return NextResponse.redirect(new URL('/verify?payment=success', req.url))
