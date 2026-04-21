@@ -33,6 +33,7 @@ export interface Database {
           is_online: boolean
           last_seen_at: string | null
           show_verification_badges: boolean
+          stripe_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -59,6 +60,7 @@ export interface Database {
           is_online?: boolean
           last_seen_at?: string | null
           show_verification_badges?: boolean
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -85,6 +87,7 @@ export interface Database {
           is_online?: boolean
           last_seen_at?: string | null
           show_verification_badges?: boolean
+          stripe_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
+import { GroupSettingsModal } from '@/components/groups/group-settings-modal'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -664,6 +665,20 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           onClose={() => setShowInviteModal(false)}
           onSuccess={() => {
             setShowInviteModal(false)
+            fetchGroup()
+          }}
+        />
+      )}
+
+      {/* Settings / Edit Mission Modal */}
+      {showSettingsModal && (
+        <GroupSettingsModal
+          groupId={group.id}
+          initialName={group.name}
+          initialDescription={group.description ?? ''}
+          onClose={() => setShowSettingsModal(false)}
+          onSaved={() => {
+            setShowSettingsModal(false)
             fetchGroup()
           }}
         />

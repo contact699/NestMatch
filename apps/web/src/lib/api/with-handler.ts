@@ -314,6 +314,14 @@ export function withApiHandler(
         action: method,
       })
 
+      // Surface the underlying error in structured logs so Vercel/prod log readers
+      // see the real cause (e.g. StripeConnectionError + Node cause code).
+      // AppError subclasses are expected (NotFound, Authorization, Validation) and
+      // shouldn't spam the error channel.
+      if (!(err instanceof AppError)) {
+        logger.error('API handler error', error, { requestId, path, method, userId })
+      }
+
       // Log error response
       logApiResponse({ requestId, method, path, userId }, 500, Date.now() - startTime)
 

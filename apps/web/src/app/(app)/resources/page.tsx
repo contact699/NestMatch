@@ -17,6 +17,7 @@ import {
   LegalDisclaimer,
   SearchBar,
   CategoryNav,
+  FeaturedResourceCard,
 } from '@/components/resources'
 import { Resource, ResourceCategory } from '@/types/database'
 
@@ -63,17 +64,26 @@ const COMMON_QUESTIONS = [
 export default function ResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [categories, setCategories] = useState<ResourceCategory[]>([])
+  const [featuredResources, setFeaturedResources] = useState<Resource[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [openFAQ, setOpenFAQ] = useState<number | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const categoriesRes = await fetch('/api/resources/categories')
+        const [categoriesRes, featuredRes] = await Promise.all([
+          fetch('/api/resources/categories'),
+          fetch('/api/resources?featured=true&limit=6'),
+        ])
 
         if (categoriesRes.ok) {
           const data = await categoriesRes.json()
           setCategories(data.categories || [])
+        }
+
+        if (featuredRes.ok) {
+          const data = await featuredRes.json()
+          setFeaturedResources(data.resources || [])
         }
       } catch (error) {
         clientLogger.error('Error fetching resources', error)
@@ -147,6 +157,21 @@ export default function ResourcesPage() {
           ))}
         </div>
       </div>
+
+      {/* Featured Articles */}
+      {featuredResources.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-xl font-display font-semibold text-on-surface mb-4 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-secondary" />
+            Featured Articles
+          </h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {featuredResources.map((resource) => (
+              <FeaturedResourceCard key={resource.id} resource={resource} />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Expert Knowledge Base */}
       <div className="mb-10">

@@ -51,6 +51,7 @@ export const POST = withApiHandler(
 
     // Get or create Stripe customer
     const customer = await getOrCreateCustomer(
+      supabase,
       userId!,
       payerProfile.email,
       payerProfile.name ?? undefined

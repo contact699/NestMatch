@@ -26,7 +26,58 @@ interface LogEntry {
     name: string
     message: string
     stack?: string
+    code?: string
+    details?: string
+    hint?: string
   }
+}
+
+/**
+ * Normalize anything a caller throws or rejects with into a serializable shape.
+ * Handles Error instances, Supabase/PostgREST error objects ({message,code,details,hint}),
+ * plain objects, and primitives. Without this, `String(obj)` yields "[object Object]"
+ * and hides the real failure reason.
+ */
+function toErrorShape(err: unknown): LogEntry['error'] {
+  if (err === null || err === undefined) return undefined
+
+  if (err instanceof Error) {
+    const shape: NonNullable<LogEntry['error']> = {
+      name: err.name,
+      message: err.message,
+      stack: err.stack,
+    }
+    // Unwrap Error.cause (e.g. StripeConnectionError wraps ENOTFOUND/ECONNRESET)
+    const cause = (err as { cause?: unknown }).cause
+    if (cause && typeof cause === 'object') {
+      const c = cause as Record<string, unknown>
+      if (typeof c.code === 'string') shape.code = c.code
+      if (!shape.message.includes(String(c.message ?? ''))) {
+        const causeMsg =
+          typeof c.message === 'string' ? c.message : JSON.stringify(cause)
+        shape.message = `${shape.message} | cause: ${causeMsg}`
+      }
+    }
+    return shape
+  }
+
+  if (typeof err === 'object') {
+    const obj = err as Record<string, unknown>
+    const message =
+      typeof obj.message === 'string' && obj.message.length > 0
+        ? obj.message
+        : JSON.stringify(err)
+    return {
+      name: typeof obj.name === 'string' ? obj.name : 'Object',
+      message,
+      stack: typeof obj.stack === 'string' ? obj.stack : undefined,
+      code: typeof obj.code === 'string' ? obj.code : undefined,
+      details: typeof obj.details === 'string' ? obj.details : undefined,
+      hint: typeof obj.hint === 'string' ? obj.hint : undefined,
+    }
+  }
+
+  return { name: typeof err, message: String(err) }
 }
 
 const LOG_LEVELS: Record<LogLevel, number> = {
@@ -58,7 +109,7 @@ function createEntry(
   level: LogLevel,
   message: string,
   context?: LogContext,
-  error?: Error
+  error?: unknown
 ): LogEntry {
   return {
     timestamp: new Date().toISOString(),
@@ -67,17 +118,11 @@ function createEntry(
     service: 'nestmatch',
     environment: process.env.NODE_ENV || 'development',
     context,
-    error: error
-      ? {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-        }
-      : undefined,
+    error: toErrorShape(error),
   }
 }
 
-function log(level: LogLevel, message: string, context?: LogContext, error?: Error): void {
+function log(level: LogLevel, message: string, context?: LogContext, error?: unknown): void {
   if (!shouldLog(level)) return
 
   const entry = createEntry(level, message, context, error)
@@ -103,7 +148,7 @@ export const logger = {
   debug: (message: string, context?: LogContext) => log('debug', message, context),
   info: (message: string, context?: LogContext) => log('info', message, context),
   warn: (message: string, context?: LogContext) => log('warn', message, context),
-  error: (message: string, error?: Error, context?: LogContext) =>
+  error: (message: string, error?: unknown, context?: LogContext) =>
     log('error', message, context, error),
 
   /**
@@ -116,7 +161,7 @@ export const logger = {
       log('info', message, { ...baseContext, ...context }),
     warn: (message: string, context?: LogContext) =>
       log('warn', message, { ...baseContext, ...context }),
-    error: (message: string, error?: Error, context?: LogContext) =>
+    error: (message: string, error?: unknown, context?: LogContext) =>
       log('error', message, { ...baseContext, ...context }, error),
   }),
 
@@ -136,7 +181,7 @@ export const logger = {
       return result
     } catch (error) {
       const duration = Date.now() - start
-      log('error', message, { ...context, duration, success: false }, error as Error)
+      log('error', message, { ...context, duration, success: false }, error)
       throw error
     }
   },

@@ -1,4 +1,6 @@
 import Stripe from 'stripe'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
 // Lazy initialization of Stripe to avoid errors during build
 let _stripe: Stripe | null = null
@@ -108,23 +110,28 @@ export async function createConnectLoginLink(
 // ============================================
 
 /**
- * Create or retrieve a Stripe customer for a user
+ * Get the Stripe customer ID for a user, creating one if needed.
+ *
+ * The customer ID is cached on profiles.stripe_customer_id so we avoid
+ * stripe.customers.search() on every checkout — that endpoint is slow
+ * and has caused StripeConnectionError timeouts in production.
  */
 export async function getOrCreateCustomer(
+  supabase: SupabaseClient<Database>,
   userId: string,
   email: string,
   name?: string
-): Promise<Stripe.Customer> {
-  // Search for existing customer by metadata
-  const existingCustomers = await getStripe().customers.search({
-    query: `metadata['nestmatch_user_id']:'${userId}'`,
-  })
+): Promise<{ id: string }> {
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('stripe_customer_id')
+    .eq('user_id', userId)
+    .single()
 
-  if (existingCustomers.data.length > 0) {
-    return existingCustomers.data[0]
+  if (profile?.stripe_customer_id) {
+    return { id: profile.stripe_customer_id }
   }
 
-  // Create new customer
   const customer = await getStripe().customers.create({
     email,
     name: name || undefined,
@@ -133,7 +140,12 @@ export async function getOrCreateCustomer(
     },
   })
 
-  return customer
+  await supabase
+    .from('profiles')
+    .update({ stripe_customer_id: customer.id })
+    .eq('user_id', userId)
+
+  return { id: customer.id }
 }
 
 /**

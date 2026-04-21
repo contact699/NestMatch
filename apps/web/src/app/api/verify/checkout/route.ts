@@ -50,7 +50,7 @@ export const POST = withApiHandler(
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(payingUserId, payerProfile.email, payerProfile.name || undefined)
+    const customer = await getOrCreateCustomer(supabase, payingUserId, payerProfile.email, payerProfile.name || undefined)
 
     // Build success/cancel URLs
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
