@@ -29,6 +29,10 @@ interface LogEntry {
     code?: string
     details?: string
     hint?: string
+    type?: string
+    statusCode?: number
+    requestId?: string
+    detail?: string
   }
 }
 
@@ -47,17 +51,33 @@ function toErrorShape(err: unknown): LogEntry['error'] {
       message: err.message,
       stack: err.stack,
     }
-    // Unwrap Error.cause (e.g. StripeConnectionError wraps ENOTFOUND/ECONNRESET)
-    const cause = (err as { cause?: unknown }).cause
-    if (cause && typeof cause === 'object') {
-      const c = cause as Record<string, unknown>
-      if (typeof c.code === 'string') shape.code = c.code
-      if (!shape.message.includes(String(c.message ?? ''))) {
-        const causeMsg =
-          typeof c.message === 'string' ? c.message : JSON.stringify(cause)
-        shape.message = `${shape.message} | cause: ${causeMsg}`
+
+    // Extract Stripe-specific fields (StripeConnectionError / StripeAPIError).
+    // Stripe wraps the underlying Node error in `detail` or `raw`, not `cause`.
+    const anyErr = err as unknown as Record<string, unknown>
+    if (typeof anyErr.type === 'string') shape.type = anyErr.type
+    if (typeof anyErr.code === 'string') shape.code = anyErr.code
+    if (typeof anyErr.statusCode === 'number') shape.statusCode = anyErr.statusCode
+    if (typeof anyErr.requestId === 'string') shape.requestId = anyErr.requestId
+
+    // Unwrap nested detail (Stripe) or cause (ES2022) to surface transport codes
+    // like ENOTFOUND / ECONNRESET / ETIMEDOUT.
+    const nested = anyErr.detail ?? anyErr.raw ?? anyErr.cause
+    if (nested && typeof nested === 'object') {
+      const n = nested as Record<string, unknown>
+      if (typeof n.code === 'string' && !shape.code) shape.code = n.code
+      const detailMsg =
+        typeof n.message === 'string'
+          ? n.message
+          : typeof n === 'object'
+            ? JSON.stringify(nested)
+            : String(nested)
+      shape.detail = detailMsg
+      if (!shape.message.includes(detailMsg)) {
+        shape.message = `${shape.message} | detail: ${detailMsg}`
       }
     }
+
     return shape
   }
 

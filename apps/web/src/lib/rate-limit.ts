@@ -106,7 +106,7 @@ export async function checkRateLimit(
     })
 
     if (error) {
-      logger.error('Rate limit check error', error instanceof Error ? error : new Error(String(error)))
+      logger.error('Rate limit check error', error)
       // Fail open - allow request if rate limit check fails
       return { allowed: true, remaining: maxRequests, resetAt: new Date() }
     }
@@ -119,7 +119,7 @@ export async function checkRateLimit(
       blocked: !result?.allowed,
     }
   } catch (error) {
-    logger.error('Rate limit error', error instanceof Error ? error : new Error(String(error)))
+    logger.error('Rate limit error', error)
     // Fail open
     return { allowed: true, remaining: 100, resetAt: new Date() }
   }
