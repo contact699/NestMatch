@@ -7,10 +7,14 @@ let _stripe: Stripe | null = null
 
 function getStripe(): Stripe {
   if (!_stripe) {
-    if (!process.env.STRIPE_SECRET_KEY) {
+    const rawKey = process.env.STRIPE_SECRET_KEY
+    if (!rawKey) {
       throw new Error('STRIPE_SECRET_KEY is not set')
     }
-    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    // Trim whitespace/newlines. A trailing newline pasted into Vercel/similar
+    // dashboards surfaces as "Invalid character in header content [Authorization]"
+    // at request time, not at client init — very hard to diagnose otherwise.
+    _stripe = new Stripe(rawKey.trim(), {
       apiVersion: '2026-01-28.clover',
     })
   }
