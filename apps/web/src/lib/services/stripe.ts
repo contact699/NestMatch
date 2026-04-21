@@ -371,11 +371,14 @@ export function constructWebhookEvent(
   payload: string | Buffer,
   signature: string
 ): Stripe.Event {
-  return getStripe().webhooks.constructEvent(
-    payload,
-    signature,
-    process.env.STRIPE_WEBHOOK_SECRET!
-  )
+  const secret = process.env.STRIPE_WEBHOOK_SECRET
+  if (!secret) {
+    throw new Error('STRIPE_WEBHOOK_SECRET is not set')
+  }
+  // Trim whitespace. Stripe's own error explicitly calls out whitespace in
+  // the signing secret as the most common cause of signature verification
+  // failures — every event gets rejected if the env var has a trailing \n.
+  return getStripe().webhooks.constructEvent(payload, signature, secret.trim())
 }
 
 // ============================================

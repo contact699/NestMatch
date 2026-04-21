@@ -8,8 +8,10 @@
 
 import { logger } from '@/lib/logger'
 
-const CERTN_API_KEY = process.env.CERTN_API_KEY
-const CERTN_API_BASE = process.env.CERTN_API_BASE || 'https://api.ca.certn.co'
+// Trim whitespace so a trailing newline pasted into an env var dashboard
+// doesn't silently break every request via a malformed Authorization header.
+const CERTN_API_KEY = process.env.CERTN_API_KEY?.trim()
+const CERTN_API_BASE = (process.env.CERTN_API_BASE || 'https://api.ca.certn.co').trim()
 
 // ============================================
 // TYPES
