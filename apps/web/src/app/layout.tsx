@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Manrope } from "next/font/google";
+import { Inter, Manrope, Geist } from "next/font/google";
 import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
@@ -18,6 +18,12 @@ const manrope = Manrope({
   variable: "--font-manrope",
 });
 
+const geist = Geist({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-geist",
+});
+
 export const viewport = {
   width: "device-width",
   initialScale: 1,
@@ -30,7 +36,7 @@ export const metadata: Metadata = {
     template: "%s - NestMatch",
   },
   description:
-    "The only roommate platform where every user is verified, every listing is real, and compatibility is based on how you actually live.",
+    "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
   keywords: [
     "roommate",
     "Canada",
@@ -46,7 +52,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "NestMatch - Find Your Perfect Roommate in Canada",
     description:
-      "The only roommate platform where every user is verified, every listing is real, and compatibility is based on how you actually live.",
+      "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
     url: "https://www.nestmatch.app",
     siteName: "NestMatch",
     locale: "en_CA",
@@ -64,7 +70,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "NestMatch - Find Your Perfect Roommate in Canada",
     description:
-      "The only roommate platform where every user is verified, every listing is real, and compatibility is based on how you actually live.",
+      "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
   },
   robots: {
     index: true,
@@ -79,7 +85,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${manrope.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${manrope.variable} ${geist.variable} font-sans antialiased`}>
         <GoogleAnalytics />
         <Suspense fallback={null}>
           <PostHogPageview />

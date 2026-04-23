@@ -29,7 +29,12 @@ export function ImageUploader({
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [dragActive, setDragActive] = useState(false)
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // Custom MIME so the upload-area drop handler can ignore internal thumbnail drags
+  const THUMB_DRAG_MIME = 'application/x-nestmatch-image-index'
 
   const uploadFile = async (file: File): Promise<string | null> => {
     // Validate file type
@@ -115,6 +120,8 @@ export function ImageUploader({
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
+    // Ignore reorder drags so the upload area doesn't light up
+    if (e.dataTransfer.types.includes(THUMB_DRAG_MIME)) return
     if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true)
     } else if (e.type === 'dragleave') {
@@ -131,6 +138,34 @@ export function ImageUploader({
       handleFiles(e.dataTransfer.files)
     }
   }, [images])
+
+  const handleThumbDragStart = (index: number) => (e: React.DragEvent) => {
+    setDraggedIndex(index)
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData(THUMB_DRAG_MIME, String(index))
+  }
+
+  const handleThumbDragOver = (index: number) => (e: React.DragEvent) => {
+    if (draggedIndex === null) return
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverIndex !== index) setDragOverIndex(index)
+  }
+
+  const handleThumbDrop = (index: number) => (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (draggedIndex !== null && draggedIndex !== index) {
+      moveImage(draggedIndex, index)
+    }
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
+
+  const handleThumbDragEnd = () => {
+    setDraggedIndex(null)
+    setDragOverIndex(null)
+  }
 
   const removeImage = (index: number) => {
     const newImages = [...images]
@@ -162,16 +197,26 @@ export function ImageUploader({
           {images.map((url, index) => (
             <div
               key={url}
-              className="relative aspect-square bg-surface-container-low rounded-lg overflow-hidden group"
+              draggable
+              onDragStart={handleThumbDragStart(index)}
+              onDragOver={handleThumbDragOver(index)}
+              onDrop={handleThumbDrop(index)}
+              onDragEnd={handleThumbDragEnd}
+              onDragLeave={() => setDragOverIndex((current) => (current === index ? null : current))}
+              className={`
+                relative aspect-square bg-surface-container-low rounded-lg overflow-hidden group cursor-move
+                ${draggedIndex === index ? 'opacity-40' : ''}
+                ${dragOverIndex === index && draggedIndex !== index ? 'ring-2 ring-primary ring-offset-2' : ''}
+              `}
             >
               <img
                 src={url}
                 alt={`Upload ${index + 1}`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover pointer-events-none"
               />
 
-              {/* Overlay with actions */}
-              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              {/* Overlay with actions — visible on touch, hover-revealed on desktop */}
+              <div className="absolute inset-0 bg-black/30 md:bg-black/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                 {index > 0 && (
                   <button
                     type="button"

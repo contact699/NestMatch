@@ -1,6 +1,6 @@
 'use client'
 
-import Image from 'next/image'
+import { LogoMark } from '@/components/ui/logo-mark'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
@@ -45,9 +45,9 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
     <aside className="hidden lg:flex fixed top-16 left-0 w-64 h-[calc(100vh-4rem)] bg-surface-container-lowest flex-col z-40 border-r border-outline-variant/15">
       {/* Logo / Brand section */}
       <div className="px-6 py-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Image src="/logo.png" alt="NestMatch" width={32} height={32} />
-          <h2 className="font-display text-primary font-bold text-lg">NestMatch</h2>
+        <div className="flex items-center gap-2.5 mb-1">
+          <LogoMark size={28} />
+          <h2 className="font-logo text-lg font-semibold text-primary tracking-[-0.02em] leading-none">NestMatch</h2>
         </div>
         <p className="text-xs text-on-surface-variant">Premium Housing Concierge</p>
       </div>

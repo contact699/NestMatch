@@ -24,7 +24,6 @@ import {
   PawPrint,
   Car,
   ShieldCheck,
-  Star,
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
@@ -417,20 +416,18 @@ export default async function ListingPage({ params }: ListingPageProps) {
                   isLoggedIn={!!user}
                 />
 
-                {/* Trust badges */}
-                <div className="mt-6 pt-4 ghost-border-t">
-                  <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Trust Verified</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-                      <ShieldCheck className="h-4 w-4 text-secondary" />
-                      <span>Identity verified</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-on-surface-variant">
-                      <Star className="h-4 w-4 text-secondary" />
-                      <span>Responsive host</span>
+                {/* Trust badges — only rendered for actual verification states */}
+                {profile?.verification_level && profile.verification_level !== 'basic' && (
+                  <div className="mt-6 pt-4 ghost-border-t">
+                    <h4 className="text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-3">Trust & Safety</h4>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm text-on-surface-variant">
+                        <ShieldCheck className="h-4 w-4 text-secondary" />
+                        <span>Identity verified</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 

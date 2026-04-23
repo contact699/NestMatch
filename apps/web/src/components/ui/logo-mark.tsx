@@ -1,0 +1,47 @@
+import { cn } from '@/lib/utils'
+
+interface LogoMarkProps {
+  size?: number
+  className?: string
+  mono?: boolean
+}
+
+export function LogoMark({ size = 28, className, mono = false }: LogoMarkProps) {
+  if (mono) {
+    return (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={size}
+        height={size}
+        viewBox="0 0 100 100"
+        fill="none"
+        aria-label="NestMatch"
+        role="img"
+        className={cn('block shrink-0', className)}
+      >
+        <path d="M22 40 L50 18 L78 40" stroke="currentColor" strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        <path d="M14 52 Q14 48 18 48 H82 Q86 48 86 52 A36 36 0 0 1 14 52 Z" fill="currentColor" />
+        <path d="M40 30 Q32 40 40 52 Q52 50 52 38 Q52 30 40 30 Z" fill="currentColor" opacity={0.55} />
+        <path d="M56 34 Q50 46 58 56 Q70 54 70 44 Q70 34 56 34 Z" fill="currentColor" opacity={0.55} />
+      </svg>
+    )
+  }
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      fill="none"
+      aria-label="NestMatch"
+      role="img"
+      className={cn('block shrink-0', className)}
+    >
+      <path d="M22 40 L50 18 L78 40" stroke="#E89A3C" strokeWidth={10} strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      <path d="M14 52 Q14 48 18 48 H82 Q86 48 86 52 A36 36 0 0 1 14 52 Z" fill="#E89A3C" />
+      <path d="M40 30 Q32 40 40 52 Q52 50 52 38 Q52 30 40 30 Z" fill="#6B8E3D" />
+      <path d="M56 34 Q50 46 58 56 Q70 54 70 44 Q70 34 56 34 Z" fill="#6B8E3D" />
+    </svg>
+  )
+}

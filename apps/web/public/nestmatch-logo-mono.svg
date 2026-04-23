@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 100 100" fill="none" aria-label="NestMatch" role="img">
+  <path d="M22 40 L50 18 L78 40" stroke="currentColor" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+  <path d="M14 52 Q14 48 18 48 H82 Q86 48 86 52 A36 36 0 0 1 14 52 Z" fill="currentColor"></path>
+  <path d="M40 30 Q32 40 40 52 Q52 50 52 38 Q52 30 40 30 Z" fill="currentColor" opacity="0.55"></path>
+  <path d="M56 34 Q50 46 58 56 Q70 54 70 44 Q70 34 56 34 Z" fill="currentColor" opacity="0.55"></path>
+</svg>
