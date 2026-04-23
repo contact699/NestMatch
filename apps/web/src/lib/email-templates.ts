@@ -145,7 +145,7 @@ export function welcomeEmail(name: string) {
             <td style="padding: 32px 24px;">
               <p style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px;">Hi ${name},</p>
               <p style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px;">Welcome to NestMatch! We're excited to help you find your perfect roommate.</p>
-              <p style="margin: 0 0 24px 0; color: #1f2937; font-size: 16px;">NestMatch connects you with verified roommates who match your lifestyle. Our background checks and lifestyle matching ensure you find someone you'll actually enjoy living with.</p>
+              <p style="margin: 0 0 24px 0; color: #1f2937; font-size: 16px;">NestMatch helps you find roommates who match your lifestyle, with optional ID and background checks available to build trust along the way.</p>
               <p style="margin: 0 0 8px 0; color: #1f2937; font-size: 16px; font-weight: 500;">Here's how to get started:</p>
               <ul style="margin: 0 0 24px 0; padding-left: 20px; color: #4b5563; font-size: 15px;">
                 <li style="margin-bottom: 8px;">Complete your profile so others can get to know you</li>

@@ -5,9 +5,9 @@ import { ShieldCheck, CheckCircle, Users } from 'lucide-react'
 const FEATURES = [
   {
     icon: ShieldCheck,
-    title: 'ID Verified Users',
+    title: 'Optional ID Verification',
     description:
-      'Every user goes through government ID verification. No fake profiles, no catfishing, no scams.',
+      'Verify your identity with a government ID check and earn a trust badge on your profile. Filter for verified users to protect yourself from catfishing and scams.',
   },
   {
     icon: CheckCircle,

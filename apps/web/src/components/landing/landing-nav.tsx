@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
 import { Bell } from 'lucide-react'
+import { LogoMark } from '@/components/ui/logo-mark'
 
 export function LandingNav() {
   const [scrolled, setScrolled] = useState(false)
@@ -27,10 +27,12 @@ export function LandingNav() {
       <div className="max-w-7xl mx-auto flex justify-between items-center px-6 py-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-2xl font-bold text-primary tracking-tighter font-display"
+          className="inline-flex items-center gap-2.5 no-underline"
         >
-          <Image src="/logo.png" alt="NestMatch" width={40} height={40} />
-          NestMatch
+          <LogoMark size={32} />
+          <span className="font-logo text-lg font-semibold text-primary tracking-[-0.02em] leading-none">
+            NestMatch
+          </span>
         </Link>
 
         {/* Desktop Nav */}

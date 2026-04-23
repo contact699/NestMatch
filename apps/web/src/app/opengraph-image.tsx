@@ -57,7 +57,7 @@ export default async function Image() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: 18 }}>
-              ✓ Verified Users
+              ✓ ID Verification
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: 18 }}>
               ✓ Real Listings

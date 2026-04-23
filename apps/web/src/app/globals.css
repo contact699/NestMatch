@@ -120,6 +120,7 @@
   --color-tertiary-fixed: var(--tertiary-fixed);
   --font-sans: var(--font-inter);
   --font-display: var(--font-manrope);
+  --font-logo: var(--font-geist), var(--font-inter);
 }
 
 /* ============================================
