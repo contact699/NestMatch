@@ -44,11 +44,6 @@ export function LatestMembersSection() {
     fetchMembers()
   }, [])
 
-  const getDelayClass = (index: number) => {
-    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400']
-    return delays[index % delays.length]
-  }
-
   // Hide section entirely if we have fewer than 2 cards to show
   if (!loading && !error && members.length < 2) {
     return null
@@ -81,12 +76,8 @@ export function LatestMembersSection() {
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-              {members.slice(0, 4).map((member, index) => (
-                <div
-                  key={member.user_id}
-                  data-animate
-                  className={getDelayClass(index)}
-                >
+              {members.slice(0, 4).map((member) => (
+                <div key={member.user_id}>
                   <Link href={`/signup?redirect=/profile/${member.user_id}`}>
                     <Card variant="bordered" className="overflow-hidden feature-card group h-full">
                       <div className="relative aspect-[4/5] bg-surface-container-low overflow-hidden">
@@ -133,10 +124,7 @@ export function LatestMembersSection() {
               ))}
             </div>
 
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 delay-500"
-              data-animate
-            >
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/signup">
                 <Button variant="primary" size="lg">
                   Sign up to browse members
