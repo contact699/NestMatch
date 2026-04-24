@@ -72,11 +72,11 @@ export function FeaturedListingsSection() {
         {/* Section header */}
         <div className="text-center mb-12" data-animate>
           <h2 className="font-display text-3xl sm:text-4xl font-bold text-primary mb-4">
-            Featured Listings
+            Latest Listings
           </h2>
           <p className="text-lg text-on-surface-variant max-w-2xl mx-auto">
-            Browse rooms available right now across Canada. Sign up to see your
-            compatibility score and contact hosts.
+            Rooms just posted across Canada. Sign up to see your compatibility
+            score and contact hosts.
           </p>
         </div>
 

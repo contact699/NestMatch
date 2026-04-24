@@ -10,6 +10,7 @@ import {
   Footer,
 } from '@/components/landing'
 import { FeaturedListingsSection } from '@/components/landing/featured-listings-section'
+import { LatestMembersSection } from '@/components/landing/latest-members-section'
 import { OrganizationJsonLd } from '@/components/json-ld'
 
 export default function HomePage() {
@@ -43,6 +44,7 @@ export default function HomePage() {
         <TrustFeaturesSection />
         <HowItWorksSection />
         <FeaturedListingsSection />
+        <LatestMembersSection />
         <CTASection />
       </main>
       <Footer />

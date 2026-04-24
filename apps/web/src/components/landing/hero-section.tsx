@@ -16,9 +16,9 @@ export function HeroSection() {
           </h1>
 
           <p className="text-xl text-on-surface-variant max-w-xl mb-10 leading-relaxed">
-            Canada&apos;s first trust-centric housing platform. We combine
-            rigorous verification with lifestyle matching to create living
-            situations that actually work.
+            Canada&apos;s first trust-centric housing platform. We pair optional
+            ID verification with lifestyle matching to create living situations
+            that actually work.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -53,10 +53,10 @@ export function HeroSection() {
             </div>
             <div>
               <p className="font-bold text-primary text-lg">
-                Trust-verified community
+                Trust-first community
               </p>
               <p className="text-sm text-on-surface-variant">
-                Verified in Toronto, Vancouver &amp; Montreal
+                Live in Toronto, Vancouver &amp; Montreal
               </p>
             </div>
           </div>
@@ -72,10 +72,10 @@ export function HeroSection() {
                   <ShieldCheck className="h-12 w-12 text-primary" />
                 </div>
                 <p className="text-on-surface-variant font-display font-semibold text-lg">
-                  Verified Living Spaces
+                  Real Living Spaces
                 </p>
                 <p className="text-on-surface-variant/70 text-sm mt-2">
-                  Every listing is pre-vetted for quality and safety
+                  Real listings from real hosts
                 </p>
               </div>
             </div>
@@ -87,10 +87,11 @@ export function HeroSection() {
               <div className="bg-secondary-container p-2 rounded-full">
                 <ShieldCheck className="h-5 w-5 text-secondary" />
               </div>
-              <span className="font-bold text-primary">Identity Verified</span>
+              <span className="font-bold text-primary">Identity Verification</span>
             </div>
             <p className="text-xs text-on-surface-variant">
-              All NestMatch users undergo mandatory identity verification.
+              Optional government ID verification available — verified users
+              display a trust badge.
             </p>
           </div>
         </div>

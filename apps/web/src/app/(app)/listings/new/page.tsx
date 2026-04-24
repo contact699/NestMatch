@@ -234,14 +234,14 @@ export default function NewListingPage() {
           </p>
         </div>
 
-        {/* Verified Listings badge */}
+        {/* Trust & safety badge */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center">
             <ShieldCheck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold">Verified Listings</p>
-            <p className="text-xs text-white/50">We verify 100% of hosts for safety.</p>
+            <p className="text-sm font-semibold">Built for Trust</p>
+            <p className="text-xs text-white/50">Hosts can verify their ID to earn a trust badge.</p>
           </div>
         </div>
       </div>

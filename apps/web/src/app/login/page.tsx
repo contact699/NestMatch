@@ -1,8 +1,8 @@
 import { Suspense } from 'react'
-import Image from 'next/image'
 import { LoginForm } from '@/components/auth/login-form'
 import Link from 'next/link'
 import { ShieldCheck } from 'lucide-react'
+import { LogoMark } from '@/components/ui/logo-mark'
 
 export const metadata = {
   title: 'Sign In - NestMatch',
@@ -41,17 +41,17 @@ export default function LoginPage() {
                 ))}
               </div>
               <span className="text-on-primary text-sm font-semibold">
-                Trust-verified community
+                Trust-first community
               </span>
             </div>
           </div>
         </div>
 
-        {/* Logo overlay */}
+        {/* Logo overlay — mono variant on the dark hero */}
         <div className="absolute top-12 left-16 z-20">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/logo.png" alt="NestMatch" width={48} height={48} />
-            <span className="font-display text-3xl font-extrabold text-on-primary tracking-tighter">
+          <Link href="/" className="inline-flex items-center gap-3 text-on-primary no-underline">
+            <LogoMark size={40} mono />
+            <span className="font-logo text-2xl font-semibold tracking-[-0.02em] leading-none">
               NestMatch
             </span>
           </Link>
@@ -63,9 +63,9 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-10">
           {/* Mobile logo */}
           <div className="lg:hidden mb-8 text-center">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <Image src="/logo.png" alt="NestMatch" width={36} height={36} />
-              <span className="font-display text-2xl font-extrabold text-primary tracking-tighter">
+            <Link href="/" className="inline-flex items-center gap-2.5 no-underline">
+              <LogoMark size={32} />
+              <span className="font-logo text-xl font-semibold text-primary tracking-[-0.02em] leading-none">
                 NestMatch
               </span>
             </Link>
@@ -85,7 +85,7 @@ export default function LoginPage() {
           <div className="pt-6 flex flex-col items-center">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-secondary-container text-primary rounded-full text-xs font-bold tracking-tight">
               <ShieldCheck className="h-4 w-4" />
-              TRUST VERIFIED COMMUNITY
+              TRUST-FIRST COMMUNITY
             </div>
             <p className="mt-4 text-[10px] text-on-surface-variant text-center uppercase tracking-widest leading-relaxed">
               Securely processed in Canada

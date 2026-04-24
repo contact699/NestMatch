@@ -4,7 +4,7 @@ import Link from 'next/link'
 export const metadata: Metadata = {
   title: 'Terms of Service',
   description:
-    'Terms of Service for NestMatch, the verified roommate matching platform in Canada.',
+    'Terms of Service for NestMatch, the roommate matching platform in Canada.',
 }
 
 export default function TermsOfServicePage() {

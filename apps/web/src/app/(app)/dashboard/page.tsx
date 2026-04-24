@@ -329,7 +329,7 @@ export default async function DashboardPage() {
               <Search className="w-5 h-5 text-secondary" />
             </div>
             <h4 className="font-display font-bold text-primary mb-2">Find a Room</h4>
-            <p className="text-xs text-on-surface-variant">Browse verified shared listings.</p>
+            <p className="text-xs text-on-surface-variant">Browse shared listings near you.</p>
           </Link>
 
           <Link

@@ -12,8 +12,8 @@ export function CTASection() {
             perfect sanctuary?
           </h2>
           <p className="text-primary-fixed-dim text-xl max-w-2xl mx-auto mb-12">
-            Join verified Canadians who have redefined communal living through
-            trust and compatibility.
+            Join Canadians redefining communal living through trust and
+            compatibility.
           </p>
           <div className="flex flex-col sm:flex-row justify-center gap-6">
             <Link href="/signup">

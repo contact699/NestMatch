@@ -281,7 +281,7 @@ export default function SearchPage() {
               : 'Find a room'}
           </h1>
           <p className="text-on-surface-variant">
-            Browse verified listings across Canada
+            Browse rooms and listings across Canada
           </p>
         </div>
         <div className="flex items-center gap-3">

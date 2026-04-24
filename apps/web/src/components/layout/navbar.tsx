@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import Image from 'next/image'
 import Link from 'next/link'
+import { LogoMark } from '@/components/ui/logo-mark'
 import { clientLogger } from '@/lib/client-logger'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -155,15 +155,9 @@ export function Navbar({ user }: NavbarProps) {
         <div className="flex justify-between h-full">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href={user ? '/dashboard' : '/'} className="flex items-center group">
-              <Image
-                src="/logo.png"
-                alt="NestMatch"
-                width={36}
-                height={36}
-                className="transition-transform duration-300 group-hover:scale-105"
-              />
-              <span className="ml-2 font-display text-primary font-bold text-xl transition-transform duration-300 group-hover:scale-105">
+            <Link href={user ? '/dashboard' : '/'} className="inline-flex items-center gap-2.5 group no-underline">
+              <LogoMark size={30} className="transition-transform duration-300 group-hover:scale-105" />
+              <span className="font-logo text-lg font-semibold text-primary tracking-[-0.02em] leading-none transition-transform duration-300 group-hover:scale-105">
                 NestMatch
               </span>
             </Link>
