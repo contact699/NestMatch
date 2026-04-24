@@ -10,6 +10,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "maestro:login": "maestro test .maestro/flows/auth/login-email.yaml",
+    "maestro:tabs": "maestro test .maestro/flows/navigation/tabs.yaml",
+    "maestro:all": "maestro test .maestro/flows",
     "postinstall": "node scripts/patch-expo-router.js"
   },
   "dependencies": {

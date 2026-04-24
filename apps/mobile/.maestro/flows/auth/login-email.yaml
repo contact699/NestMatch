@@ -1,0 +1,26 @@
+appId: com.nestmatch.app
+name: Login with email/password
+tags:
+  - auth
+  - smoke
+---
+- launchApp:
+    clearState: true
+- assertVisible: "Welcome Back"
+
+- tapOn:
+    id: "login-email"
+- inputText: ${MAESTRO_EMAIL}
+- hideKeyboard
+
+- tapOn:
+    id: "login-password"
+- inputText: ${MAESTRO_PASSWORD}
+- hideKeyboard
+
+- tapOn:
+    id: "login-submit"
+
+- assertVisible:
+    id: "screen-home"
+    timeout: 15000

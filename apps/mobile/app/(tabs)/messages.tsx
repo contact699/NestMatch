@@ -177,7 +177,7 @@ export default function MessagesScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView testID="screen-messages" style={styles.container} edges={['bottom']}>
       {isLoading ? (
         <View style={styles.centered}>
           <ActivityIndicator size="large" color="#2563eb" />

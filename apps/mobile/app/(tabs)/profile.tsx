@@ -96,7 +96,7 @@ export default function ProfileScreen() {
   const badge = getVerificationBadge(profile?.verification_level ?? null)
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView testID="screen-profile" style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHeader}>
           <View style={styles.avatarLarge}>

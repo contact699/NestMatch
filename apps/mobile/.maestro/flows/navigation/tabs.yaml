@@ -1,0 +1,31 @@
+appId: com.nestmatch.app
+name: Cycle through the four main tabs
+tags:
+  - navigation
+  - smoke
+---
+- runFlow: ../auth/login-email.yaml
+
+- tapOn:
+    id: "tab-search"
+- assertVisible:
+    id: "screen-search"
+    timeout: 5000
+
+- tapOn:
+    id: "tab-messages"
+- assertVisible:
+    id: "screen-messages"
+    timeout: 5000
+
+- tapOn:
+    id: "tab-profile"
+- assertVisible:
+    id: "screen-profile"
+    timeout: 5000
+
+- tapOn:
+    id: "tab-home"
+- assertVisible:
+    id: "screen-home"
+    timeout: 5000
