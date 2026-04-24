@@ -151,8 +151,8 @@ export function apiResponse<T>(
 export function withApiHandler(
   handler: ApiHandler,
   config: ApiHandlerConfig = {}
-): (req: NextRequest, routeContext?: { params: Promise<Record<string, string>> }) => Promise<Response> {
-  return async (req: NextRequest, routeContext?: { params: Promise<Record<string, string>> }): Promise<Response> => {
+): (req: NextRequest, routeContext: { params: Promise<Record<string, string>> }) => Promise<Response> {
+  return async (req: NextRequest, routeContext: { params: Promise<Record<string, string>> } = { params: Promise.resolve({}) }): Promise<Response> => {
     const requestId = generateRequestId()
     const startTime = Date.now()
     const path = req.nextUrl.pathname
