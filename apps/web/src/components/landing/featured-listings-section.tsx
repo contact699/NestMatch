@@ -55,12 +55,6 @@ export function FeaturedListingsSection() {
     fetchListings()
   }, [])
 
-  // Get stagger delay class based on index
-  const getDelayClass = (index: number) => {
-    const delays = ['delay-100', 'delay-200', 'delay-300', 'delay-400']
-    return delays[index % delays.length]
-  }
-
   // Don't render section if no listings and not loading
   if (!loading && listings.length === 0) {
     return null
@@ -95,22 +89,13 @@ export function FeaturedListingsSection() {
         ) : (
           <>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-              {listings.slice(0, 8).map((listing, index) => (
-                <div
-                  key={listing.id}
-                  data-animate
-                  className={getDelayClass(index)}
-                >
-                  <PublicListingCard listing={listing} />
-                </div>
+              {listings.slice(0, 8).map((listing) => (
+                <PublicListingCard key={listing.id} listing={listing} />
               ))}
             </div>
 
             {/* CTAs */}
-            <div
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 delay-500"
-              data-animate
-            >
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/search">
                 <Button variant="outline" size="lg" className="group">
                   Browse all listings
