@@ -203,46 +203,34 @@ export function LoginForm() {
         </div>
       </div>
 
-      {/* Social Logins */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className="flex items-center justify-center gap-3 py-3 px-4 border border-outline-variant/20 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors active:scale-95 duration-200"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-              fill="#4285F4"
-            />
-            <path
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-              fill="#34A853"
-            />
-            <path
-              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
-              fill="#FBBC05"
-            />
-            <path
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-              fill="#EA4335"
-            />
-          </svg>
-          <span className="text-sm font-semibold text-primary">Google</span>
-        </button>
-        <button
-          type="button"
-          className="flex items-center justify-center gap-3 py-3 px-4 border border-outline-variant/20 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors active:scale-95 duration-200"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
-            <path
-              d="M17.05 20.28c-.96.95-2.04 1.72-3.32 1.72-1.25 0-1.63-.78-3.15-.78-1.53 0-1.95.76-3.14.78-1.29.02-2.31-.83-3.29-1.78C2.16 18.25 1 15.11 1 12.18c0-2.86 1.48-4.38 2.85-4.38 1.43 0 2.22.84 3.31.84.97 0 1.57-.84 3.2-.84 1.16 0 2.29.49 3 1.3-2.31 1.14-1.94 4.51.44 5.48-.9 2.06-2.09 4.04-3.75 5.7M12.03 7.25c-.02-2.23 1.51-4.07 3.5-4.25.19 2.4-2.09 4.43-3.5 4.25"
-              fill="currentColor"
-            />
-          </svg>
-          <span className="text-sm font-semibold text-primary">Apple</span>
-        </button>
-      </div>
+      {/* Social Logins — Apple sign-in removed: button had no handler and used
+          a non-standard mark. Bring it back when Apple Developer + Supabase
+          provider config is in place. */}
+      <button
+        type="button"
+        onClick={handleGoogleLogin}
+        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-outline-variant/20 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors active:scale-95 duration-200"
+      >
+        <svg className="w-5 h-5" viewBox="0 0 24 24">
+          <path
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+            fill="#4285F4"
+          />
+          <path
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+            fill="#34A853"
+          />
+          <path
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"
+            fill="#FBBC05"
+          />
+          <path
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+            fill="#EA4335"
+          />
+        </svg>
+        <span className="text-sm font-semibold text-primary">Continue with Google</span>
+      </button>
     </div>
   )
 }
