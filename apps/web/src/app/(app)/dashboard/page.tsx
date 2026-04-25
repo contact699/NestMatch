@@ -234,9 +234,62 @@ export default async function DashboardPage() {
 
   const isVerified = profile?.verification_level !== 'basic'
 
+  // Onboarding nudges — surface explicit next steps right at the top of the
+  // dashboard so newly-signed-up users have a clear path. Tester noted no
+  // prompt to take the quiz / complete the profile after signup.
+  const needsLifestyleQuiz = !lifestyleResponses
+  const needsProfileBasics = !profile?.bio || !profile?.city || !profile?.occupation
+  const showOnboardingBanner = needsLifestyleQuiz || needsProfileBasics
+
   return (
     <AnimatedPage>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+        {/* ====== Onboarding banner (only shown when there are next steps) ====== */}
+        {showOnboardingBanner && (
+          <section
+            className="rounded-2xl bg-gradient-to-r from-secondary-container to-secondary-container/60 p-6 sm:p-8 ghost-border"
+            data-animate
+          >
+            <div className="flex flex-col sm:flex-row gap-6 sm:items-center sm:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-widest text-secondary mb-2">
+                  Get the most out of NestMatch
+                </p>
+                <h2 className="text-xl sm:text-2xl font-display font-bold text-on-surface mb-1">
+                  Finish setting up your profile
+                </h2>
+                <p className="text-sm text-on-surface-variant max-w-xl">
+                  {needsLifestyleQuiz && needsProfileBasics
+                    ? 'Take the lifestyle quiz and add a few profile details so we can match you with compatible roommates.'
+                    : needsLifestyleQuiz
+                      ? 'Take the lifestyle quiz so we can score your compatibility with other roommates.'
+                      : 'Add a bio, city, and occupation so other roommates can get to know you.'}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2 shrink-0">
+                {needsLifestyleQuiz && (
+                  <Link
+                    href="/quiz"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-on-primary text-sm font-semibold hover:opacity-90 transition-opacity"
+                  >
+                    Take the quiz
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                )}
+                {needsProfileBasics && (
+                  <Link
+                    href="/profile/edit"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-surface-container-lowest ghost-border text-on-surface text-sm font-semibold hover:bg-surface-container-low transition-colors"
+                  >
+                    Complete profile
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* ====== Hero + Profile Strength ====== */}
         <section className="flex flex-col lg:flex-row gap-8 items-stretch" data-animate>
           {/* Hero Card */}
