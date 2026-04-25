@@ -22,6 +22,26 @@ export function StepLocation({ register, errors, watch }: StepLocationProps) {
         Where is it located?
       </h3>
 
+      <div>
+        <label className="block text-sm font-medium text-on-surface-variant mb-1">
+          Province *
+        </label>
+        <select
+          {...register('province')}
+          className="w-full px-3 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary bg-surface-container-lowest text-on-surface"
+        >
+          <option value="">Select a province</option>
+          {CANADIAN_PROVINCES.map((prov) => (
+            <option key={prov.value} value={prov.value}>
+              {prov.label}
+            </option>
+          ))}
+        </select>
+        {errors.province && (
+          <p className="mt-1 text-sm text-error">{errors.province.message}</p>
+        )}
+      </div>
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium text-on-surface-variant mb-1">
@@ -60,26 +80,6 @@ export function StepLocation({ register, errors, watch }: StepLocationProps) {
             />
           </div>
         </div>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-on-surface-variant mb-1">
-          Province *
-        </label>
-        <select
-          {...register('province')}
-          className="w-full px-3 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary bg-surface-container-lowest text-on-surface"
-        >
-          <option value="">Select a province</option>
-          {CANADIAN_PROVINCES.map((prov) => (
-            <option key={prov.value} value={prov.value}>
-              {prov.label}
-            </option>
-          ))}
-        </select>
-        {errors.province && (
-          <p className="mt-1 text-sm text-error">{errors.province.message}</p>
-        )}
       </div>
 
       <Input

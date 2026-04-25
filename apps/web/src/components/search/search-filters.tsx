@@ -142,6 +142,7 @@ export function SearchFilters() {
           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <input
             type="number"
+            min={0}
             value={filters.minPrice}
             onChange={(e) => handleChange('minPrice', e.target.value)}
             placeholder="Min $"
@@ -154,6 +155,7 @@ export function SearchFilters() {
           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
           <input
             type="number"
+            min={0}
             value={filters.maxPrice}
             onChange={(e) => handleChange('maxPrice', e.target.value)}
             placeholder="Max $"
