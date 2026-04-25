@@ -23,7 +23,6 @@ import {
   Star,
   Receipt,
   Calendar,
-  Bell,
   LayoutDashboard,
   Heart,
   ShieldCheck,
@@ -204,17 +203,6 @@ export function Navbar({ user }: NavbarProps) {
           <div className="flex items-center gap-2">
             {user ? (
               <>
-                {/* Notification Bell */}
-                <button
-                  className="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-low transition-all duration-300"
-                  aria-label="Notifications"
-                >
-                  <Bell className="h-5 w-5" />
-                  {unreadCount > 0 && (
-                    <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface-container-lowest" />
-                  )}
-                </button>
-
                 {/* Profile / Avatar */}
                 <div className="relative">
                   <button
