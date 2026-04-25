@@ -19,6 +19,7 @@ import {
   Home,
   Minus,
   Plus,
+  DollarSign,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -58,7 +59,15 @@ const profileSchema = z.object({
     .optional()
     .nullable(),
   number_of_children: z.number().min(0).max(10).optional().nullable(),
-})
+  budget_min: z.number().min(0).max(50000).optional().nullable(),
+  budget_max: z.number().min(0).max(50000).optional().nullable(),
+}).refine(
+  (data) =>
+    data.budget_min == null ||
+    data.budget_max == null ||
+    data.budget_min <= data.budget_max,
+  { message: 'Maximum budget must be greater than or equal to the minimum', path: ['budget_max'] }
+)
 
 type ProfileFormData = z.infer<typeof profileSchema>
 
@@ -123,6 +132,8 @@ export default function ProfileEditPage() {
           province: profile.province || '',
           household_situation: profile.household_situation,
           number_of_children: profile.number_of_children || 0,
+          budget_min: profile.budget_min ?? null,
+          budget_max: profile.budget_max ?? null,
         })
         setProfilePhoto(profile.profile_photo)
       }
@@ -224,6 +235,8 @@ export default function ProfileEditPage() {
         profile_photo: profilePhoto,
         household_situation: data.household_situation || null,
         number_of_children: data.number_of_children || null,
+        budget_min: data.budget_min ?? null,
+        budget_max: data.budget_max ?? null,
       })
       .eq('user_id', user.id)
 
@@ -585,6 +598,57 @@ export default function ProfileEditPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Budget */}
+          <Card variant="bordered">
+            <CardContent className="py-6">
+              <h3 className="text-base font-display font-semibold text-on-surface flex items-center gap-2 mb-4">
+                <DollarSign className="h-4 w-4 text-on-surface-variant" />
+                Monthly Budget
+              </h3>
+              <p className="text-sm text-on-surface-variant mb-4">
+                The price range you&apos;re looking to spend each month. We use this to
+                rank listings and roommate matches that fit what you can afford.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                    Minimum (CAD)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-on-surface-variant text-sm">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      placeholder="0"
+                      {...register('budget_min', { setValueAs: (v) => v === '' || v === null ? null : Number(v) })}
+                      className="w-full pl-7 pr-3 py-2 rounded-lg text-on-surface text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-1.5">
+                    Maximum (CAD)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-on-surface-variant text-sm">$</span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      placeholder="0"
+                      {...register('budget_max', { setValueAs: (v) => v === '' || v === null ? null : Number(v) })}
+                      className="w-full pl-7 pr-3 py-2 rounded-lg text-on-surface text-sm bg-surface-container-low border-0 focus:outline-none focus:ring-2 focus:ring-surface-tint/20 focus:bg-surface-container-lowest"
+                    />
+                  </div>
+                  {errors.budget_max && (
+                    <p className="mt-1 text-xs text-error">{errors.budget_max.message}</p>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
