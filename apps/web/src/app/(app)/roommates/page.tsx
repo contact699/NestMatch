@@ -514,7 +514,7 @@ export default function RoommatesPage() {
                           <div className="flex items-center gap-1 text-sm text-on-surface-variant mt-1">
                             <MapPin className="h-3 w-3" />
                             <span className="truncate">
-                              {[profile.city, profile.province].filter(Boolean).join(', ')}
+                              {profile.city || profile.province}
                             </span>
                           </div>
                         )}
