@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -66,15 +66,28 @@ export function Modal({
   const modalRef = useRef<HTMLDivElement>(null)
   const previousActiveElement = useRef<HTMLElement | null>(null)
 
-  // Handle keyboard events
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && closeOnEscape) {
-        onClose()
+  // Stash the latest onClose / closeOnEscape in a ref so the open-time effect
+  // below can depend solely on `isOpen`. If we put `handleKeyDown` (or its
+  // deps) in the effect dep array, every parent re-render — e.g. typing a
+  // character into an input that lives in the modal — would re-run the effect
+  // and re-focus the first focusable element, stealing focus from the input.
+  const onCloseRef = useRef(onClose)
+  const closeOnEscapeRef = useRef(closeOnEscape)
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
+  useEffect(() => { closeOnEscapeRef.current = closeOnEscape }, [closeOnEscape])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    previousActiveElement.current = document.activeElement as HTMLElement
+    document.body.style.overflow = 'hidden'
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && closeOnEscapeRef.current) {
+        onCloseRef.current()
         return
       }
 
-      // Focus trap - Tab navigation
       if (e.key === 'Tab' && modalRef.current) {
         const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
           'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
@@ -90,38 +103,24 @@ export function Modal({
           firstElement?.focus()
         }
       }
-    },
-    [onClose, closeOnEscape]
-  )
-
-  useEffect(() => {
-    if (isOpen) {
-      // Store current focus to return later
-      previousActiveElement.current = document.activeElement as HTMLElement
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'hidden'
-
-      // Focus first focusable element in modal
-      requestAnimationFrame(() => {
-        const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
-          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        )
-        firstFocusable?.focus()
-      })
     }
+
+    document.addEventListener('keydown', handleKeyDown)
+
+    const focusFrame = requestAnimationFrame(() => {
+      const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )
+      firstFocusable?.focus()
+    })
 
     return () => {
+      cancelAnimationFrame(focusFrame)
       document.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = ''
-
-      // Return focus to previous element
-      if (!isOpen && previousActiveElement.current) {
-        previousActiveElement.current.focus()
-      }
+      previousActiveElement.current?.focus()
     }
-  }, [isOpen, handleKeyDown])
+  }, [isOpen])
 
   if (!isOpen) return null
 
