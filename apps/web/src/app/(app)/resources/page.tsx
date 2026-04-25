@@ -205,12 +205,20 @@ export default function ResourcesPage() {
         <p className="text-on-surface-variant mb-4">
           Our team is available to help with complex legal or relocation issues.
         </p>
-        <a href="mailto:support@nestmatch.ca">
-          <Button className="bg-secondary text-on-primary hover:bg-secondary/90">
-            <Mail className="h-4 w-4 mr-2" />
-            Contact Support
-          </Button>
-        </a>
+        <Button
+          type="button"
+          className="bg-secondary text-on-primary hover:bg-secondary/90"
+          onClick={() => { window.location.href = 'mailto:support@nestmatch.ca' }}
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          Contact Support
+        </Button>
+        <p className="text-xs text-on-surface-variant mt-3">
+          Or email{' '}
+          <a href="mailto:support@nestmatch.ca" className="underline text-secondary">
+            support@nestmatch.ca
+          </a>
+        </p>
       </div>
 
       {/* Legal Disclaimer */}
