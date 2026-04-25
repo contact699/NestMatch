@@ -98,12 +98,15 @@ export default async function ListingPage({ params }: ListingPageProps) {
     isSaved = !!savedListing
   }
 
-  // Increment view count
+  // Increment view count via SECURITY DEFINER RPC. A direct UPDATE here is
+  // silently blocked by the listings UPDATE policy (`auth.uid() = user_id`),
+  // which is why the counter was stuck at 0 for everyone but the owner.
+  let displayedViews = listing.views_count || 0
   if (!isOwner) {
-    await supabase
-      .from('listings')
-      .update({ views_count: (listing.views_count || 0) + 1 })
-      .eq('id', id)
+    // Cast: this RPC was added in migration 023 — the generated Database type
+    // doesn't know about it yet. Regenerate types after applying the migration.
+    await (supabase.rpc as any)('increment_listing_views', { p_listing_id: id })
+    displayedViews += 1
   }
 
   const typeLabels: Record<string, string> = {
@@ -272,7 +275,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
                 </span>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-container-low text-on-surface-variant rounded-full text-sm transition-all hover:bg-surface-container">
                   <Eye className="h-4 w-4" />
-                  {listing.views_count || 0} views
+                  {displayedViews} {displayedViews === 1 ? 'view' : 'views'}
                 </span>
               </div>
             </div>
@@ -311,52 +314,62 @@ export default async function ListingPage({ params }: ListingPageProps) {
               </Card>
             )}
 
-            {/* Meet Your Host */}
-            <Card variant="bordered" data-animate className="delay-250">
-              <CardContent className="py-6">
-                <h2 className="font-display font-semibold text-on-surface text-lg mb-4">Meet Your Host, {profile?.name || 'Anonymous'}</h2>
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 bg-secondary-container rounded-2xl flex items-center justify-center overflow-hidden transition-transform duration-300 hover:scale-105 flex-shrink-0">
-                    {profile?.profile_photo ? (
-                      <img
-                        src={profile.profile_photo}
-                        alt={profile.name || 'Host'}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Users className="h-8 w-8 text-secondary" />
-                    )}
+            {/* Meet Your Host — entire card links to the host's profile so
+                visitors can read their full bio, lifestyle answers, etc. */}
+            <Link href={`/profile/${listing.user_id}`} className="block group">
+              <Card variant="bordered" data-animate className="delay-250 transition-all group-hover:border-secondary/40 group-hover:shadow-md">
+                <CardContent className="py-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-display font-semibold text-on-surface text-lg">
+                      Meet Your Host, {profile?.name || 'Anonymous'}
+                    </h2>
+                    <span className="text-sm text-secondary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      View profile →
+                    </span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-on-surface">
-                        {profile?.name || 'Anonymous'}
-                      </h3>
-                      <VerificationBadge level={profile?.verification_level || 'basic'} />
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-secondary-container rounded-2xl flex items-center justify-center overflow-hidden transition-transform duration-300 group-hover:scale-105 flex-shrink-0">
+                      {profile?.profile_photo ? (
+                        <img
+                          src={profile.profile_photo}
+                          alt={profile.name || 'Host'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Users className="h-8 w-8 text-secondary" />
+                      )}
                     </div>
-                    {profile?.created_at && (
-                      <p className="text-xs text-on-surface-variant mb-2">
-                        Member since {formatDate(profile.created_at)}
-                      </p>
-                    )}
-                    {profile?.bio && (
-                      <p className="text-sm text-on-surface-variant line-clamp-3">
-                        {profile.bio}
-                      </p>
-                    )}
-                    {profile?.languages && profile.languages.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2">
-                        {profile.languages.map((lang: string) => (
-                          <span key={lang} className="text-xs px-2 py-0.5 bg-surface-container-low text-on-surface-variant rounded-full">
-                            {lang}
-                          </span>
-                        ))}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-semibold text-on-surface group-hover:text-secondary transition-colors">
+                          {profile?.name || 'Anonymous'}
+                        </h3>
+                        <VerificationBadge level={profile?.verification_level || 'basic'} />
                       </div>
-                    )}
+                      {profile?.created_at && (
+                        <p className="text-xs text-on-surface-variant mb-2">
+                          Member since {formatDate(profile.created_at)}
+                        </p>
+                      )}
+                      {profile?.bio && (
+                        <p className="text-sm text-on-surface-variant line-clamp-3">
+                          {profile.bio}
+                        </p>
+                      )}
+                      {profile?.languages && profile.languages.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {profile.languages.map((lang: string) => (
+                            <span key={lang} className="text-xs px-2 py-0.5 bg-surface-container-low text-on-surface-variant rounded-full">
+                              {lang}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </Link>
 
             {/* Apartment Features */}
             {listing.amenities && listing.amenities.length > 0 && (

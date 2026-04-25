@@ -10,7 +10,6 @@ import {
   Share2,
   Flag,
   Loader2,
-  Send,
 } from 'lucide-react'
 
 interface ListingActionsProps {
@@ -168,38 +167,31 @@ export function ListingActions({
 
       <Button
         variant="outline"
-        className="w-full"
-        onClick={handleContact}
-        disabled={isContacting}
+        className={`w-full ${isSaved ? 'text-red-500 hover:bg-red-50' : ''}`}
+        onClick={handleSave}
+        disabled={isSaving}
       >
-        {isContacting ? (
+        {isSaving ? (
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
         ) : (
-          <Send className="h-4 w-4 mr-2" />
+          <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
         )}
-        Message Host
+        {isSaved ? 'Saved' : 'Save Listing'}
       </Button>
 
-      <div className="grid grid-cols-3 gap-2">
-        <Button
-          variant="outline"
-          onClick={handleSave}
-          disabled={isSaving}
-          className={isSaved ? 'text-red-500 ghost-border hover:bg-red-50' : ''}
-        >
-          {isSaving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
-          )}
-        </Button>
-        <Button variant="outline" onClick={handleShare}>
-          <Share2 className="h-4 w-4" />
-        </Button>
-        <Button variant="outline" onClick={handleReport}>
-          <Flag className="h-4 w-4" />
-        </Button>
-      </div>
+      <Button variant="outline" className="w-full" onClick={handleShare}>
+        <Share2 className="h-4 w-4 mr-2" />
+        Share Listing
+      </Button>
+
+      <button
+        type="button"
+        onClick={handleReport}
+        className="w-full text-xs text-on-surface-variant hover:text-on-surface inline-flex items-center justify-center gap-1.5 pt-1 transition-colors"
+      >
+        <Flag className="h-3 w-3" />
+        Report this listing
+      </button>
     </div>
   )
 }
