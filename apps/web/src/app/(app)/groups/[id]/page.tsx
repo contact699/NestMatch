@@ -12,7 +12,6 @@ import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   Users,
-  MapPin,
   Calendar,
   DollarSign,
   Loader2,
@@ -298,13 +297,16 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Top Contextual Nav */}
       <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
-        <Link href={`/groups/${id}`} className="text-on-surface border-b-2 border-primary pb-1">
-          Groups
+        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          All Groups
         </Link>
+        <span className="text-on-surface border-b-2 border-primary pb-1">
+          This Group
+        </span>
         <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
           Expenses
         </Link>
-        <Link href={`/groups/${id}`} className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+        <Link href="/resources/agreement" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
           Agreement
         </Link>
         <Link href="/payments" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
@@ -364,15 +366,6 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
               {primaryCity}
             </p>
           )}
-          <div className="flex items-center gap-2 mt-2">
-            <div className="w-8 h-8 bg-secondary-container rounded-full flex items-center justify-center">
-              <MapPin className="h-4 w-4 text-secondary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-on-surface">Walk Score: --</p>
-              <p className="text-xs text-on-surface-variant">Transit Access</p>
-            </div>
-          </div>
         </Card>
 
         {/* Move-in Date - dark card */}
