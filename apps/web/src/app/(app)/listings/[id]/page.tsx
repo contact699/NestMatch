@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
-import { formatPrice, formatDate, AMENITIES } from '@/lib/utils'
+import { formatPrice, formatDate, AMENITIES, HELP_TASKS } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
@@ -416,6 +416,50 @@ export default async function ListingPage({ params }: ListingPageProps) {
                       </div>
                     ))}
                   </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Help Exchange — what kind of assistance the host needs */}
+            {listing.help_needed && (
+              <Card variant="bordered" data-animate className="delay-350">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <HandHelping className="h-5 w-5 text-secondary" />
+                    <h2 className="font-display font-semibold text-on-surface">Help Exchange</h2>
+                  </div>
+                  <p className="text-sm text-on-surface-variant mb-4">
+                    The host is offering reduced rent in exchange for help with the
+                    tasks below. If this is a fit, mention it when you message them.
+                  </p>
+
+                  {listing.help_tasks && listing.help_tasks.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+                      {listing.help_tasks.map((task: string) => {
+                        const meta = HELP_TASKS.find((t) => t.value === task)
+                        return (
+                          <div
+                            key={task}
+                            className="flex items-center gap-2 text-on-surface-variant transition-all duration-300 hover:text-on-surface"
+                          >
+                            <Check className="h-4 w-4 text-secondary flex-shrink-0" />
+                            <span className="text-sm">{meta?.label ?? task}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {listing.help_details && (
+                    <div className="p-3 bg-surface-container-low rounded-xl">
+                      <p className="text-xs font-medium text-on-surface-variant mb-1">
+                        Details from the host
+                      </p>
+                      <p className="text-sm text-on-surface whitespace-pre-wrap">
+                        {listing.help_details}
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
