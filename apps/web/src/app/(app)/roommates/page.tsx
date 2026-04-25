@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES } from '@/lib/utils'
+import { SaveProfileButton } from '@/components/profile/save-profile-button'
 
 interface Profile {
   id: string
@@ -57,6 +58,7 @@ const EMPTY_FILTERS = {
 export default function RoommatesPage() {
   const [profiles, setProfiles] = useState<ProfileWithScore[]>([])
   const [lifestyleByUser, setLifestyleByUser] = useState<Record<string, LifestyleSummary>>({})
+  const [savedUserIds, setSavedUserIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
@@ -149,9 +151,10 @@ export default function RoommatesPage() {
       return
     }
 
-    // Get compatibility scores + lifestyle responses in parallel
+    // Get compatibility scores + lifestyle responses + this viewer's saved
+    // profile set in parallel.
     const userIds = profilesData.map(p => p.user_id)
-    const [scoresRes, lifestyleRes] = await Promise.all([
+    const [scoresRes, lifestyleRes, savedRes] = await Promise.all([
       fetch('/api/compatibility', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -161,7 +164,16 @@ export default function RoommatesPage() {
         .from('lifestyle_responses')
         .select('user_id, smoking, pets_preference')
         .in('user_id', userIds),
+      (supabase as any)
+        .from('saved_profiles')
+        .select('saved_user_id')
+        .eq('user_id', user.id)
+        .in('saved_user_id', userIds),
     ])
+
+    setSavedUserIds(
+      new Set(((savedRes?.data as Array<{ saved_user_id: string }> | null) || []).map((r) => r.saved_user_id))
+    )
 
     let scores: Record<string, number> = {}
     if (scoresRes.ok) {
@@ -513,11 +525,22 @@ export default function RoommatesPage() {
                 <Card
                   variant="bordered"
                   animate
+                  className="relative"
                 >
+                  {/* Save heart — top-right corner. Floats over the card so it
+                      stays out of the way of the compatibility badge / photo. */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <SaveProfileButton
+                      savedUserId={profile.user_id}
+                      isSavedInitial={savedUserIds.has(profile.user_id)}
+                      isLoggedIn={!!currentUserId}
+                      variant="icon"
+                    />
+                  </div>
                   <CardContent className="p-6">
                     {/* Compatibility badge at top */}
                     {profile.compatibilityScore > 0 && (
-                      <div className="mb-4">
+                      <div className="mb-4 pr-10">
                         <CompatibilityBadgeStatic
                           score={profile.compatibilityScore}
                           size="md"

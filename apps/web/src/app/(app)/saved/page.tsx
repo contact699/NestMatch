@@ -46,15 +46,29 @@ interface SavedListing {
   saved_id: string
 }
 
+interface SavedProfile {
+  saved_id: string
+  user_id: string
+  name: string | null
+  profile_photo: string | null
+  occupation: string | null
+  city: string | null
+  province: string | null
+  bio: string | null
+  verification_level: 'basic' | 'verified' | 'trusted'
+}
+
 export default function SavedListingsPage() {
   const router = useRouter()
   const [listings, setListings] = useState<SavedListing[]>([])
+  const [savedProfiles, setSavedProfiles] = useState<SavedProfile[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removingProfileId, setRemovingProfileId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'all' | 'properties' | 'roommates'>('all')
 
   useEffect(() => {
-    async function loadSavedListings() {
+    async function loadAll() {
       const supabase = createClient()
 
       const {
@@ -66,18 +80,62 @@ export default function SavedListingsPage() {
         return
       }
 
-      const response = await fetch('/api/saved-listings')
-      const data = await response.json()
+      // Listings come from the existing API. Profiles go straight to Supabase
+      // since the saved_profiles table is new (migration 024) and there's no
+      // dedicated route yet.
+      const [listingsRes, savedRows] = await Promise.all([
+        fetch('/api/saved-listings').then((r) => r.json()).catch(() => ({ listings: [] })),
+        (supabase as any)
+          .from('saved_profiles')
+          .select('id, saved_user_id, created_at')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+      ])
 
-      if (response.ok) {
-        setListings(data.listings)
+      setListings(listingsRes.listings || [])
+
+      const savedIds: string[] = ((savedRows.data as Array<{ saved_user_id: string }> | null) || []).map(
+        (r) => r.saved_user_id
+      )
+      const savedIdToRowId = new Map<string, string>()
+      for (const r of (savedRows.data as Array<{ id: string; saved_user_id: string }> | null) || []) {
+        savedIdToRowId.set(r.saved_user_id, r.id)
+      }
+
+      if (savedIds.length > 0) {
+        const { data: profileRows } = await supabase
+          .from('profiles')
+          .select('user_id, name, profile_photo, occupation, city, province, bio, verification_level')
+          .in('user_id', savedIds) as { data: any[] | null }
+
+        setSavedProfiles(
+          (profileRows || []).map((p) => ({
+            saved_id: savedIdToRowId.get(p.user_id) || '',
+            user_id: p.user_id,
+            name: p.name,
+            profile_photo: p.profile_photo,
+            occupation: p.occupation,
+            city: p.city,
+            province: p.province,
+            bio: p.bio,
+            verification_level: (p.verification_level || 'basic') as SavedProfile['verification_level'],
+          }))
+        )
       }
 
       setIsLoading(false)
     }
 
-    loadSavedListings()
+    loadAll()
   }, [router])
+
+  const handleRemoveProfile = async (savedRowId: string, savedUserId: string) => {
+    setRemovingProfileId(savedUserId)
+    const supabase = createClient()
+    await (supabase as any).from('saved_profiles').delete().eq('id', savedRowId)
+    setSavedProfiles((prev) => prev.filter((p) => p.user_id !== savedUserId))
+    setRemovingProfileId(null)
+  }
 
   const handleRemove = async (listingId: string) => {
     setRemovingId(listingId)
@@ -151,8 +209,91 @@ export default function SavedListingsPage() {
         </button>
       </div>
 
-      {/* Listings */}
-      {listings.length === 0 ? (
+      {/* Saved roommates section — shown on 'all' or 'roommates' tabs */}
+      {(activeTab === 'all' || activeTab === 'roommates') && (
+        <div className="mb-10">
+          {activeTab === 'all' && (
+            <h2 className="text-lg font-display font-semibold text-on-surface mb-4">
+              Saved Roommates
+            </h2>
+          )}
+          {savedProfiles.length === 0 ? (
+            <Card variant="bordered">
+              <CardContent className="py-10 text-center">
+                <Users className="h-10 w-10 text-on-surface-variant/30 mx-auto mb-3" />
+                <h3 className="text-base font-display font-medium text-on-surface mb-1">
+                  No saved roommates yet
+                </h3>
+                <p className="text-sm text-on-surface-variant mb-4">
+                  Save profiles from the Find Roommates page to come back to them later.
+                </p>
+                <Link href="/roommates">
+                  <Button variant="outline" size="sm">
+                    Find Roommates
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {savedProfiles.map((p) => (
+                <Card key={p.user_id} variant="bordered" className="overflow-hidden group relative">
+                  <button
+                    onClick={() => handleRemoveProfile(p.saved_id, p.user_id)}
+                    disabled={removingProfileId === p.user_id}
+                    aria-label="Unsave profile"
+                    className="absolute top-3 right-3 p-2 bg-surface-container-lowest/90 backdrop-blur rounded-full hover:bg-surface-container-lowest transition-all opacity-0 group-hover:opacity-100 z-10"
+                  >
+                    {removingProfileId === p.user_id ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-on-surface-variant" />
+                    ) : (
+                      <Trash2 className="h-4 w-4 text-error" />
+                    )}
+                  </button>
+                  <Link href={`/profile/${p.user_id}`}>
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-3 mb-3">
+                        <div className="w-14 h-14 bg-secondary-container rounded-2xl flex items-center justify-center overflow-hidden flex-shrink-0">
+                          {p.profile_photo ? (
+                            <img
+                              src={p.profile_photo}
+                              alt={p.name || 'Profile'}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <Users className="h-6 w-6 text-secondary" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-display font-semibold text-on-surface truncate group-hover:text-secondary transition-colors">
+                            {p.name || 'Anonymous'}
+                          </h3>
+                          {p.occupation && (
+                            <p className="text-sm text-on-surface-variant truncate">{p.occupation}</p>
+                          )}
+                          <VerificationBadge level={p.verification_level} size="sm" />
+                        </div>
+                      </div>
+                      {(p.city || p.province) && (
+                        <div className="flex items-center gap-1 text-sm text-on-surface-variant mb-2">
+                          <MapPin className="h-3 w-3" />
+                          <span className="truncate">{p.city || p.province}</span>
+                        </div>
+                      )}
+                      {p.bio && (
+                        <p className="text-sm text-on-surface-variant line-clamp-2">{p.bio}</p>
+                      )}
+                    </CardContent>
+                  </Link>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Saved listings section — hidden on the Roommates-only tab */}
+      {activeTab === 'roommates' ? null : listings.length === 0 ? (
         <Card variant="bordered">
           <CardContent className="py-12 text-center">
             <Heart className="h-12 w-12 text-on-surface-variant/30 mx-auto mb-4" />
