@@ -99,12 +99,15 @@ CREATE POLICY "Expense creators can insert shares" ON expense_shares
     public.is_expense_creator(expense_id, auth.uid())
   );
 
+-- Direct UPDATE is creator-only. Participants must transition share status
+-- through the SECURITY DEFINER RPCs (pay_expense_share for the
+-- pending → processing transition, and the Stripe webhook running with the
+-- service-role key for processing → paid / processing → pending on failure).
+-- Allowing `auth.uid() = user_id` here would let a participant directly
+-- mutate amount, status, payment_id, paid_at on their own row.
 CREATE POLICY "Expense creators can update shares" ON expense_shares
   FOR UPDATE
-  USING (
-    public.is_expense_creator(expense_id, auth.uid())
-    OR auth.uid() = user_id  -- payers can update their own share status
-  );
+  USING (public.is_expense_creator(expense_id, auth.uid()));
 
 CREATE POLICY "Expense creators can delete shares" ON expense_shares
   FOR DELETE
