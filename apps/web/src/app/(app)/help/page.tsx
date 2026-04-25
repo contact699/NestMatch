@@ -145,12 +145,14 @@ export default function HelpPage() {
           Our team reads every message. For account, billing, or verification issues, email us
           directly.
         </p>
-        <a href="mailto:support@nestmatch.ca">
-          <Button className="bg-secondary text-on-primary hover:bg-secondary/90">
-            <Mail className="h-4 w-4 mr-2" />
-            support@nestmatch.ca
-          </Button>
-        </a>
+        <Button
+          type="button"
+          className="bg-secondary text-on-primary hover:bg-secondary/90"
+          onClick={() => { window.location.href = 'mailto:support@nestmatch.ca' }}
+        >
+          <Mail className="h-4 w-4 mr-2" />
+          support@nestmatch.ca
+        </Button>
       </div>
 
       <div className="flex flex-wrap gap-3 text-sm">
