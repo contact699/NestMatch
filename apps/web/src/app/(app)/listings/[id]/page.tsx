@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
+import { ListingPhotoGallery } from '@/components/listings/listing-photo-gallery'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { ListingJsonLd } from '@/components/json-ld'
 
@@ -139,85 +140,52 @@ export default async function ListingPage({ params }: ListingPageProps) {
           </Link>
         </div>
 
-        {/* Photo Gallery Grid */}
+        {/* Photo Gallery — click any image to open full-screen lightbox */}
         <div className="mb-8" data-animate="scale">
-          {listing.photos && listing.photos.length > 0 ? (
-            <div className="grid grid-cols-4 grid-rows-2 gap-2 h-[400px] lg:h-[480px] rounded-2xl overflow-hidden">
-              {/* Main large image */}
-              <div className="col-span-2 row-span-2 relative">
-                <img
-                  src={listing.photos[0]}
-                  alt={listing.title}
-                  className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-                />
-                {/* Badges */}
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
-                  {listing.newcomer_friendly && (
-                    <Badge variant="success" className="flex items-center gap-1">
-                      <Leaf className="h-3 w-3" />
-                      Newcomer Friendly
-                    </Badge>
-                  )}
-                  {listing.no_credit_history_ok && (
-                    <Badge variant="info">No Credit History OK</Badge>
-                  )}
-                  {listing.help_needed && (
-                    <Badge variant="warning" className="flex items-center gap-1">
-                      <HandHelping className="h-3 w-3" />
-                      Assistance Required
-                    </Badge>
-                  )}
-                  {listing.ideal_for_students && (
-                    <Badge variant="default" className="flex items-center gap-1 bg-primary/10 text-primary">
-                      <GraduationCap className="h-3 w-3" />
-                      Ideal for Students
-                    </Badge>
-                  )}
-                  {listing.pets_allowed && (
-                    <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
-                      <PawPrint className="h-3 w-3" />
-                      Pets Allowed
-                    </Badge>
-                  )}
-                  {listing.parking_included && (
-                    <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
-                      <Car className="h-3 w-3" />
-                      Parking Included
-                    </Badge>
-                  )}
-                  {!listing.is_active && (
-                    <Badge variant="warning">Inactive</Badge>
-                  )}
-                </div>
-              </div>
-              {/* Secondary images */}
-              {listing.photos.slice(1, 5).map((photo: string, i: number) => (
-                <div key={i} className="relative overflow-hidden">
-                  <img
-                    src={photo}
-                    alt={`${listing.title} - Photo ${i + 2}`}
-                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                  />
-                </div>
-              ))}
-              {/* Fill empty slots */}
-              {listing.photos.length < 5 && Array.from({ length: Math.max(0, 5 - listing.photos.length) }).map((_, i) => (
-                <div key={`empty-${i}`} className="bg-surface-container flex items-center justify-center">
-                  <Home className="h-8 w-8 text-on-surface-variant/20" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="h-[400px] bg-surface-container rounded-2xl flex items-center justify-center">
-              <Home className="h-16 w-16 text-on-surface-variant/20" />
-            </div>
-          )}
-          {/* Photo count */}
-          {listing.photos && listing.photos.length > 5 && (
-            <div className="mt-2 text-right">
-              <span className="text-sm text-on-surface-variant">+{listing.photos.length - 5} more photos</span>
-            </div>
-          )}
+          <ListingPhotoGallery
+            photos={listing.photos || []}
+            title={listing.title}
+            mainPhotoBadges={
+              <>
+                {listing.newcomer_friendly && (
+                  <Badge variant="success" className="flex items-center gap-1">
+                    <Leaf className="h-3 w-3" />
+                    Newcomer Friendly
+                  </Badge>
+                )}
+                {listing.no_credit_history_ok && (
+                  <Badge variant="info">No Credit History OK</Badge>
+                )}
+                {listing.help_needed && (
+                  <Badge variant="warning" className="flex items-center gap-1">
+                    <HandHelping className="h-3 w-3" />
+                    Assistance Required
+                  </Badge>
+                )}
+                {listing.ideal_for_students && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-primary/10 text-primary">
+                    <GraduationCap className="h-3 w-3" />
+                    Ideal for Students
+                  </Badge>
+                )}
+                {listing.pets_allowed && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
+                    <PawPrint className="h-3 w-3" />
+                    Pets Allowed
+                  </Badge>
+                )}
+                {listing.parking_included && (
+                  <Badge variant="default" className="flex items-center gap-1 bg-secondary-container text-secondary">
+                    <Car className="h-3 w-3" />
+                    Parking Included
+                  </Badge>
+                )}
+                {!listing.is_active && (
+                  <Badge variant="warning">Inactive</Badge>
+                )}
+              </>
+            }
+          />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
