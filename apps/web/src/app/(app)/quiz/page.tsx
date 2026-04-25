@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -200,6 +200,13 @@ export default function QuizPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimer.current) clearTimeout(advanceTimer.current)
+    }
+  }, [])
 
   useEffect(() => {
     async function loadExistingResponses() {
@@ -241,15 +248,29 @@ export default function QuizPage() {
 
   const handleAnswer = (value: string) => {
     setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }))
+
+    // Auto-advance to the next question after a short delay so the user sees
+    // their selection register before the screen changes. Skip on the last
+    // step — Complete Quiz stays an explicit action.
+    if (advanceTimer.current) clearTimeout(advanceTimer.current)
+    if (currentStep < quizQuestions.length - 1) {
+      advanceTimer.current = setTimeout(() => {
+        setCurrentStep((prev) =>
+          prev < quizQuestions.length - 1 ? prev + 1 : prev,
+        )
+      }, 450)
+    }
   }
 
   const handleNext = () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current)
     if (currentStep < quizQuestions.length - 1) {
       setCurrentStep((prev) => prev + 1)
     }
   }
 
   const handleBack = () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current)
     if (currentStep > 0) {
       setCurrentStep((prev) => prev - 1)
     }
