@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
+import { geocodeListingAddress } from '@/lib/geocode'
 
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -170,6 +171,25 @@ export const POST = withApiHandler(
       }
     })()
 
+    // Geocode the listing on the server unless the client already supplied
+    // coordinates. Without this, lat/lng stay null on every new listing and
+    // the search map view always shows "No listings with location data".
+    // Failures degrade gracefully — listing still saves, just without coords.
+    let lat: number | null = listingData.lat ?? null
+    let lng: number | null = listingData.lng ?? null
+    if (lat == null || lng == null) {
+      const geocoded = await geocodeListingAddress({
+        address: listingData.address,
+        city: listingData.city,
+        province: listingData.province,
+        postal_code: listingData.postal_code,
+      })
+      if (geocoded) {
+        lat = geocoded.lat
+        lng = geocoded.lng
+      }
+    }
+
     // Create listing
     const { data: listing, error } = await writeClient
       .from('listings')
@@ -186,8 +206,8 @@ export const POST = withApiHandler(
         city: listingData.city,
         province: listingData.province,
         postal_code: listingData.postal_code || null,
-        lat: listingData.lat || null,
-        lng: listingData.lng || null,
+        lat,
+        lng,
         photos: listingData.photos,
         amenities: listingData.amenities,
         bathroom_type: listingData.bathroom_type,
