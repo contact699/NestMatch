@@ -151,8 +151,14 @@ export default function HelpPage() {
           onClick={() => { window.location.href = 'mailto:support@nestmatch.ca' }}
         >
           <Mail className="h-4 w-4 mr-2" />
-          support@nestmatch.ca
+          Email Support
         </Button>
+        <p className="text-xs text-on-surface-variant mt-3">
+          Or email{' '}
+          <a href="mailto:support@nestmatch.ca" className="underline text-secondary">
+            support@nestmatch.ca
+          </a>
+        </p>
       </div>
 
       <div className="flex flex-wrap gap-3 text-sm">
