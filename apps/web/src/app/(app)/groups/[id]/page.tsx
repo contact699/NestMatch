@@ -576,7 +576,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
       {/* Saved Listings — places the group is collectively shortlisting */}
       <div className="mb-10">
-        <GroupSavedListings groupId={id} />
+        <GroupSavedListings groupId={id} isCurrentUserAdmin={group.is_admin} />
       </div>
 
       {/* Expense Summary */}

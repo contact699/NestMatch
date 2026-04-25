@@ -9,6 +9,10 @@ import { formatPrice } from '@/lib/utils'
 
 interface GroupSavedListingsProps {
   groupId: string
+  /** Whether the current viewer is an admin of this group. Admins can remove
+   *  any saved listing, not just their own (matches the DELETE policy in
+   *  migration 025). */
+  isCurrentUserAdmin?: boolean
 }
 
 interface Row {
@@ -23,7 +27,10 @@ interface Row {
   saved_by_name: string | null
 }
 
-export function GroupSavedListings({ groupId }: GroupSavedListingsProps) {
+export function GroupSavedListings({
+  groupId,
+  isCurrentUserAdmin = false,
+}: GroupSavedListingsProps) {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -140,7 +147,8 @@ export function GroupSavedListings({ groupId }: GroupSavedListingsProps) {
         ) : (
           <ul className="space-y-3">
             {rows.map((r) => {
-              const canRemove = r.saved_by === currentUserId
+              // Mirrors the DELETE policy: saver OR group admin.
+              const canRemove = r.saved_by === currentUserId || isCurrentUserAdmin
               return (
                 <li
                   key={r.saved_id}

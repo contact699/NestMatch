@@ -42,6 +42,57 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.is_group_member(UUID, UUID) TO authenticated;
 
+-- Mirror of is_group_member but checks for the admin role specifically. Used by
+-- the DELETE policy so admins can clean up the shortlist. Also used by
+-- get_my_active_groups below to surface admin status to the client without
+-- forcing it to query co_renter_members directly (which has known recursion
+-- issues — see /api/groups/route.ts comments).
+CREATE OR REPLACE FUNCTION public.is_group_admin(p_group_id UUID, p_user_id UUID)
+RETURNS BOOLEAN
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+      FROM co_renter_members
+     WHERE group_id = p_group_id
+       AND user_id  = p_user_id
+       AND role     = 'admin'
+       AND status   = 'active'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_group_admin(UUID, UUID) TO authenticated;
+
+-- get_my_active_groups — returns the active group memberships for the calling
+-- user, with admin status. SECURITY DEFINER so the SaveToGroupButton client
+-- doesn't have to query co_renter_members directly (where its RLS recursion
+-- bug would silently return zero rows).
+CREATE OR REPLACE FUNCTION public.get_my_active_groups()
+RETURNS TABLE (
+  group_id   UUID,
+  group_name TEXT,
+  is_admin   BOOLEAN
+)
+LANGUAGE sql
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT m.group_id,
+         g.name::TEXT       AS group_name,
+         (m.role = 'admin') AS is_admin
+    FROM co_renter_members m
+    JOIN co_renter_groups g ON g.id = m.group_id
+   WHERE m.user_id = auth.uid()
+     AND m.status  = 'active'
+   ORDER BY g.name;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_my_active_groups() TO authenticated;
+
 DROP POLICY IF EXISTS "Group members can view group saved listings"   ON group_saved_listings;
 DROP POLICY IF EXISTS "Group members can save listings to a group"    ON group_saved_listings;
 DROP POLICY IF EXISTS "Group members can unsave listings from a group" ON group_saved_listings;
@@ -61,15 +112,11 @@ CREATE POLICY "Group members can save listings to a group" ON group_saved_listin
   );
 
 -- Either the saver themselves or any group admin can remove a saved listing.
+-- Using is_group_admin() (SECURITY DEFINER) instead of an inline EXISTS so we
+-- don't recurse through co_renter_members' own RLS.
 CREATE POLICY "Group members can unsave listings from a group" ON group_saved_listings
   FOR DELETE
   USING (
     auth.uid() = saved_by
-    OR EXISTS (
-      SELECT 1 FROM co_renter_members
-       WHERE group_id = group_saved_listings.group_id
-         AND user_id  = auth.uid()
-         AND role     = 'admin'
-         AND status   = 'active'
-    )
+    OR public.is_group_admin(group_id, auth.uid())
   );

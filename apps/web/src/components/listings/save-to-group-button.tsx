@@ -47,17 +47,15 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
         return
       }
 
-      // Active group memberships for this user.
-      const { data: memberships } = await supabase
-        .from('co_renter_members')
-        .select('group_id, group:co_renter_groups(id, name)')
-        .eq('user_id', user.id)
-        .eq('status', 'active') as { data: any[] | null }
-
-      const rows = (memberships ?? [])
+      // Active group memberships for this user, via SECURITY DEFINER RPC
+      // (migration 025). co_renter_members has known RLS recursion issues —
+      // querying it directly from the client silently returns zero rows, the
+      // same reason /api/groups/* routes hop through a service client.
+      const { data: rpcRows } = await (supabase.rpc as any)('get_my_active_groups')
+      const rows = ((rpcRows as Array<{ group_id: string; group_name: string }> | null) ?? [])
         .map((m) => ({
-          group_id: m.group_id as string,
-          group_name: (m.group?.name as string) || 'Untitled group',
+          group_id: m.group_id,
+          group_name: m.group_name || 'Untitled group',
         }))
         .filter((r) => r.group_id)
 
