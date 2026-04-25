@@ -105,6 +105,47 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/**
+ * Sync the parent expense_share row when a Stripe payment intent terminates.
+ *
+ * Without this, `payments` would flip to completed but `expense_shares.status`
+ * would stay at 'processing' (set by the pay_expense_share RPC), and the
+ * trigger that recomputes `shared_expenses.status` would never fire because
+ * its WHEN clause requires status to actually change. Result: the bill split
+ * UI would never show the share as paid even after Stripe confirmed it.
+ *
+ * On failure / cancel we revert 'processing' back to 'pending' so the share
+ * isn't stuck and the user can retry.
+ */
+async function syncExpenseShareStatusFromPaymentIntent(
+  paymentIntent: Stripe.PaymentIntent,
+  nextStatus: 'paid' | 'pending',
+  requestId: string
+): Promise<void> {
+  const shareId = paymentIntent.metadata?.share_id
+  if (!shareId) return // Not a bill-split payment (e.g. verification checkout) — nothing to sync
+
+  const updates: Record<string, unknown> = {
+    status: nextStatus,
+    updated_at: new Date().toISOString(),
+  }
+  if (nextStatus === 'paid') {
+    updates.paid_at = new Date().toISOString()
+  }
+
+  const { error } = await (getSupabaseAdmin() as any)
+    .from('expense_shares')
+    .update(updates)
+    .eq('id', shareId)
+
+  if (error) {
+    logger.error('Error syncing expense_share status', error, {
+      requestId,
+      resourceId: paymentIntent.id,
+    })
+  }
+}
+
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, requestId: string) {
   logger.info('Payment succeeded', { requestId, resourceId: paymentIntent.id })
 
@@ -121,6 +162,8 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent,
   if (error) {
     logger.error('Error updating payment', error, { requestId, resourceId: paymentIntent.id })
   }
+
+  await syncExpenseShareStatusFromPaymentIntent(paymentIntent, 'paid', requestId)
 }
 
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, requestId: string) {
@@ -141,6 +184,9 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, re
   if (error) {
     logger.error('Error updating failed payment', error, { requestId, resourceId: paymentIntent.id })
   }
+
+  // Unstick the share so the participant can retry.
+  await syncExpenseShareStatusFromPaymentIntent(paymentIntent, 'pending', requestId)
 }
 
 async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent, requestId: string) {
@@ -157,6 +203,9 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent, 
   if (error) {
     logger.error('Error updating canceled payment', error, { requestId, resourceId: paymentIntent.id })
   }
+
+  // Unstick the share so the participant can retry.
+  await syncExpenseShareStatusFromPaymentIntent(paymentIntent, 'pending', requestId)
 }
 
 async function handleChargeRefunded(charge: Stripe.Charge, requestId: string) {
