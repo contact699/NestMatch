@@ -29,6 +29,7 @@ import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { ListingJsonLd } from '@/components/json-ld'
+import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -104,6 +105,31 @@ export default async function ListingPage({ params }: ListingPageProps) {
       .from('listings')
       .update({ views_count: (listing.views_count || 0) + 1 })
       .eq('id', id)
+  }
+
+  // Pull both lifestyle_responses rows so the compatibility card can show
+  // the actual matched factors instead of hardcoded copy. Only relevant when
+  // there's a logged-in viewer who isn't the host.
+  let matchedFactors: { key: string; label: string }[] = []
+  if (user && !isOwner) {
+    const lifestyleCols =
+      'sleep_schedule, noise_tolerance, cleanliness_level, smoking, pets_preference, communication_style, temperature_preference, guest_frequency, cooking_habits'
+    const [myRes, theirRes] = await Promise.all([
+      supabase
+        .from('lifestyle_responses')
+        .select(lifestyleCols)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('lifestyle_responses')
+        .select(lifestyleCols)
+        .eq('user_id', listing.user_id)
+        .maybeSingle(),
+    ])
+    matchedFactors = computeMatchedLifestyleFactors(
+      myRes.data as any,
+      theirRes.data as any
+    )
   }
 
   const typeLabels: Record<string, string> = {
@@ -290,11 +316,29 @@ export default async function ListingPage({ params }: ListingPageProps) {
                         showLabel={true}
                       />
                     </div>
-                    <div>
-                      <h2 className="font-display font-semibold text-on-surface text-lg">A Perfect Match for Your Lifestyle</h2>
-                      <p className="text-sm text-on-surface-variant mt-1">
-                        You and {profile?.name || 'this host'} share compatible lifestyles for space, routine, and social preferences.
-                      </p>
+                    <div className="flex-1">
+                      <h2 className="font-display font-semibold text-on-surface text-lg">
+                        {matchedFactors.length > 0
+                          ? `You and ${profile?.name || 'this host'} match on:`
+                          : 'A Perfect Match for Your Lifestyle'}
+                      </h2>
+                      {matchedFactors.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                          {matchedFactors.map((f) => (
+                            <span
+                              key={f.key}
+                              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-secondary text-sm font-medium"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                              {f.label}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-on-surface-variant mt-1">
+                          Take the lifestyle quiz on your profile to see specific factors you and {profile?.name || 'this host'} share.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
