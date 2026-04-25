@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
+import { GroupSavedListings } from '@/components/groups/group-saved-listings'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -571,6 +572,11 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Saved Listings — places the group is collectively shortlisting */}
+      <div className="mb-10">
+        <GroupSavedListings groupId={id} />
       </div>
 
       {/* Expense Summary */}

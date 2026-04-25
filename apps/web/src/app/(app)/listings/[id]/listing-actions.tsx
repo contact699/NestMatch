@@ -12,6 +12,7 @@ import {
   Loader2,
   Send,
 } from 'lucide-react'
+import { SaveToGroupButton } from '@/components/listings/save-to-group-button'
 
 interface ListingActionsProps {
   listingId: string
@@ -200,6 +201,8 @@ export function ListingActions({
           <Flag className="h-4 w-4" />
         </Button>
       </div>
+
+      <SaveToGroupButton listingId={listingId} isLoggedIn={isLoggedIn} />
     </div>
   )
 }
