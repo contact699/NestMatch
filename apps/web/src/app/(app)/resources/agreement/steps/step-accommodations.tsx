@@ -28,6 +28,29 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
   const careAccessibilityMods = watch('careAccessibilityMods')
   const hasCareNeeds = careScheduledVisits || careQuietHoursMedical || careAccessibilityMods
   const helpExchangeEnabled = watch('helpExchangeEnabled')
+  const helpExchangeAssignments = watch('helpExchangeAssignments') || []
+
+  const HELP_TASK_OPTIONS = [
+    { value: 'cleaning', label: 'Cleaning' },
+    { value: 'cooking', label: 'Cooking/Meal Prep' },
+    { value: 'groceries', label: 'Grocery Shopping' },
+    { value: 'errands', label: 'Running Errands' },
+    { value: 'caregiving', label: 'Caregiving/Companionship' },
+    { value: 'gardening', label: 'Yard/Garden Work' },
+    { value: 'driving', label: 'Driving/Transportation' },
+    { value: 'pet_care', label: 'Pet Care' },
+  ]
+
+  const getTaskProvider = (taskValue: string): string =>
+    helpExchangeAssignments.find((a) => a.task === taskValue)?.provider || ''
+
+  const setTaskProvider = (taskValue: string, provider: string) => {
+    const filtered = helpExchangeAssignments.filter((a) => a.task !== taskValue)
+    const next = provider
+      ? [...filtered, { task: taskValue, provider }]
+      : filtered
+    setValue('helpExchangeAssignments', next)
+  }
 
   const initializeParkingAssignments = (spots: number) => {
     if (spots > 0) {
@@ -424,48 +447,39 @@ export function StepAccommodations({ register, watch, setValue, errors }: StepAc
 
         {helpExchangeEnabled && (
           <div className="space-y-4 pl-4 border-l-2 border-secondary/30">
-            {/* Who provides help */}
-            <div>
-              <label className="block text-sm font-medium text-on-surface-variant mb-1">
-                Who provides the assistance?
-              </label>
-              <select
-                {...register('helpExchangeProvider')}
-                className="w-full px-3 py-2 ghost-border rounded-lg focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface"
-              >
-                <option value="">Select a roommate</option>
-                {roommateNames.filter(Boolean).map((name, i) => (
-                  <option key={i} value={name}>{name}</option>
-                ))}
-              </select>
-            </div>
-
-            {/* Tasks */}
+            {/* Per-task assignment matrix — each task can be assigned to a
+                different roommate. Leaving a row Unassigned omits the task. */}
             <div>
               <label className="block text-sm font-medium text-on-surface-variant mb-2">
-                Tasks included in the arrangement
+                Tasks and who provides each
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {[
-                  { value: 'cleaning', label: 'Cleaning' },
-                  { value: 'cooking', label: 'Cooking/Meal Prep' },
-                  { value: 'groceries', label: 'Grocery Shopping' },
-                  { value: 'errands', label: 'Running Errands' },
-                  { value: 'caregiving', label: 'Caregiving/Companionship' },
-                  { value: 'gardening', label: 'Yard/Garden Work' },
-                  { value: 'driving', label: 'Driving/Transportation' },
-                  { value: 'pet_care', label: 'Pet Care' },
-                ].map((task) => (
-                  <label key={task.value} className="flex items-center gap-2 p-2 bg-surface-container rounded-lg cursor-pointer text-sm text-on-surface">
-                    <input
-                      type="checkbox"
-                      value={task.value}
-                      {...register('helpExchangeTasks')}
-                      className="w-4 h-4 text-secondary rounded focus:ring-secondary"
-                    />
-                    {task.label}
-                  </label>
-                ))}
+              <p className="text-xs text-on-surface-variant mb-3">
+                Pick a roommate for each task that's part of the arrangement. Leave a task as &ldquo;Unassigned&rdquo; to skip it.
+              </p>
+              <div className="space-y-2">
+                {HELP_TASK_OPTIONS.map((task) => {
+                  const assigned = getTaskProvider(task.value)
+                  return (
+                    <div
+                      key={task.value}
+                      className={`flex items-center gap-3 p-2 rounded-lg ${
+                        assigned ? 'bg-secondary-container/30' : 'bg-surface-container'
+                      }`}
+                    >
+                      <span className="text-sm text-on-surface flex-1">{task.label}</span>
+                      <select
+                        value={assigned}
+                        onChange={(e) => setTaskProvider(task.value, e.target.value)}
+                        className="px-3 py-1.5 ghost-border rounded-md focus:ring-2 focus:ring-secondary/30 outline-none bg-surface-container-lowest text-on-surface text-sm"
+                      >
+                        <option value="">Unassigned</option>
+                        {roommateNames.filter(Boolean).map((name, i) => (
+                          <option key={i} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
