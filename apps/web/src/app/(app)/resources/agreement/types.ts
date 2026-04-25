@@ -67,10 +67,16 @@ export const agreementSchema = z.object({
   careAccessibilityMods: z.boolean(),
   careAdditionalDetails: z.string().optional(),
 
-  // Help/Assistance Exchange (Assistance Required)
+  // Help/Assistance Exchange (Assistance Required).
+  // helpExchangeAssignments lets each task be assigned to a different
+  // roommate. The legacy `helpExchangeProvider` (single string) and
+  // `helpExchangeTasks` (string[]) fields were removed — they couldn't
+  // express different tasks going to different people.
   helpExchangeEnabled: z.boolean(),
-  helpExchangeTasks: z.array(z.string()).optional(),
-  helpExchangeProvider: z.string().optional(),
+  helpExchangeAssignments: z.array(z.object({
+    task: z.string(),
+    provider: z.string(),
+  })).optional(),
   helpExchangeCompensation: z.string().optional(),
   helpExchangeDetails: z.string().optional(),
   helpExchangeHoursPerWeek: z.number().min(0).optional(),
@@ -133,8 +139,7 @@ export const defaultValues: Partial<AgreementFormData> = {
   careAccessibilityMods: false,
   careAdditionalDetails: '',
   helpExchangeEnabled: false,
-  helpExchangeTasks: [],
-  helpExchangeProvider: '',
+  helpExchangeAssignments: [],
   helpExchangeCompensation: 'reduced_rent',
   helpExchangeDetails: '',
   helpExchangeHoursPerWeek: 0,
