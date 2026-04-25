@@ -76,6 +76,7 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email</Text>
             <TextInput
+              testID="login-email"
               style={styles.input}
               placeholder="you@example.com"
               placeholderTextColor="#94a3b8"
@@ -90,6 +91,7 @@ export default function LoginScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password</Text>
             <TextInput
+              testID="login-password"
               style={styles.input}
               placeholder="Enter your password"
               placeholderTextColor="#94a3b8"
@@ -101,6 +103,7 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity
+            testID="login-submit"
             style={[styles.button, loading && styles.buttonDisabled]}
             onPress={handleSignIn}
             disabled={loading}

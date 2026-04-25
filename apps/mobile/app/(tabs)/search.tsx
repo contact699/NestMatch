@@ -78,7 +78,7 @@ export default function SearchScreen() {
   )
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView testID="screen-search" style={styles.container} edges={['bottom']}>
       <View style={styles.searchContainer}>
         <TextInput
           style={styles.searchInput}

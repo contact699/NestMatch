@@ -41,7 +41,7 @@ export default function HomeScreen() {
   })
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
+    <SafeAreaView testID="screen-home" style={styles.container} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.welcomeSection}>
           <Text style={styles.greeting}>Hello, {userName}!</Text>

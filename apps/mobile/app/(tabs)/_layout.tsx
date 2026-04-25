@@ -23,6 +23,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
+          tabBarButtonTestID: 'tab-home',
           tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
         }}
       />
@@ -30,6 +31,7 @@ export default function TabLayout() {
         name="search"
         options={{
           title: 'Search',
+          tabBarButtonTestID: 'tab-search',
           tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
         }}
       />
@@ -37,6 +39,7 @@ export default function TabLayout() {
         name="messages"
         options={{
           title: 'Messages',
+          tabBarButtonTestID: 'tab-messages',
           tabBarIcon: ({ color, size }) => (
             <MessageCircle color={color} size={size} />
           ),
@@ -46,6 +49,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
+          tabBarButtonTestID: 'tab-profile',
           tabBarIcon: ({ color, size }) => <User color={color} size={size} />,
         }}
       />
