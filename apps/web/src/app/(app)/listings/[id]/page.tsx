@@ -110,7 +110,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
   // Pull both lifestyle_responses rows so the compatibility card can show
   // the actual matched factors instead of hardcoded copy. Only relevant when
   // there's a logged-in viewer who isn't the host.
+  //
+  // We track whether each side has a quiz row separately from whether any
+  // factors matched, so the empty state can correctly distinguish "no quiz
+  // yet" from "both took the quiz but happen to share nothing".
   let matchedFactors: { key: string; label: string }[] = []
+  let viewerHasQuiz = false
+  let hostHasQuiz = false
   if (user && !isOwner) {
     const lifestyleCols =
       'sleep_schedule, noise_tolerance, cleanliness_level, smoking, pets_preference, communication_style, temperature_preference, guest_frequency, cooking_habits'
@@ -126,6 +132,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
         .eq('user_id', listing.user_id)
         .maybeSingle(),
     ])
+    viewerHasQuiz = myRes.data != null
+    hostHasQuiz = theirRes.data != null
     matchedFactors = computeMatchedLifestyleFactors(
       myRes.data as any,
       theirRes.data as any
@@ -320,7 +328,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
                       <h2 className="font-display font-semibold text-on-surface text-lg">
                         {matchedFactors.length > 0
                           ? `You and ${profile?.name || 'this host'} match on:`
-                          : 'A Perfect Match for Your Lifestyle'}
+                          : 'Lifestyle Compatibility'}
                       </h2>
                       {matchedFactors.length > 0 ? (
                         <div className="flex flex-wrap gap-2 mt-3">
@@ -334,9 +342,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
                             </span>
                           ))}
                         </div>
-                      ) : (
+                      ) : !viewerHasQuiz ? (
                         <p className="text-sm text-on-surface-variant mt-1">
                           Take the lifestyle quiz on your profile to see specific factors you and {profile?.name || 'this host'} share.
+                        </p>
+                      ) : !hostHasQuiz ? (
+                        <p className="text-sm text-on-surface-variant mt-1">
+                          {profile?.name || 'This host'} hasn&apos;t completed the lifestyle quiz yet, so we can&apos;t show specific shared preferences.
+                        </p>
+                      ) : (
+                        <p className="text-sm text-on-surface-variant mt-1">
+                          You and {profile?.name || 'this host'} have both completed the lifestyle quiz but don&apos;t share specific preferences yet — message them to learn more.
                         </p>
                       )}
                     </div>
