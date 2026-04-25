@@ -45,3 +45,16 @@ next-env.d.ts
 
 # turbo
 .turbo
+
+# IDE / editor
+.idea/
+.vscode/
+
+# local design assets (figma exports etc.)
+Design/
+
+# Playwright artifacts
+apps/web/playwright-report/
+apps/web/test-results/
+playwright-report/
+test-results/
