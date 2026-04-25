@@ -11,6 +11,7 @@ import {
   Flag,
   Loader2,
 } from 'lucide-react'
+import { SaveToGroupButton } from '@/components/listings/save-to-group-button'
 
 interface ListingActionsProps {
   listingId: string
@@ -150,6 +151,9 @@ export function ListingActions({
     )
   }
 
+  // NOTE: This action stack mirrors PR #12 (labelled buttons, no duplicate
+  // "Message Host", report demoted to a small text link) so the two PRs
+  // don't merge-conflict on this file regardless of merge order.
   return (
     <div className="space-y-3">
       <Button
@@ -183,6 +187,8 @@ export function ListingActions({
         <Share2 className="h-4 w-4 mr-2" />
         Share Listing
       </Button>
+
+      <SaveToGroupButton listingId={listingId} isLoggedIn={isLoggedIn} />
 
       <button
         type="button"
