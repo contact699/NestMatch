@@ -37,7 +37,7 @@ import {
 } from './steps'
 
 const STEPS = [
-  { id: 1, title: 'Type & Location', icon: Home },
+  { id: 1, title: 'Type', icon: Home },
   { id: 2, title: 'Location', icon: MapPin },
   { id: 3, title: 'Details', icon: DollarSign },
   { id: 4, title: 'Amenities', icon: Calendar },

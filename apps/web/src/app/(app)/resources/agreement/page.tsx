@@ -259,7 +259,16 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
 
   // Assistance Required
   if (data.helpExchangeEnabled) {
-    const helpTasks = data.helpExchangeTasks || []
+    const TASK_LABELS: Record<string, string> = {
+      cleaning: 'Cleaning',
+      cooking: 'Cooking/Meal Prep',
+      groceries: 'Grocery Shopping',
+      errands: 'Running Errands',
+      caregiving: 'Caregiving/Companionship',
+      gardening: 'Yard/Garden Work',
+      driving: 'Driving/Transportation',
+      pet_care: 'Pet Care',
+    }
     const compensationLabels: Record<string, string> = {
       reduced_rent: 'reduced rent',
       free_rent: 'free rent',
@@ -267,13 +276,19 @@ function generateClausesFromFormData(data: AgreementFormData): { title: string; 
       other: 'an alternative arrangement',
     }
     let helpContent = `An assistance required arrangement is in place.`
-    if (data.helpExchangeProvider) {
-      helpContent += ` ${data.helpExchangeProvider} will provide assistance`
+    const assignments = (data.helpExchangeAssignments || []).filter(
+      (a) => a.task && a.provider
+    )
+    if (assignments.length > 0) {
+      const byProvider: Record<string, string[]> = {}
+      for (const a of assignments) {
+        if (!byProvider[a.provider]) byProvider[a.provider] = []
+        byProvider[a.provider].push(TASK_LABELS[a.task] || a.task)
+      }
+      helpContent += Object.entries(byProvider)
+        .map(([provider, tasks]) => ` ${provider} will provide: ${tasks.join(', ')}.`)
+        .join('')
     }
-    if (helpTasks.length > 0) {
-      helpContent += ` including: ${helpTasks.join(', ')}`
-    }
-    helpContent += '.'
     if (data.helpExchangeCompensation) {
       helpContent += ` In exchange, the assisting roommate receives ${compensationLabels[data.helpExchangeCompensation] || data.helpExchangeCompensation}.`
     }

@@ -190,12 +190,20 @@ export default function FAQPage() {
               <p className="text-sm text-on-surface-variant mb-3">
                 Our team is available to assist with your search.
               </p>
-              <a href="mailto:support@nestmatch.ca">
-                <Button size="sm" className="w-full bg-secondary text-on-primary hover:bg-secondary/90">
-                  <Mail className="h-4 w-4 mr-2" />
-                  Contact Support
-                </Button>
-              </a>
+              <Button
+                type="button"
+                size="sm"
+                className="w-full bg-secondary text-on-primary hover:bg-secondary/90"
+                onClick={() => { window.location.href = 'mailto:support@nestmatch.ca' }}
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Contact Support
+              </Button>
+              <p className="text-xs text-on-surface-variant mt-2 text-center">
+                <a href="mailto:support@nestmatch.ca" className="underline">
+                  support@nestmatch.ca
+                </a>
+              </p>
             </div>
           </div>
 

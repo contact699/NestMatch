@@ -10,7 +10,7 @@ import {
   Search,
   MessageSquare,
   Home,
-  Bookmark,
+  Heart,
   ShieldCheck,
   Plus,
   Settings,
@@ -27,7 +27,7 @@ const navItems = [
   { href: '/groups', label: 'Co-Renter Groups', icon: UsersRound },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/my-listings', label: 'My Listings', icon: Home },
-  { href: '/saved', label: 'Saved', icon: Bookmark },
+  { href: '/saved', label: 'Saved', icon: Heart },
   { href: '/verify', label: 'Trust Center', icon: ShieldCheck },
 ]
 

@@ -371,7 +371,7 @@ export default async function ProfilePage() {
                   <div className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl">
                     <Briefcase className="h-5 w-5 text-secondary mt-0.5" />
                     <div>
-                      <p className="font-medium text-on-surface">Current Employer</p>
+                      <p className="font-medium text-on-surface">Occupation</p>
                       <p className="text-sm text-on-surface-variant">{profile.occupation}</p>
                     </div>
                   </div>

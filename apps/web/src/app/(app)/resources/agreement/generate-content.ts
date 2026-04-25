@@ -280,14 +280,32 @@ ${(() => {
 ${(() => {
   if (!data.helpExchangeEnabled) return 'No assistance exchange arrangement is in place.'
   let content = 'An assistance exchange arrangement is in place.'
-  if (data.helpExchangeProvider) {
-    content += ` ${data.helpExchangeProvider} will provide assistance`
+  const TASK_LABELS: Record<string, string> = {
+    cleaning: 'Cleaning',
+    cooking: 'Cooking/Meal Prep',
+    groceries: 'Grocery Shopping',
+    errands: 'Running Errands',
+    caregiving: 'Caregiving/Companionship',
+    gardening: 'Yard/Garden Work',
+    driving: 'Driving/Transportation',
+    pet_care: 'Pet Care',
   }
-  const tasks = data.helpExchangeTasks || []
-  if (tasks.length > 0) {
-    content += ` including: ${tasks.join(', ')}`
+  // Group task assignments by provider so each roommate gets one sentence
+  // covering everything they've been assigned.
+  const assignments = (data.helpExchangeAssignments || []).filter(
+    (a) => a.task && a.provider
+  )
+  if (assignments.length > 0) {
+    const byProvider: Record<string, string[]> = {}
+    for (const a of assignments) {
+      if (!byProvider[a.provider]) byProvider[a.provider] = []
+      byProvider[a.provider].push(TASK_LABELS[a.task] || a.task)
+    }
+    const sentences = Object.entries(byProvider).map(
+      ([provider, tasks]) => ` ${provider} will provide: ${tasks.join(', ')}.`
+    )
+    content += sentences.join('')
   }
-  content += '.'
   const compensationLabels: Record<string, string> = {
     reduced_rent: 'reduced rent',
     free_rent: 'free rent',

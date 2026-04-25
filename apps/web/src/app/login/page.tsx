@@ -47,10 +47,10 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Logo overlay — mono variant on the dark hero */}
+        {/* Logo overlay */}
         <div className="absolute top-12 left-16 z-20">
           <Link href="/" className="inline-flex items-center gap-3 text-on-primary no-underline">
-            <LogoMark size={40} mono />
+            <LogoMark size={40} />
             <span className="font-logo text-2xl font-semibold tracking-[-0.02em] leading-none">
               NestMatch
             </span>
@@ -90,7 +90,7 @@ export default function LoginPage() {
             <p className="mt-4 text-[10px] text-on-surface-variant text-center uppercase tracking-widest leading-relaxed">
               Securely processed in Canada
               <br />
-              &copy; {new Date().getFullYear()} NestMatch Hospitality
+              &copy; {new Date().getFullYear()} NestMatch Technologies Incorporated
             </p>
           </div>
         </div>

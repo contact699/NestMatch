@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE, LANGUAGES } from '@/lib/utils'
+import { SaveProfileButton } from '@/components/profile/save-profile-button'
 
 interface Profile {
   id: string
@@ -57,6 +58,7 @@ const EMPTY_FILTERS = {
 export default function RoommatesPage() {
   const [profiles, setProfiles] = useState<ProfileWithScore[]>([])
   const [lifestyleByUser, setLifestyleByUser] = useState<Record<string, LifestyleSummary>>({})
+  const [savedUserIds, setSavedUserIds] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [filters, setFilters] = useState(EMPTY_FILTERS)
@@ -94,10 +96,16 @@ export default function RoommatesPage() {
 
   useEffect(() => {
     fetchProfiles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  async function fetchProfiles() {
+  // Track the search term last sent to the server so the input can render
+  // a "Search applied" affordance distinct from the unsubmitted draft.
+  const [appliedSearch, setAppliedSearch] = useState('')
+
+  async function fetchProfiles(searchTerm: string = '') {
     const supabase = createClient()
+    setLoading(true)
 
     // Get current user
     const { data: { user } } = await supabase.auth.getUser()
@@ -108,13 +116,28 @@ export default function RoommatesPage() {
       return
     }
 
-    // Fetch all profiles except current user
-    const { data: profilesData, error } = await supabase
+    // Fetch profiles except current user. When the user has explicitly
+    // submitted a search term, push it to the server so we're not just
+    // filtering the most-recent 50 profiles client-side.
+    let query = supabase
       .from('profiles')
       .select('*')
       .neq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(50) as { data: Profile[] | null; error: any }
+      .limit(50)
+
+    const trimmedTerm = searchTerm.trim()
+    if (trimmedTerm) {
+      // Escape PostgREST OR-pattern wildcards by stripping commas — they break
+      // the .or() syntax. Bio is text, name and city are short — ilike is fine.
+      const safeTerm = trimmedTerm.replace(/,/g, '')
+      query = query.or(
+        `name.ilike.%${safeTerm}%,bio.ilike.%${safeTerm}%,city.ilike.%${safeTerm}%`
+      )
+    }
+    setAppliedSearch(trimmedTerm)
+
+    const { data: profilesData, error } = await query as { data: Profile[] | null; error: any }
 
     if (error) {
       clientLogger.error('Error fetching profiles', error)
@@ -128,9 +151,10 @@ export default function RoommatesPage() {
       return
     }
 
-    // Get compatibility scores + lifestyle responses in parallel
+    // Get compatibility scores + lifestyle responses + this viewer's saved
+    // profile set in parallel.
     const userIds = profilesData.map(p => p.user_id)
-    const [scoresRes, lifestyleRes] = await Promise.all([
+    const [scoresRes, lifestyleRes, savedRes] = await Promise.all([
       fetch('/api/compatibility', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -140,7 +164,16 @@ export default function RoommatesPage() {
         .from('lifestyle_responses')
         .select('user_id, smoking, pets_preference')
         .in('user_id', userIds),
+      (supabase as any)
+        .from('saved_profiles')
+        .select('saved_user_id')
+        .eq('user_id', user.id)
+        .in('saved_user_id', userIds),
     ])
+
+    setSavedUserIds(
+      new Set(((savedRes?.data as Array<{ saved_user_id: string }> | null) || []).map((r) => r.saved_user_id))
+    )
 
     let scores: Record<string, number> = {}
     if (scoresRes.ok) {
@@ -178,15 +211,9 @@ export default function RoommatesPage() {
     if (filters.province && profile.province !== filters.province) {
       return false
     }
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      const nameMatch = profile.name?.toLowerCase().includes(searchLower)
-      const bioMatch = profile.bio?.toLowerCase().includes(searchLower)
-      const cityMatch = profile.city?.toLowerCase().includes(searchLower)
-      if (!nameMatch && !bioMatch && !cityMatch) {
-        return false
-      }
-    }
+    // Note: free-text search runs server-side via fetchProfiles(searchTerm) so
+    // typing a name not in the most-recent 50 still finds it. We don't filter
+    // on filters.search here — `appliedSearch` already shaped the result set.
     if (filters.verificationLevel && profile.verification_level !== filters.verificationLevel) {
       return false
     }
@@ -255,17 +282,44 @@ export default function RoommatesPage() {
       {/* Search & Filter pills */}
       <div className="mb-8 space-y-4" data-animate>
         <div className="flex flex-col sm:flex-row gap-4">
-          {/* Search bar */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant" />
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-              placeholder="Search by name, bio, or city..."
-              className="w-full pl-10 pr-4 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest backdrop-blur-sm transition-all text-on-surface placeholder:text-on-surface-variant"
-            />
-          </div>
+          {/* Search bar — submits on Enter or via the Search button.
+              The input is intentionally not auto-applied: free-text search hits
+              Supabase, so we don't want a query per keystroke. */}
+          <form
+            className="relative flex-1 flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault()
+              fetchProfiles(filters.search)
+            }}
+          >
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-on-surface-variant" />
+              <input
+                type="text"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Search by name, bio, or city..."
+                className="w-full pl-10 pr-4 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent bg-surface-container-lowest backdrop-blur-sm transition-all text-on-surface placeholder:text-on-surface-variant"
+              />
+            </div>
+            <Button type="submit" variant="primary" size="md" disabled={loading}>
+              {loading ? 'Searching…' : 'Search'}
+            </Button>
+            {appliedSearch && (
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setFilters({ ...filters, search: '' })
+                  fetchProfiles('')
+                }}
+                disabled={loading}
+              >
+                Clear
+              </Button>
+            )}
+          </form>
 
           {/* Filter pills row */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -471,11 +525,22 @@ export default function RoommatesPage() {
                 <Card
                   variant="bordered"
                   animate
+                  className="relative"
                 >
+                  {/* Save heart — top-right corner. Floats over the card so it
+                      stays out of the way of the compatibility badge / photo. */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <SaveProfileButton
+                      savedUserId={profile.user_id}
+                      isSavedInitial={savedUserIds.has(profile.user_id)}
+                      isLoggedIn={!!currentUserId}
+                      variant="icon"
+                    />
+                  </div>
                   <CardContent className="p-6">
                     {/* Compatibility badge at top */}
                     {profile.compatibilityScore > 0 && (
-                      <div className="mb-4">
+                      <div className="mb-4 pr-10">
                         <CompatibilityBadgeStatic
                           score={profile.compatibilityScore}
                           size="md"
@@ -514,7 +579,7 @@ export default function RoommatesPage() {
                           <div className="flex items-center gap-1 text-sm text-on-surface-variant mt-1">
                             <MapPin className="h-3 w-3" />
                             <span className="truncate">
-                              {[profile.city, profile.province].filter(Boolean).join(', ')}
+                              {profile.city || profile.province}
                             </span>
                           </div>
                         )}

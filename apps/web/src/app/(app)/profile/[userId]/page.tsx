@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { formatDate, HOUSEHOLD_SITUATIONS } from '@/lib/utils'
 import { VerificationBadges } from '@/components/verification-badges'
+import { SaveProfileButton } from '@/components/profile/save-profile-button'
 
 interface ProfilePageProps {
   params: Promise<{ userId: string }>
@@ -82,6 +83,18 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
 
   if (error || !profile) {
     notFound()
+  }
+
+  // Pre-load is-saved state so the Save button doesn't flash
+  let isSaved = false
+  if (currentUser) {
+    const { data: savedRow } = await (supabase
+      .from('saved_profiles' as any)
+      .select('id')
+      .eq('user_id', currentUser.id)
+      .eq('saved_user_id', userId)
+      .maybeSingle() as any)
+    isSaved = !!savedRow
   }
 
   // Fetch lifestyle responses
@@ -218,15 +231,20 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                 )}
               </div>
 
-              {/* Message Button */}
+              {/* Message + Save Buttons */}
               {currentUser && (
-                <div className="mt-6">
+                <div className="mt-6 space-y-2">
                   <Link href={`/messages?to=${userId}`}>
                     <Button className="w-full" variant="primary">
                       <MessageCircle className="h-4 w-4 mr-2" />
                       Message {firstName}
                     </Button>
                   </Link>
+                  <SaveProfileButton
+                    savedUserId={userId}
+                    isSavedInitial={isSaved}
+                    isLoggedIn={true}
+                  />
                 </div>
               )}
 
