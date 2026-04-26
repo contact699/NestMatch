@@ -232,6 +232,60 @@ export function verificationCompleteEmail(name: string, verificationType: string
   }
 }
 
+export function newGroupMessageEmail(
+  recipientName: string,
+  groupName: string,
+  groupId: string,
+  senderName: string,
+) {
+  return {
+    subject: `New activity in ${groupName}`,
+    html: `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; background-color: #f8fafc;">
+  <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #f8fafc;">
+    <tr>
+      <td style="padding: 40px 20px;">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden;">
+          <tr>
+            <td style="background-color: #2563eb; padding: 24px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 600;">NestMatch</h1>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 32px 24px;">
+              <p style="margin: 0 0 16px 0; color: #1f2937; font-size: 16px;">Hi ${recipientName},</p>
+              <p style="margin: 0 0 24px 0; color: #1f2937; font-size: 16px;"><strong>${senderName}</strong> posted in your co-renter group <strong>${groupName}</strong>. Catch up on the conversation when you have a moment.</p>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
+                <tr>
+                  <td style="text-align: center; padding: 16px 0;">
+                    <a href="${appUrl}/groups/${groupId}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 12px 32px; border-radius: 8px; font-size: 16px; font-weight: 500;">Open Group</a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 16px 0 0 0; color: #6b7280; font-size: 13px; text-align: center;">You're getting this because you're a member of ${groupName}. We only send one of these per group every 30 minutes.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 24px; background-color: #f8fafc; text-align: center; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0; color: #6b7280; font-size: 14px;">Thank you for using NestMatch!</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `.trim(),
+  }
+}
+
 export function newMessageEmail(recipientName: string, senderName: string) {
   return {
     subject: `New message from ${senderName}`,
