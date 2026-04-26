@@ -329,6 +329,7 @@ export interface Database {
           id: string
           participant_ids: string[]
           listing_id: string | null
+          group_id: string | null
           last_message_at: string | null
           created_at: string
           updated_at: string
@@ -337,6 +338,7 @@ export interface Database {
           id?: string
           participant_ids: string[]
           listing_id?: string | null
+          group_id?: string | null
           last_message_at?: string | null
           created_at?: string
           updated_at?: string
@@ -345,6 +347,7 @@ export interface Database {
           id?: string
           participant_ids?: string[]
           listing_id?: string | null
+          group_id?: string | null
           last_message_at?: string | null
           created_at?: string
           updated_at?: string
@@ -989,6 +992,7 @@ export interface Database {
           status: string
           joined_at: string
           left_at: string | null
+          last_read_at: string | null
         }
         Insert: {
           id?: string
@@ -999,6 +1003,7 @@ export interface Database {
           status?: string
           joined_at?: string
           left_at?: string | null
+          last_read_at?: string | null
         }
         Update: {
           id?: string
@@ -1009,6 +1014,7 @@ export interface Database {
           status?: string
           joined_at?: string
           left_at?: string | null
+          last_read_at?: string | null
         }
         Relationships: []
       }

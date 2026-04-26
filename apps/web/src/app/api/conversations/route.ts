@@ -11,7 +11,9 @@ const createConversationSchema = z.object({
 
 export const GET = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    // Get all conversations where user is a participant
+    // Get all 1:1 conversations where user is a participant. Group
+    // conversations (group_id IS NOT NULL) live on /groups/[id] and must not
+    // appear in this inbox.
     const { data: conversations, error } = await supabase
       .from('conversations')
       .select(`
@@ -22,6 +24,7 @@ export const GET = withApiHandler(
           photos
         )
       `)
+      .is('group_id', null)
       .contains('participant_ids', [userId!])
       .order('last_message_at', { ascending: false, nullsFirst: false })
 

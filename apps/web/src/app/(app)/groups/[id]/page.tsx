@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ConfirmModal } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
 import { GroupSavedListings } from '@/components/groups/group-saved-listings'
+import { GroupChat } from '@/components/groups/group-chat'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
@@ -565,6 +566,11 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Group chat — real-time messaging between active members */}
+      <div className="mb-10">
+        <GroupChat groupId={id} />
       </div>
 
       {/* Saved Listings — places the group is collectively shortlisting */}
