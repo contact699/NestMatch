@@ -993,6 +993,7 @@ export interface Database {
           joined_at: string
           left_at: string | null
           last_read_at: string | null
+          last_chat_email_at: string | null
         }
         Insert: {
           id?: string
@@ -1004,6 +1005,7 @@ export interface Database {
           joined_at?: string
           left_at?: string | null
           last_read_at?: string | null
+          last_chat_email_at?: string | null
         }
         Update: {
           id?: string
@@ -1015,6 +1017,7 @@ export interface Database {
           joined_at?: string
           left_at?: string | null
           last_read_at?: string | null
+          last_chat_email_at?: string | null
         }
         Relationships: []
       }
