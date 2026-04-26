@@ -20,6 +20,7 @@ import {
   UserPlus,
   Crown,
   Bell,
+  MessageCircle,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -77,6 +78,12 @@ export default function GroupsPage() {
     error: groupsError,
     refetch: refetchGroups,
   } = useFetch<{ groups: Group[] }>('/api/groups')
+
+  const {
+    data: unreadData,
+  } = useFetch<{ totalUnread: number; byGroup: Record<string, number> }>(
+    '/api/groups/unread',
+  )
 
   const {
     data: invitationsData,
@@ -244,6 +251,14 @@ export default function GroupsPage() {
                           <Crown className="h-4 w-4 text-tertiary-container" />
                         )}
                         {getStatusBadge(group.status)}
+                        {(unreadData?.byGroup?.[group.id] ?? 0) > 0 && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-secondary text-on-secondary text-[10px] font-bold">
+                            <MessageCircle className="h-3 w-3" />
+                            {(unreadData!.byGroup[group.id]) > 9
+                              ? '9+'
+                              : unreadData!.byGroup[group.id]}
+                          </span>
+                        )}
                       </div>
 
                       {group.description && (

@@ -63,6 +63,7 @@ export function Navbar({ user }: NavbarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [profileMenuOpen, setProfileMenuOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [groupUnreadCount, setGroupUnreadCount] = useState(0)
   const [isScrolled, setIsScrolled] = useState(false)
 
   // Handle scroll for glassmorphism effect
@@ -95,9 +96,24 @@ export function Navbar({ user }: NavbarProps) {
       }
     }
 
-    fetchUnreadCount()
+    async function fetchGroupUnread() {
+      try {
+        const response = await fetch('/api/groups/unread')
+        if (response.ok) {
+          const data = await response.json()
+          setGroupUnreadCount(data.totalUnread ?? 0)
+        }
+      } catch (error) {
+        clientLogger.error('Error fetching group unread count', error)
+      }
+    }
 
-    // Set up real-time subscription for new messages
+    fetchUnreadCount()
+    fetchGroupUnread()
+
+    // Set up real-time subscription for new messages (1:1 + group). Both
+    // surfaces refetch on any messages-table change since the badge counters
+    // are cheap to recompute.
     const supabase = createClient()
     const channel = supabase
       .channel('navbar-messages')
@@ -110,6 +126,7 @@ export function Navbar({ user }: NavbarProps) {
         },
         () => {
           fetchUnreadCount()
+          fetchGroupUnread()
         }
       )
       .on(
@@ -167,7 +184,10 @@ export function Navbar({ user }: NavbarProps) {
             <div className="hidden md:flex items-center space-x-1">
               {topNavLinks.map(({ href, label, icon: Icon }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/')
-                const showBadge = href === '/messages' && unreadCount > 0
+                const badgeCount =
+                  href === '/messages' ? unreadCount :
+                  href === '/groups' ? groupUnreadCount : 0
+                const showBadge = badgeCount > 0
 
                 return (
                   <Link
@@ -184,7 +204,7 @@ export function Navbar({ user }: NavbarProps) {
                       <Icon className="h-4 w-4 transition-transform duration-300" />
                       {showBadge && (
                         <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 bg-error text-on-error text-[10px] font-bold rounded-full animate-bounce-subtle">
-                          {unreadCount > 9 ? '9+' : unreadCount}
+                          {badgeCount > 9 ? '9+' : badgeCount}
                         </span>
                       )}
                     </div>
@@ -348,7 +368,10 @@ export function Navbar({ user }: NavbarProps) {
             <>
               {mobileNavItems.map(({ href, label, icon: Icon }) => {
                 const isActive = pathname === href || pathname.startsWith(href + '/')
-                const showBadge = href === '/messages' && unreadCount > 0
+                const badgeCount =
+                  href === '/messages' ? unreadCount :
+                  href === '/groups' ? groupUnreadCount : 0
+                const showBadge = badgeCount > 0
 
                 return (
                   <Link
@@ -366,14 +389,14 @@ export function Navbar({ user }: NavbarProps) {
                       <Icon className="h-5 w-5" />
                       {showBadge && (
                         <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 bg-error text-on-error text-[10px] font-bold rounded-full">
-                          {unreadCount > 9 ? '9+' : unreadCount}
+                          {badgeCount > 9 ? '9+' : badgeCount}
                         </span>
                       )}
                     </div>
                     {label}
                     {showBadge && (
                       <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 bg-error text-on-error text-xs font-bold rounded-full">
-                        {unreadCount > 99 ? '99+' : unreadCount}
+                        {badgeCount > 99 ? '99+' : badgeCount}
                       </span>
                     )}
                   </Link>

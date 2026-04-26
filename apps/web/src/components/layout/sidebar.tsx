@@ -34,9 +34,10 @@ const navItems = [
 interface SidebarProps {
   user: SupabaseUser | null
   unreadCount?: number
+  groupUnreadCount?: number
 }
 
-export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
+export function Sidebar({ user, unreadCount = 0, groupUnreadCount = 0 }: SidebarProps) {
   const pathname = usePathname()
 
   if (!user) return null
@@ -56,7 +57,10 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
       <nav className="flex-1 px-3 space-y-1">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + '/')
-          const showBadge = href === '/messages' && unreadCount > 0
+          const badgeCount =
+            href === '/messages' ? unreadCount :
+            href === '/groups' ? groupUnreadCount : 0
+          const showBadge = badgeCount > 0
 
           return (
             <Link
@@ -73,14 +77,14 @@ export function Sidebar({ user, unreadCount = 0 }: SidebarProps) {
                 <Icon className="h-5 w-5" />
                 {showBadge && (
                   <span className="absolute -top-1.5 -right-1.5 inline-flex items-center justify-center w-4 h-4 bg-error text-on-error text-[10px] font-bold rounded-full">
-                    {unreadCount > 9 ? '9+' : unreadCount}
+                    {badgeCount > 9 ? '9+' : badgeCount}
                   </span>
                 )}
               </div>
               <span>{label}</span>
               {showBadge && (
                 <span className="ml-auto inline-flex items-center justify-center px-2 py-0.5 bg-error text-on-error text-xs font-bold rounded-full">
-                  {unreadCount > 99 ? '99+' : unreadCount}
+                  {badgeCount > 99 ? '99+' : badgeCount}
                 </span>
               )}
             </Link>

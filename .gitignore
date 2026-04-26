@@ -46,6 +46,9 @@ next-env.d.ts
 # turbo
 .turbo
 
+# brainstorming workspace (visual companion)
+.superpowers/
+
 # IDE / editor
 .idea/
 .vscode/
