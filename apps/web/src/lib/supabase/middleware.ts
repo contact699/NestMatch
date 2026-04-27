@@ -105,9 +105,6 @@ export async function updateSession(request: NextRequest) {
     // Matching preferences
     '/matching-preferences',
 
-    // Notifications
-    '/notifications',
-
     // Onboarding
     '/onboarding',
   ]
