@@ -14,8 +14,7 @@ export function Footer() {
             NestMatch
           </Link>
           <p className="text-xs tracking-wide text-on-surface-variant text-center md:text-left">
-            &copy; {new Date().getFullYear()} NestMatch. Canadian Hospitality
-            &amp; Secure Housing.
+            &copy; {new Date().getFullYear()} NestMatch Technologies Incorporated
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-8">
