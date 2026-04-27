@@ -122,33 +122,33 @@ export function SearchResultsProximity({
     setAddressError(null)
   }
 
-  // Sort listings by distance
+  // Sort listings by distance from the reference point. When the user has
+  // shared a location, listings without coordinates are filtered out — the
+  // proximity view exists to show "what's near me", and a place with no
+  // known location can't answer that. Without a reference location we just
+  // pass listings through unsorted.
+  const hiddenWithoutCoords = useMemo<number>(() => {
+    if (!hasLocation || !refLat || !refLng) return 0
+    return listings.filter((l) => !l.lat || !l.lng).length
+  }, [listings, refLat, refLng, hasLocation])
+
   const sortedListings = useMemo<ListingWithDistance[]>(() => {
     if (!hasLocation || !refLat || !refLng) {
       return listings.map((l) => ({ ...l, distance: null }))
     }
 
     return listings
-      .map((listing) => {
-        let distance: number | null = null
-
-        if (listing.lat && listing.lng) {
-          distance = calculateDistance(
-            refLat,
-            refLng,
-            listing.lat,
-            listing.lng
-          )
-        }
-
-        return { ...listing, distance }
-      })
-      .sort((a, b) => {
-        if (a.distance === null && b.distance === null) return 0
-        if (a.distance === null) return 1
-        if (b.distance === null) return -1
-        return a.distance - b.distance
-      })
+      .filter((l) => l.lat != null && l.lng != null)
+      .map((listing) => ({
+        ...listing,
+        distance: calculateDistance(
+          refLat,
+          refLng,
+          listing.lat as number,
+          listing.lng as number,
+        ),
+      }))
+      .sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
   }, [listings, refLat, refLng, hasLocation])
 
   const getDelayClass = (index: number) => {
@@ -314,10 +314,9 @@ export function SearchResultsProximity({
         ))}
       </div>
 
-      {/* Note about listings without coordinates */}
-      {sortedListings.some((l) => l.distance === null) && (
-        <p className="mt-6 text-sm text-gray-500 text-center">
-          Some listings don't have precise location data and appear at the end.
+      {hiddenWithoutCoords > 0 && (
+        <p className="mt-6 text-sm text-on-surface-variant text-center">
+          {hiddenWithoutCoords} {hiddenWithoutCoords === 1 ? 'listing is' : 'listings are'} hidden because we don&apos;t have precise location data for {hiddenWithoutCoords === 1 ? 'it' : 'them'}. Switch to list view to see {hiddenWithoutCoords === 1 ? 'it' : 'them'}.
         </p>
       )}
     </div>
