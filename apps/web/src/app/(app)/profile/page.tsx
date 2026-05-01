@@ -132,6 +132,17 @@ export default async function ProfilePage() {
   return (
     <AnimatedPage>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page header with Edit button */}
+        <div className="flex items-center justify-between mb-6" data-animate>
+          <h1 className="text-2xl font-display font-bold text-on-surface">Your Profile</h1>
+          <Link href="/profile/edit">
+            <Button variant="secondary" size="sm">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Profile
+            </Button>
+          </Link>
+        </div>
+
         {/* Profile Header */}
         <div className="grid lg:grid-cols-3 gap-8" data-animate>
           {/* Left: Profile Info */}
@@ -359,14 +370,36 @@ export default async function ProfilePage() {
             </CardContent>
           </Card>
 
-          {/* Employment & Trust */}
+          {/* About You */}
           <Card variant="bordered">
             <CardContent className="py-6">
               <h3 className="text-lg font-display font-semibold text-on-surface flex items-center gap-2 mb-5">
-                <Briefcase className="h-5 w-5 text-on-surface-variant" />
-                Employment & Trust
+                <User className="h-5 w-5 text-on-surface-variant" />
+                About You
               </h3>
               <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl">
+                  <Home className="h-5 w-5 text-secondary mt-0.5" />
+                  <div>
+                    <p className="font-medium text-on-surface">Household</p>
+                    <p className="text-sm text-on-surface-variant">
+                      {(() => {
+                        const label = HOUSEHOLD_SITUATIONS.find(
+                          (s) => s.value === profile?.household_situation
+                        )?.label
+                        if (!label) return 'Not specified'
+                        const childCount = profile?.number_of_children ?? 0
+                        const showChildren =
+                          childCount > 0 &&
+                          (profile?.household_situation === 'single_parent' ||
+                            profile?.household_situation === 'couple_with_children')
+                        return showChildren
+                          ? `${label} (${childCount} child${childCount === 1 ? '' : 'ren'})`
+                          : label
+                      })()}
+                    </p>
+                  </div>
+                </div>
                 {profile?.occupation && (
                   <div className="flex items-start gap-3 p-4 bg-surface-container-low rounded-xl">
                     <Briefcase className="h-5 w-5 text-secondary mt-0.5" />
