@@ -163,16 +163,18 @@ export function ListingActions({
     return (
       <div className="space-y-2">
         <Button variant="outline" className="w-full" onClick={handleShare}>
-          <Share2 className="h-4 w-4 mr-2" />
+          <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-secondary-container text-secondary mr-2.5">
+            <Share2 className="h-4 w-4" />
+          </span>
           Share Listing
         </Button>
       </div>
     )
   }
 
-  // NOTE: This action stack mirrors PR #12 (labelled buttons, no duplicate
-  // "Message Host", report demoted to a small text link) so the two PRs
-  // don't merge-conflict on this file regardless of merge order.
+  // Each action gets a tinted icon "chip" so the meaning is readable at a
+  // glance — tester reported the actions felt label-only because the inline
+  // 16px icons were easy to overlook against the button background.
   return (
     <div className="space-y-3">
       <Button
@@ -181,9 +183,9 @@ export function ListingActions({
         disabled={isContacting}
       >
         {isContacting ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
         ) : (
-          <MessageCircle className="h-4 w-4 mr-2" />
+          <MessageCircle className="h-5 w-5 mr-2" />
         )}
         Contact Host
       </Button>
@@ -195,15 +197,23 @@ export function ListingActions({
         disabled={isSaving}
       >
         {isSaving ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <Loader2 className="h-5 w-5 mr-2.5 animate-spin" />
         ) : (
-          <Heart className={`h-4 w-4 mr-2 ${isSaved ? 'fill-current' : ''}`} />
+          <span
+            className={`inline-flex items-center justify-center h-7 w-7 rounded-lg mr-2.5 ${
+              isSaved ? 'bg-red-100 text-red-500' : 'bg-tertiary-fixed/30 text-tertiary'
+            }`}
+          >
+            <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} />
+          </span>
         )}
         {isSaved ? 'Saved' : 'Save Listing'}
       </Button>
 
       <Button variant="outline" className="w-full" onClick={handleShare}>
-        <Share2 className="h-4 w-4 mr-2" />
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-primary-fixed/30 text-primary mr-2.5">
+          <Share2 className="h-4 w-4" />
+        </span>
         Share Listing
       </Button>
 
