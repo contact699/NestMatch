@@ -830,3 +830,28 @@ body {
   opacity: 0.03;
   pointer-events: none;
 }
+
+/* === Landing hero animations === */
+
+@keyframes hero-float-y {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+.hero-float-a { animation: hero-float-y 6s ease-in-out infinite; }
+.hero-float-b { animation: hero-float-y 7s ease-in-out -1.5s infinite; }
+.hero-float-c { animation: hero-float-y 8s ease-in-out -3s infinite; }
+
+@keyframes hero-pulse-ring {
+  0%   { box-shadow: 0 0 0 0 rgba(0, 106, 96, 0.45); }
+  100% { box-shadow: 0 0 0 14px rgba(0, 106, 96, 0); }
+}
+.hero-pulse-ring { animation: hero-pulse-ring 2.2s ease-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-float-a,
+  .hero-float-b,
+  .hero-float-c,
+  .hero-pulse-ring {
+    animation: none;
+  }
+}
