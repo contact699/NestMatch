@@ -239,10 +239,25 @@ export default function SearchPage() {
           />
         )
       default:
+        // On large screens the map opens as a sticky side panel next to the
+        // list. On <lg it stacks above the list (tester reported the button
+        // did nothing on smaller widths because the panel was lg-only).
         return (
-          <div className="flex gap-6">
-            {/* Results grid */}
-            <div className="flex-1">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {showMap && (
+              <div className="lg:hidden">
+                <div className="h-[400px] rounded-2xl overflow-hidden">
+                  <SearchResultsMap
+                    listings={listings}
+                    savedIds={savedIds}
+                    onSave={save}
+                    onUnsave={unsave}
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 min-w-0">
               <SearchResultsList
                 listings={listings}
                 currentUserId={currentUserId}
@@ -252,7 +267,6 @@ export default function SearchPage() {
               />
             </div>
 
-            {/* Expandable map panel */}
             {showMap && (
               <div className="hidden lg:block w-[400px] flex-shrink-0">
                 <div className="sticky top-24 h-[calc(100vh-120px)] rounded-2xl overflow-hidden">
@@ -293,14 +307,14 @@ export default function SearchPage() {
           {viewMode === 'list' && (
             <button
               onClick={() => setShowMap(!showMap)}
-              className={`hidden lg:flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
                 showMap
                   ? 'bg-secondary text-on-secondary'
                   : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface'
               }`}
             >
               <MapIcon className="h-4 w-4" />
-              {showMap ? 'Hide Map' : 'Expand Map'}
+              <span className="hidden sm:inline">{showMap ? 'Hide Map' : 'Expand Map'}</span>
             </button>
           )}
         </div>
