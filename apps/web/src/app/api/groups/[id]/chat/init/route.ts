@@ -44,14 +44,17 @@ export const POST = withApiHandler(
     if (existing) {
       conversationId = existing.id
     } else {
-      // Lazy-create. participant_ids is required by the schema for 1:1 chat
-      // bookkeeping; for group conversations RLS uses group_id, so any
-      // non-empty array is fine. Use the creator as a placeholder.
+      // Lazy-create. participant_ids is intentionally an empty array for
+      // group conversations: RLS gates access via group_id +
+      // is_group_member(), so populating participant_ids would only grant
+      // stale 1:1-policy access (e.g. the creator retaining read after they
+      // leave the group). Migration 032 scopes the old participant_ids
+      // policies to group_id IS NULL so this is the safe default.
       const { data: created, error: createErr } = await service
         .from('conversations')
         .insert({
           group_id: groupId,
-          participant_ids: [userId!],
+          participant_ids: [],
         })
         .select('id')
         .single()
