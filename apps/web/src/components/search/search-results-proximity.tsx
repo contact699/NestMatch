@@ -127,11 +127,6 @@ export function SearchResultsProximity({
   // proximity view exists to show "what's near me", and a place with no
   // known location can't answer that. Without a reference location we just
   // pass listings through unsorted.
-  const hiddenWithoutCoords = useMemo<number>(() => {
-    if (!hasLocation || !refLat || !refLng) return 0
-    return listings.filter((l) => !l.lat || !l.lng).length
-  }, [listings, refLat, refLng, hasLocation])
-
   const sortedListings = useMemo<ListingWithDistance[]>(() => {
     if (!hasLocation || !refLat || !refLng) {
       return listings.map((l) => ({ ...l, distance: null }))
@@ -285,11 +280,16 @@ export function SearchResultsProximity({
     <div>
       {addressSearchBar}
 
-      {/* Location indicator (when using geolocation, not address) */}
-      {hasGeoLocation && !hasAddress && (
-        <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-          <Navigation className="h-4 w-4 text-blue-500" />
-          <span>Showing listings sorted by distance from your location</span>
+      {/* Reference-point indicator. Tester said "nearby search is unclear
+          because it doesn't show the distance" — making the count and the
+          reference point explicit at the top reinforces that every card has
+          a "X km away" badge, even when only a subset of listings sorted. */}
+      {hasGeoLocation && !hasAddress && sortedListings.length > 0 && (
+        <div className="flex items-center gap-2 mb-4 text-sm text-on-surface-variant">
+          <Navigation className="h-4 w-4 text-secondary" />
+          <span>
+            <strong className="text-on-surface">{sortedListings.length}</strong> listing{sortedListings.length === 1 ? '' : 's'} sorted by distance from your location
+          </span>
         </div>
       )}
 
@@ -316,12 +316,6 @@ export function SearchResultsProximity({
           </div>
         ))}
       </div>
-
-      {hiddenWithoutCoords > 0 && (
-        <p className="mt-6 text-sm text-on-surface-variant text-center">
-          We can&apos;t sort {hiddenWithoutCoords === 1 ? '1 listing' : `${hiddenWithoutCoords} more listings`} by distance — {hiddenWithoutCoords === 1 ? 'its' : 'their'} exact address {hiddenWithoutCoords === 1 ? 'is' : 'are'} not on file yet. Switch to <strong>List</strong> view above to see {hiddenWithoutCoords === 1 ? 'it' : 'them'}.
-        </p>
-      )}
     </div>
   )
 }
