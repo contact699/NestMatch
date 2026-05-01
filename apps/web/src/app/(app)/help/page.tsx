@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   HelpCircle,
   Mail,
@@ -13,8 +14,11 @@ import {
   Search,
   ChevronDown,
   ArrowRight,
+  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+
+const SUPPORT_EMAIL = 'support@nestmatch.ca'
 
 const QUICK_LINKS = [
   {
@@ -145,18 +149,40 @@ export default function HelpPage() {
           Our team reads every message. For account, billing, or verification issues, email us
           directly.
         </p>
-        <Button
-          type="button"
-          className="bg-secondary text-on-primary hover:bg-secondary/90"
-          onClick={() => { window.location.href = 'mailto:support@nestmatch.ca' }}
-        >
-          <Mail className="h-4 w-4 mr-2" />
-          Email Support
-        </Button>
+        {/* Render as <a> so the browser handles the mailto: itself — setting
+            window.location.href silently no-ops when no mail handler is
+            registered (e.g., a Windows user with no default mail app). */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Real <a> so the browser handles mailto: itself; setting
+              window.location.href silently no-ops when the user has no
+              default mail handler (e.g., Windows without a mail app set). */}
+          <a
+            href={`mailto:${SUPPORT_EMAIL}`}
+            className="inline-flex items-center justify-center font-medium rounded-lg px-5 py-2.5 text-sm gap-2 bg-secondary text-on-primary hover:bg-secondary/90 transition-colors"
+          >
+            <Mail className="h-4 w-4" />
+            Email Support
+          </a>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(SUPPORT_EMAIL)
+                toast.success('Email address copied')
+              } catch {
+                toast.error(`Couldn't copy. Email us at ${SUPPORT_EMAIL}`)
+              }
+            }}
+          >
+            <Copy className="h-4 w-4 mr-2" />
+            Copy address
+          </Button>
+        </div>
         <p className="text-xs text-on-surface-variant mt-3">
           Or email{' '}
-          <a href="mailto:support@nestmatch.ca" className="underline text-secondary">
-            support@nestmatch.ca
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="underline text-secondary">
+            {SUPPORT_EMAIL}
           </a>
         </p>
       </div>
