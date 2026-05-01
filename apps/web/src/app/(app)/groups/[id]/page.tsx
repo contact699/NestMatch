@@ -28,6 +28,7 @@ import {
   CheckCircle,
   Circle,
   Pencil,
+  MessageCircle,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -297,15 +298,21 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Top Contextual Nav */}
-      <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
+      {/* Top Contextual Nav. The "Chat" anchor is styled as a pill so testers
+          stop asking "is there a group chat?" — the answer is right at the
+          top of the page, visually distinct from the plain text links. */}
+      <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 mb-8 text-sm font-medium">
         <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
           My Groups
         </Link>
         <span className="text-on-surface border-b-2 border-primary pb-1">
           This Group
         </span>
-        <a href="#group-chat" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+        <a
+          href="#group-chat"
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-secondary hover:bg-secondary hover:text-on-secondary transition-colors"
+        >
+          <MessageCircle className="h-3.5 w-3.5" />
           Chat
         </a>
         <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
@@ -329,14 +336,27 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         {group.name}
       </h1>
 
-      {/* Mission quote + action buttons */}
+      {/* Mission quote + action buttons. The "Open Chat" CTA is the primary
+          action so testers stop asking "is there a group chat?" — it scrolls
+          to the chat block further down the page. */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-10">
         {group.description && (
           <p className="text-on-surface-variant italic max-w-2xl text-base leading-relaxed">
             &ldquo;{group.description}&rdquo;
           </p>
         )}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex flex-wrap items-center gap-3 flex-shrink-0">
+          <Button
+            size="sm"
+            onClick={() => {
+              document
+                .getElementById('group-chat')
+                ?.scrollIntoView({ behavior: 'smooth' })
+            }}
+          >
+            <MessageCircle className="h-4 w-4 mr-1.5" />
+            Open Chat
+          </Button>
           {group.is_admin && (
             <Button variant="outline" size="sm" onClick={() => setShowSettingsModal(true)}>
               <Pencil className="h-4 w-4 mr-1.5" />
@@ -344,7 +364,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
             </Button>
           )}
           {group.is_admin && (
-            <Button size="sm" onClick={() => setShowInviteModal(true)}>
+            <Button variant="outline" size="sm" onClick={() => setShowInviteModal(true)}>
               <UserPlus className="h-4 w-4 mr-1.5" />
               Invite Member
             </Button>
