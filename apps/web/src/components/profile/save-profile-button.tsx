@@ -3,7 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Heart, Loader2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
+import { clientLogger } from '@/lib/client-logger'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -46,34 +48,54 @@ export function SaveProfileButton({
     }
 
     setIsSaving(true)
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    try {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-    if (!user) {
+      if (!user) {
+        toast.error('You need to be signed in to save profiles.')
+        return
+      }
+
+      // Cast: saved_profiles was added in migration 024; the generated
+      // Database type doesn't know about it yet. Regenerate types after
+      // applying the migration to remove the cast.
+      const fromSaved = (supabase.from as any)('saved_profiles')
+
+      if (isSaved) {
+        const { error } = await fromSaved
+          .delete()
+          .eq('user_id', user.id)
+          .eq('saved_user_id', savedUserId)
+        if (error) {
+          clientLogger.error(`Failed to unsave profile ${savedUserId}`, error)
+          toast.error("Couldn't remove the save. Please try again.")
+          return
+        }
+        setIsSaved(false)
+      } else {
+        const { error } = await fromSaved.insert({
+          user_id: user.id,
+          saved_user_id: savedUserId,
+        })
+        if (error) {
+          clientLogger.error(`Failed to save profile ${savedUserId}`, error)
+          toast.error(
+            error.message
+              ? `Couldn't save: ${error.message}`
+              : "Couldn't save the profile. Please try again."
+          )
+          return
+        }
+        setIsSaved(true)
+      }
+
+      router.refresh()
+    } finally {
       setIsSaving(false)
-      return
     }
-
-    // Cast: saved_profiles was added in migration 024; the generated
-    // Database type doesn't know about it yet. Regenerate types after
-    // applying the migration to remove the cast.
-    const fromSaved = (supabase.from as any)('saved_profiles')
-
-    if (isSaved) {
-      await fromSaved
-        .delete()
-        .eq('user_id', user.id)
-        .eq('saved_user_id', savedUserId)
-      setIsSaved(false)
-    } else {
-      await fromSaved.insert({ user_id: user.id, saved_user_id: savedUserId })
-      setIsSaved(true)
-    }
-
-    setIsSaving(false)
-    router.refresh()
   }
 
   if (variant === 'icon') {
