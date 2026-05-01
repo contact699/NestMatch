@@ -21,6 +21,7 @@ import {
   Crown,
   Bell,
   MessageCircle,
+  Search,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -71,6 +72,7 @@ interface Invitation {
 
 export default function GroupsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const {
     data: groupsData,
@@ -94,6 +96,16 @@ export default function GroupsPage() {
   const groups = groupsData?.groups ?? []
   const invitations = invitationsData?.invitations ?? []
   const isLoading = groupsLoading || invitationsLoading
+
+  const trimmedQuery = searchQuery.trim().toLowerCase()
+  const filteredGroups = trimmedQuery
+    ? groups.filter((g) => {
+        if (g.name.toLowerCase().includes(trimmedQuery)) return true
+        if (g.description?.toLowerCase().includes(trimmedQuery)) return true
+        if (g.preferred_cities?.some((c) => c.toLowerCase().includes(trimmedQuery))) return true
+        return false
+      })
+    : groups
 
   const handleInvitationResponse = async (groupId: string, invitationId: string, response: 'accept' | 'decline') => {
     try {
@@ -238,8 +250,30 @@ export default function GroupsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-4">
-          {groups.map((group) => (
+        <>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-on-surface-variant" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search your groups by name, description, or city"
+              aria-label="Search your groups"
+              className="w-full pl-9 pr-3 py-2.5 ghost-border rounded-xl bg-surface-container-lowest text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-secondary"
+            />
+          </div>
+
+          {filteredGroups.length === 0 ? (
+            <Card variant="bordered">
+              <CardContent className="py-10 text-center">
+                <p className="text-sm text-on-surface-variant">
+                  No groups match &ldquo;{searchQuery}&rdquo;.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredGroups.map((group) => (
             <Link key={group.id} href={`/groups/${group.id}`}>
               <Card variant="bordered" className="ghost-border hover:border-outline-variant/30 transition-colors">
                 <CardContent className="py-4">
@@ -346,8 +380,10 @@ export default function GroupsPage() {
                 </CardContent>
               </Card>
             </Link>
-          ))}
-        </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Create Group Modal */}

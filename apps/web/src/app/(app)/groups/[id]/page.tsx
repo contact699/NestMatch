@@ -300,11 +300,14 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       {/* Top Contextual Nav */}
       <nav className="flex items-center gap-8 mb-8 text-sm font-medium">
         <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
-          All Groups
+          My Groups
         </Link>
         <span className="text-on-surface border-b-2 border-primary pb-1">
           This Group
         </span>
+        <a href="#group-chat" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+          Chat
+        </a>
         <Link href="/expenses" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
           Expenses
         </Link>
@@ -316,12 +319,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         </Link>
       </nav>
 
-      {/* Verified Badge + Est. Date */}
+      {/* Est. Date */}
       <div className="flex items-center gap-3 mb-2">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide bg-secondary-container text-secondary uppercase">
-          <CheckCircle className="h-3.5 w-3.5" />
-          Verified Group
-        </span>
         <span className="text-sm text-on-surface-variant">Est. {estDate}</span>
       </div>
 
@@ -569,7 +568,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       </div>
 
       {/* Group chat — real-time messaging between active members */}
-      <div className="mb-10">
+      <div id="group-chat" className="mb-10 scroll-mt-24">
         <GroupChat groupId={id} />
       </div>
 

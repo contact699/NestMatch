@@ -250,7 +250,7 @@ export default function ExpensesPage() {
         <Link href="/expenses" className="text-on-surface border-b-2 border-primary pb-1">
           Expenses
         </Link>
-        <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
+        <Link href="/resources/agreement" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
           Agreement
         </Link>
         <Link href="/payments" className="text-on-surface-variant hover:text-on-surface transition-colors pb-1">
