@@ -153,7 +153,9 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
         className="w-full"
         onClick={() => setOpen((v) => !v)}
       >
-        <UsersRound className="h-4 w-4 mr-2" />
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-secondary-container text-secondary mr-2.5">
+          <UsersRound className="h-4 w-4" />
+        </span>
         Save to a group
       </Button>
 
