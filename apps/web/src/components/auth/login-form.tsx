@@ -203,9 +203,6 @@ export function LoginForm() {
         </div>
       </div>
 
-      {/* Social Logins — Apple sign-in removed: button had no handler and used
-          a non-standard mark. Bring it back when Apple Developer + Supabase
-          provider config is in place. */}
       <button
         type="button"
         onClick={handleGoogleLogin}
