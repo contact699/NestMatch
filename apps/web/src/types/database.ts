@@ -29,6 +29,10 @@ export interface Database {
           languages: string[] | null
           city: string | null
           province: string | null
+          household_situation: 'alone' | 'couple' | 'single_parent' | 'couple_with_children' | 'with_roommate' | null
+          number_of_children: number | null
+          budget_min: number | null
+          budget_max: number | null
           is_admin: boolean
           is_online: boolean
           last_seen_at: string | null
@@ -55,6 +59,10 @@ export interface Database {
           languages?: string[] | null
           city?: string | null
           province?: string | null
+          household_situation?: 'alone' | 'couple' | 'single_parent' | 'couple_with_children' | 'with_roommate' | null
+          number_of_children?: number | null
+          budget_min?: number | null
+          budget_max?: number | null
           is_admin?: boolean
           is_online?: boolean
           last_seen_at?: string | null
@@ -81,6 +89,10 @@ export interface Database {
           languages?: string[] | null
           city?: string | null
           province?: string | null
+          household_situation?: 'alone' | 'couple' | 'single_parent' | 'couple_with_children' | 'with_roommate' | null
+          number_of_children?: number | null
+          budget_min?: number | null
+          budget_max?: number | null
           is_admin?: boolean
           is_online?: boolean
           last_seen_at?: string | null
