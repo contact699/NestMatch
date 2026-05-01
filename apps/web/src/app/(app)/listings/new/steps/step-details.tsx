@@ -52,6 +52,9 @@ export function StepDetails({ register, errors, watch, setValue }: StepDetailsPr
               type="number"
               {...register('price', { valueAsNumber: true })}
               placeholder="1200"
+              min={100}
+              max={50000}
+              step={1}
               className="w-full pl-9 pr-4 py-2.5 ghost-border rounded-xl focus:outline-none focus:ring-2 focus:ring-secondary bg-surface-container-lowest text-on-surface placeholder:text-on-surface-variant"
             />
           </div>
