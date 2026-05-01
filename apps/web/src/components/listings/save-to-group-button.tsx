@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { Bookmark, Check, Loader2, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -30,6 +31,55 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
   const [loading, setLoading] = useState(false)
   const [togglingGroupId, setTogglingGroupId] = useState<string | null>(null)
   const [groups, setGroups] = useState<GroupRow[] | null>(null)
+  const buttonRef = useRef<HTMLDivElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+  // Position the floating menu using fixed coords from the button rect.
+  // The action card lives inside `.feature-card { overflow: hidden }`, so the
+  // old absolutely-positioned menu was clipped — z-index couldn't escape it.
+  // Portaling to <body> with fixed positioning sidesteps the overflow boundary.
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number } | null>(null)
+
+  useLayoutEffect(() => {
+    if (!open) return
+    const update = () => {
+      const el = buttonRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const menuWidth = 288 // w-72
+      // Anchor right-edge of menu to right-edge of button so it reads as a
+      // button-attached dropdown rather than a free-floating popover.
+      const left = Math.max(8, rect.right - menuWidth)
+      const top = rect.bottom + 8
+      setCoords({ top, left, width: menuWidth })
+    }
+    update()
+    window.addEventListener('scroll', update, true)
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update, true)
+      window.removeEventListener('resize', update)
+    }
+  }, [open])
+
+  // Close on outside click / Escape.
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node
+      if (buttonRef.current?.contains(target)) return
+      if (menuRef.current?.contains(target)) return
+      setOpen(false)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
 
   // Lazy-load groups + saved-state when the dropdown opens for the first time.
   useEffect(() => {
@@ -145,69 +195,81 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
 
   if (!isLoggedIn) return null
 
+  const menu = open && coords ? (
+    <div
+      ref={menuRef}
+      role="menu"
+      style={{
+        position: 'fixed',
+        top: coords.top,
+        left: coords.left,
+        width: coords.width,
+        zIndex: 1000,
+      }}
+      className="rounded-xl bg-surface-container-lowest ghost-border shadow-lg p-2"
+    >
+      {loading || groups === null ? (
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
+        </div>
+      ) : groups.length === 0 ? (
+        <div className="px-3 py-4 text-center">
+          <p className="text-sm text-on-surface-variant mb-2">
+            You&apos;re not in any co-renter groups yet.
+          </p>
+          <a
+            href="/groups"
+            className="text-sm font-semibold text-secondary hover:underline"
+          >
+            Create or join a group →
+          </a>
+        </div>
+      ) : (
+        <>
+          <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
+            Save to
+          </p>
+          <ul className="space-y-1">
+            {groups.map((g) => (
+              <li key={g.group_id}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(g)}
+                  disabled={togglingGroupId === g.group_id}
+                  className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-on-surface hover:bg-surface-container-low transition-colors text-left disabled:opacity-50"
+                >
+                  <span className="truncate">{g.group_name}</span>
+                  {togglingGroupId === g.group_id ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-on-surface-variant flex-shrink-0" />
+                  ) : g.alreadySaved ? (
+                    <Check className="h-4 w-4 text-secondary flex-shrink-0" />
+                  ) : (
+                    <Bookmark className="h-4 w-4 text-on-surface-variant flex-shrink-0" />
+                  )}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  ) : null
+
   return (
-    <div className="relative">
+    <div ref={buttonRef}>
       <Button
         type="button"
         variant="outline"
         className="w-full"
         onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
       >
         <UsersRound className="h-4 w-4 mr-2" />
         Save to a group
       </Button>
 
-      {open && (
-        <div
-          className="absolute z-50 right-0 mt-2 w-72 rounded-xl bg-surface-container-lowest ghost-border shadow-lg p-2"
-          role="menu"
-        >
-          {loading || groups === null ? (
-            <div className="flex items-center justify-center py-6">
-              <Loader2 className="h-5 w-5 animate-spin text-on-surface-variant" />
-            </div>
-          ) : groups.length === 0 ? (
-            <div className="px-3 py-4 text-center">
-              <p className="text-sm text-on-surface-variant mb-2">
-                You're not in any co-renter groups yet.
-              </p>
-              <a
-                href="/groups"
-                className="text-sm font-semibold text-secondary hover:underline"
-              >
-                Create or join a group →
-              </a>
-            </div>
-          ) : (
-            <>
-              <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-on-surface-variant">
-                Save to
-              </p>
-              <ul className="space-y-1">
-                {groups.map((g) => (
-                  <li key={g.group_id}>
-                    <button
-                      type="button"
-                      onClick={() => toggleGroup(g)}
-                      disabled={togglingGroupId === g.group_id}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm text-on-surface hover:bg-surface-container-low transition-colors text-left disabled:opacity-50"
-                    >
-                      <span className="truncate">{g.group_name}</span>
-                      {togglingGroupId === g.group_id ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-on-surface-variant flex-shrink-0" />
-                      ) : g.alreadySaved ? (
-                        <Check className="h-4 w-4 text-secondary flex-shrink-0" />
-                      ) : (
-                        <Bookmark className="h-4 w-4 text-on-surface-variant flex-shrink-0" />
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
-      )}
+      {menu && typeof document !== 'undefined' ? createPortal(menu, document.body) : null}
     </div>
   )
 }
