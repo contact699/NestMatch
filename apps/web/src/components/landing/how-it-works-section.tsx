@@ -1,79 +1,72 @@
 'use client'
 
-import { ShieldCheck, Heart, MessageCircle } from 'lucide-react'
-
 const STEPS = [
   {
-    step: '01',
-    title: 'Create & Verify',
+    num: '1',
+    tag: 'Sign up',
+    title: 'Verify & quiz',
     description:
-      'Sign up, complete your lifestyle quiz, and verify your identity. It takes less than 10 minutes.',
-    icon: ShieldCheck,
+      'Sign up, take the lifestyle quiz, and verify your ID. The trust badge unlocks better matches.',
   },
   {
-    step: '02',
-    title: 'Browse & Match',
+    num: '2',
+    tag: 'Browse',
+    title: 'Match & chat',
     description:
-      'Search listings or roommate profiles. See compatibility scores based on your lifestyle preferences.',
-    icon: Heart,
+      'See compatibility scores per listing and per person. Message securely, share photos, schedule viewings.',
   },
   {
-    step: '03',
-    title: 'Connect & Move In',
+    num: '3',
+    tag: 'Move in',
+    title: 'Sign & settle',
     description:
-      'Message your matches securely on the platform. Schedule viewings and find your new home.',
-    icon: MessageCircle,
+      'Generate a roommate agreement, split rent & utilities, and use shared move-in checklists.',
   },
 ]
 
 export function HowItWorksSection() {
   return (
     <section className="py-24 lg:py-32 bg-surface-container-low relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-        <div className="text-center mb-16" data-animate>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl" data-animate>
           <span className="text-secondary font-bold tracking-widest uppercase text-xs">
-            Simple Process
+            How it works
           </span>
-          <h2 className="font-display text-4xl sm:text-5xl font-bold text-primary mb-6 mt-2">
-            How NestMatch works
+          <h2 className="font-display text-4xl lg:text-5xl font-bold text-primary mt-3">
+            Three steps to a real home.
           </h2>
-          <p className="text-xl text-on-surface-variant max-w-2xl mx-auto">
-            Find your perfect roommate in three simple steps.
+          <p className="mt-4 text-lg text-on-surface-variant">
+            From verifying your profile to signing the lease — everything in
+            one place.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
-          {STEPS.map((item, index) => (
-            <div
-              key={item.step}
-              className="relative"
+        <ol className="mt-14 grid md:grid-cols-3 gap-6 relative">
+          <div className="hidden md:block absolute top-9 left-[16%] right-[16%] h-px bg-gradient-to-r from-outline-variant/0 via-outline-variant/60 to-outline-variant/0" />
+          {STEPS.map((s, i) => (
+            <li
+              key={s.num}
+              className="bg-surface-container-lowest rounded-3xl p-7 shadow-sm relative"
               data-animate
-              style={{ transitionDelay: `${index * 150}ms` }}
+              style={{ transitionDelay: `${i * 100}ms` }}
             >
-              {/* Connector line */}
-              {index < 2 && (
-                <div className="hidden md:block absolute top-12 left-[60%] w-full h-0.5 bg-gradient-to-r from-outline-variant to-transparent" />
-              )}
-
-              <div className="relative bg-surface-container-lowest rounded-2xl p-8 shadow-sm hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-center gap-4 mb-6">
-                  <span className="text-5xl font-bold text-surface-container-high font-display">
-                    {item.step}
-                  </span>
-                  <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg">
-                    <item.icon className="h-6 w-6 text-on-primary" />
-                  </div>
-                </div>
-                <h3 className="text-xl font-semibold text-primary mb-3 font-display">
-                  {item.title}
-                </h3>
-                <p className="text-on-surface-variant leading-relaxed">
-                  {item.description}
-                </p>
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-full bg-primary text-on-primary grid place-items-center font-display font-bold">
+                  {s.num}
+                </span>
+                <span className="text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
+                  {s.tag}
+                </span>
               </div>
-            </div>
+              <h3 className="mt-4 font-display text-xl font-bold text-primary">
+                {s.title}
+              </h3>
+              <p className="mt-1.5 text-on-surface-variant text-sm leading-relaxed">
+                {s.description}
+              </p>
+            </li>
           ))}
-        </div>
+        </ol>
       </div>
     </section>
   )
