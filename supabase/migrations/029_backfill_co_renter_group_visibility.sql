@@ -11,9 +11,11 @@
 -- hide them.
 --
 -- This migration flips those legacy groups to public. The created_at
--- guard limits the change to rows older than this migration's apply date,
--- so anyone who deliberately creates a private group going forward is
--- unaffected.
+-- cutoff is a FIXED timestamp (the date this migration first shipped) so
+-- re-running this migration in the future will NOT silently flip private
+-- groups created after the migration date back to public — a safety
+-- regression flagged in code review of the original `created_at < NOW()`
+-- version.
 --
 -- Anyone who actually wants their old group to stay private can flip it
 -- back from group settings; this is the safer default for the much larger
@@ -24,4 +26,4 @@ UPDATE public.co_renter_groups
    SET is_public = true,
        updated_at = NOW()
  WHERE is_public IS DISTINCT FROM true
-   AND created_at < NOW();
+   AND created_at < TIMESTAMPTZ '2026-05-01 00:00:00+00';

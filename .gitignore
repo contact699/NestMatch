@@ -49,6 +49,9 @@ next-env.d.ts
 # brainstorming workspace (visual companion)
 .superpowers/
 
+# QA triage scratch (manual SQL apply files; never committed)
+_qa_apply/
+
 # IDE / editor
 .idea/
 .vscode/
