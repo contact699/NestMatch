@@ -1,63 +1,82 @@
 'use client'
 
-import { ShieldCheck, CheckCircle, Users } from 'lucide-react'
+import Link from 'next/link'
+import { ShieldCheck, Home, Users, ArrowRight } from 'lucide-react'
 
 const FEATURES = [
   {
     icon: ShieldCheck,
-    title: 'Optional ID Verification',
+    iconBg: 'bg-primary',
+    title: 'Optional ID verification',
     description:
-      'Verify your identity with a government ID check and earn a trust badge on your profile. Filter for verified users to protect yourself from catfishing and scams.',
+      'Government ID check via Persona. Verified members display a trust badge — filter to verified-only in one tap.',
+    cta: 'How verification works',
+    href: '/verify',
   },
   {
-    icon: CheckCircle,
-    title: 'Real Listings Only',
+    icon: Home,
+    iconBg: 'bg-secondary',
+    title: 'Real listings only',
     description:
-      'We verify listing ownership. No bait-and-switch, no phantom apartments, no wasted viewings.',
+      'We verify ownership before a listing goes live. No bait-and-switch, no phantom apartments, no wasted viewings.',
+    cta: 'See verified listings',
+    href: '/search',
   },
   {
     icon: Users,
-    title: 'Lifestyle Matching',
+    iconBg: 'bg-primary-container',
+    title: 'Lifestyle matching',
     description:
-      'Our compatibility quiz matches you based on sleep schedules, cleanliness, noise tolerance, and more.',
+      'Sleep, cleanliness, noise, guests, pets, work-from-home — many dimensions, weighted by what matters to you.',
+    cta: 'Take the quiz',
+    href: '/quiz',
   },
 ]
 
 export function TrustFeaturesSection() {
   return (
-    <section className="py-24 lg:py-32 bg-surface-container-lowest relative">
+    <section className="py-24 lg:py-32 bg-surface-container-lowest">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16" data-animate>
+        <div className="max-w-3xl" data-animate>
           <span className="text-secondary font-bold tracking-widest uppercase text-xs">
-            Why NestMatch?
+            Why NestMatch
           </span>
-          <h2 className="font-display text-4xl sm:text-5xl font-bold text-primary mb-6 mt-2">
-            Built on trust, not hope
+          <h2 className="font-display text-4xl lg:text-5xl font-bold text-primary mt-3">
+            Built on trust, not hope.
           </h2>
-          <p className="text-xl text-on-surface-variant max-w-2xl mx-auto">
+          <p className="mt-4 text-lg text-on-surface-variant">
             Every feature designed to eliminate scams, fake listings, and
             roommate surprises.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
-          {FEATURES.map((feature, index) => (
-            <div
-              key={feature.title}
-              className="feature-card group"
+        <div className="mt-14 grid md:grid-cols-3 gap-6">
+          {FEATURES.map((f, i) => (
+            <article
+              key={f.title}
+              className="relative bg-background rounded-3xl p-7 ring-1 ring-outline-variant/30 hover:-translate-y-1 transition-transform group"
               data-animate
-              style={{ transitionDelay: `${index * 100}ms` }}
+              style={{ transitionDelay: `${i * 100}ms` }}
             >
-              <div className="feature-icon bg-primary shadow-lg">
-                <feature.icon className="h-6 w-6 text-on-primary" />
+              <div
+                className={`w-12 h-12 rounded-xl ${f.iconBg} text-on-primary grid place-items-center mb-5 shadow-md`}
+              >
+                <f.icon className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-semibold text-primary mb-3 font-display">
-                {feature.title}
+              <h3 className="font-display text-xl font-bold text-primary">
+                {f.title}
               </h3>
-              <p className="text-on-surface-variant leading-relaxed">
-                {feature.description}
+              <p className="mt-2 text-on-surface-variant leading-relaxed">
+                {f.description}
               </p>
-            </div>
+              <Link
+                href={f.href}
+                className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary"
+              >
+                {f.cta}
+                <ArrowRight className="w-[18px] h-[18px] transition-transform group-hover:translate-x-1" />
+              </Link>
+            </article>
           ))}
         </div>
       </div>
