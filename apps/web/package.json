@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "seed:resources": "npx tsx scripts/seed-resources.ts"
+    "seed:resources": "npx tsx scripts/seed-resources.ts",
+    "backfill:listing-coords": "npx tsx scripts/backfill-listing-coords.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
