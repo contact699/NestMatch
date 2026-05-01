@@ -159,7 +159,7 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
 
       {open && (
         <div
-          className="absolute z-20 right-0 mt-2 w-72 rounded-xl bg-surface-container-lowest ghost-border shadow-lg p-2"
+          className="absolute z-50 right-0 mt-2 w-72 rounded-xl bg-surface-container-lowest ghost-border shadow-lg p-2"
           role="menu"
         >
           {loading || groups === null ? (

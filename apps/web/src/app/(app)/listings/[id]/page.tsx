@@ -490,8 +490,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Action card */}
-            <Card variant="feature" data-animate className="delay-200 sticky top-24">
+            {/* Action card. Lifted with z-30 so the Save-to-Group dropdown
+                paints above the Quick Info card below it. */}
+            <Card variant="feature" data-animate className="delay-200 sticky top-24 relative z-30">
               <CardContent className="py-6">
                 <ListingActions
                   listingId={id}

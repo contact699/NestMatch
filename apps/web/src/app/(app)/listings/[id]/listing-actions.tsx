@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import { clientLogger } from '@/lib/client-logger'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,29 +78,35 @@ export function ListingActions({
     }
 
     setIsContacting(true)
-    const supabase = createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+    try {
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-    if (!user) {
-      setIsContacting(false)
-      return
-    }
+      if (!user) {
+        toast.error('You need to be signed in to contact the host.')
+        return
+      }
 
-    // Check if conversation already exists
-    const { data: existingConversations } = await supabase
-      .from('conversations')
-      .select('id')
-      .contains('participant_ids', [user.id, hostUserId])
-      .eq('listing_id', listingId)
+      const { data: existingConversations, error: lookupError } = await supabase
+        .from('conversations')
+        .select('id')
+        .contains('participant_ids', [user.id, hostUserId])
+        .eq('listing_id', listingId)
 
-    if (existingConversations && existingConversations.length > 0) {
-      // Navigate to existing conversation
-      router.push(`/messages/${existingConversations[0].id}`)
-    } else {
-      // Create new conversation
-      const { data: newConversation, error } = await supabase
+      if (lookupError) {
+        clientLogger.error('Failed to look up existing conversation', lookupError)
+        toast.error("Couldn't open the conversation. Please try again.")
+        return
+      }
+
+      if (existingConversations && existingConversations.length > 0) {
+        router.push(`/messages/${existingConversations[0].id}`)
+        return
+      }
+
+      const { data: newConversation, error: insertError } = await supabase
         .from('conversations')
         .insert({
           participant_ids: [user.id, hostUserId],
@@ -107,12 +115,23 @@ export function ListingActions({
         .select()
         .single()
 
-      if (newConversation) {
-        router.push(`/messages/${newConversation.id}`)
+      if (insertError || !newConversation) {
+        clientLogger.error(
+          `Failed to create conversation for listing ${listingId} (host ${hostUserId})`,
+          insertError
+        )
+        toast.error(
+          insertError?.message
+            ? `Couldn't start a conversation: ${insertError.message}`
+            : "Couldn't start a conversation. Please try again."
+        )
+        return
       }
-    }
 
-    setIsContacting(false)
+      router.push(`/messages/${newConversation.id}`)
+    } finally {
+      setIsContacting(false)
+    }
   }
 
   const handleShare = async () => {

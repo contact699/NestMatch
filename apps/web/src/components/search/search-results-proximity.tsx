@@ -297,10 +297,13 @@ export function SearchResultsProximity({
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {sortedListings.map((listing, index) => (
           <div key={listing.id} className={`relative ${getDelayClass(index)}`}>
-            {/* Distance badge */}
+            {/* Distance badge — high-contrast pill in the top-left so the
+                "how far is it from me" answer is visible at a glance, not
+                buried in the listing detail. */}
             {listing.distance !== null && (
-              <div className="absolute top-3 left-3 z-10 px-2 py-1 bg-white/90 backdrop-blur rounded-full text-xs font-medium text-blue-600 shadow-sm">
-                {formatDistance(listing.distance)}
+              <div className="absolute top-3 left-3 z-10 inline-flex items-center gap-1 px-2.5 py-1 bg-secondary text-on-secondary rounded-full text-xs font-bold shadow-md">
+                <Navigation className="h-3 w-3" />
+                {formatDistance(listing.distance)} away
               </div>
             )}
             <ListingCard
