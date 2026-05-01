@@ -319,7 +319,7 @@ export function SearchResultsProximity({
 
       {hiddenWithoutCoords > 0 && (
         <p className="mt-6 text-sm text-on-surface-variant text-center">
-          {hiddenWithoutCoords} {hiddenWithoutCoords === 1 ? 'listing is' : 'listings are'} hidden because we don&apos;t have precise location data for {hiddenWithoutCoords === 1 ? 'it' : 'them'}. Switch to list view to see {hiddenWithoutCoords === 1 ? 'it' : 'them'}.
+          We can&apos;t sort {hiddenWithoutCoords === 1 ? '1 listing' : `${hiddenWithoutCoords} more listings`} by distance — {hiddenWithoutCoords === 1 ? 'its' : 'their'} exact address {hiddenWithoutCoords === 1 ? 'is' : 'are'} not on file yet. Switch to <strong>List</strong> view above to see {hiddenWithoutCoords === 1 ? 'it' : 'them'}.
         </p>
       )}
     </div>
