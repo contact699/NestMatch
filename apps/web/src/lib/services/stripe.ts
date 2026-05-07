@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { logger } from '@/lib/logger'
 
 // Lazy initialization of Stripe to avoid errors during build
 let _stripe: Stripe | null = null
@@ -13,6 +14,31 @@ function getStripe(): Stripe {
     })
   }
   return _stripe
+}
+
+// withApiHandler only logs `.message` on caught errors, which collapses Stripe's
+// rich error envelope (type/code/statusCode/requestId/raw) into a single line.
+// When something blows up in checkout we want all of that in production logs.
+function logStripeError(operation: string, err: unknown, context?: Record<string, unknown>): void {
+  if (err instanceof Stripe.errors.StripeError) {
+    logger.error(`Stripe error during ${operation}`, err, {
+      ...context,
+      action: 'stripe_call',
+      operation,
+      stripeType: err.type,
+      stripeCode: err.code,
+      stripeStatusCode: err.statusCode,
+      stripeRequestId: err.requestId,
+      stripeDeclineCode: (err as Stripe.errors.StripeCardError).decline_code,
+      stripeRaw: err.raw,
+    })
+  } else {
+    logger.error(`Non-Stripe error during ${operation}`, err as Error, {
+      ...context,
+      action: 'stripe_call',
+      operation,
+    })
+  }
 }
 
 // Platform fee percentage (e.g., 5%)
@@ -409,21 +435,30 @@ export async function createVerificationCheckoutSession({
   successUrl: string
   cancelUrl: string
 }): Promise<Stripe.Checkout.Session> {
-  return getStripe().checkout.sessions.create({
-    customer: customerId,
-    mode: 'payment',
-    line_items: [{
-      price_data: {
-        currency: 'cad',
-        product_data: { name: productName },
-        unit_amount: priceInCents,
-      },
-      quantity: 1,
-    }],
-    metadata,
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-  })
+  try {
+    return await getStripe().checkout.sessions.create({
+      customer: customerId,
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'cad',
+          product_data: { name: productName },
+          unit_amount: priceInCents,
+        },
+        quantity: 1,
+      }],
+      metadata,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    })
+  } catch (err) {
+    logStripeError('createVerificationCheckoutSession', err, {
+      customerId,
+      productName,
+      priceInCents,
+    })
+    throw err
+  }
 }
 
 /**
