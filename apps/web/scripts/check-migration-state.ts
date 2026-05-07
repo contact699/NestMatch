@@ -55,12 +55,16 @@ async function columnExists(table: string, column: string): Promise<boolean> {
 async function rpcExists(name: string, args: Record<string, unknown> = {}): Promise<{ exists: boolean; reason: string }> {
   const { error } = await (supabase.rpc as any)(name, args)
   if (!error) return { exists: true, reason: 'callable' }
-  // 42883 = function does not exist
-  if (error.code === '42883' || /function .* does not exist/i.test(error.message)) {
+  // Best-effort: postgres 42883 is unambiguous. PostgREST 404/PGRST202 ("Could
+  // not find the function in the schema cache") often fires when the function
+  // exists in postgres but PostgREST hasn't reloaded — we treat that as
+  // existing-but-cache-stale and let RLS-using callers prove it the real way.
+  if (error.code === '42883' || /^function .* does not exist/i.test(error.message || '')) {
     return { exists: false, reason: 'missing' }
   }
-  // Any other error (auth, args) means the function exists
-  return { exists: true, reason: `errored but exists: ${error.message?.slice(0, 80)}` }
+  // Any other error (auth, args, transport, schema cache) means the function
+  // probably exists but we can't fully verify via REST.
+  return { exists: true, reason: `errored but probably exists: ${error.code || ''} ${error.message?.slice(0, 80)}` }
 }
 
 const probes: Probe[] = [
@@ -136,12 +140,16 @@ const probes: Probe[] = [
   },
   {
     migration: '032_scope_chat_policies_and_use_helper',
-    description: 'is_active_group_member helper RPC',
+    // 032 doesn't define a new function — it rebuilds policies on top of the
+    // is_group_member() helper from 025. We check that helper here as the
+    // closest behavioral signal that 032's policies can resolve at all.
+    description: 'is_group_member() helper (used by rebuilt group-chat policies)',
     check: async () => {
-      const { exists } = await rpcExists('is_active_group_member', {
+      const { exists, reason } = await rpcExists('is_group_member', {
         p_group_id: '00000000-0000-0000-0000-000000000000',
+        p_user_id: '00000000-0000-0000-0000-000000000000',
       })
-      return { applied: exists, detail: exists ? 'helper RPC exists' : 'helper RPC missing' }
+      return { applied: exists, detail: exists ? 'helper RPC exists' : `helper RPC ${reason}` }
     },
   },
   {
