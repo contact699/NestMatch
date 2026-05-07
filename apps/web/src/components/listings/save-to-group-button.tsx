@@ -193,7 +193,25 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
     router.refresh()
   }
 
-  if (!isLoggedIn) return null
+  // Logged-out users still see the button so the sidebar isn't visually
+  // shorter than for signed-in users (tester reported "something hidden").
+  // Clicking sends them to /login with a redirect back to this listing,
+  // matching the Save / Contact Host pattern in listing-actions.tsx.
+  if (!isLoggedIn) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => router.push(`/login?redirect=/listings/${listingId}`)}
+      >
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-secondary-container text-secondary mr-2.5">
+          <UsersRound className="h-4 w-4" />
+        </span>
+        Save to a group
+      </Button>
+    )
+  }
 
   const menu = open && coords ? (
     <div
