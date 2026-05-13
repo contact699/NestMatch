@@ -2,5 +2,11 @@
   "buildCommand": "npm run build:web",
   "installCommand": "npm install --install-strategy=hoisted",
   "framework": "nextjs",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "functions": {
+    "apps/web/src/app/api/upload/route.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  }
 }
