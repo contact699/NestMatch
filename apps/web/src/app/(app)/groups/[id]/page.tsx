@@ -6,6 +6,7 @@ import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AnimatedPage } from '@/components/ui/animated-page'
 import { ConfirmModal } from '@/components/ui/modal'
 import { InviteModal } from '@/components/groups/invite-modal'
 import { GroupSavedListings } from '@/components/groups/group-saved-listings'
@@ -297,7 +298,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const primaryCity = group.preferred_cities?.[0] || null
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AnimatedPage>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Top Contextual Nav. The "Chat" anchor is styled as a pill so testers
           stop asking "is there a group chat?" — the answer is right at the
           top of the page, visually distinct from the plain text links. */}
@@ -702,6 +704,7 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
         confirmText="Confirm"
         variant="danger"
       />
-    </div>
+      </div>
+    </AnimatedPage>
   )
 }

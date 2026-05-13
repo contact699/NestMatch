@@ -490,7 +490,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            <Card variant="feature" data-animate className="delay-200 sticky top-24">
+            <Card variant="feature" data-animate className="delay-200 sticky top-24 z-10">
               <CardContent className="py-6">
                 <ListingActions
                   listingId={id}
