@@ -4,7 +4,7 @@
   "framework": "nextjs",
   "outputDirectory": "apps/web/.next",
   "functions": {
-    "apps/web/src/app/api/upload/route.ts": {
+    "src/app/api/upload/route.ts": {
       "maxDuration": 30,
       "memory": 1024
     }
