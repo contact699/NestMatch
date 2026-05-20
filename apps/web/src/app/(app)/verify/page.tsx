@@ -221,13 +221,18 @@ export default function VerifyPage() {
     )
   }
 
-  const idVerification = status?.verifications.find((v) => v.type === 'id')
-  const creditVerification = status?.verifications.find(
-    (v) => v.type === 'credit'
-  )
-  const criminalVerification = status?.verifications.find(
-    (v) => v.type === 'criminal'
-  )
+  // Users can have multiple rows of the same type (e.g. a stale APPLICANT_EXPIRED
+  // case followed by a real successful one). Prefer completed > pending > failed
+  // so the UI reflects the best state, not just the most recent attempt.
+  const STATUS_PRIORITY: Record<string, number> = { completed: 3, pending: 2, failed: 1 }
+  const pickVerification = (type: 'id' | 'credit' | 'criminal') =>
+    status?.verifications
+      .filter((v) => v.type === type)
+      .sort((a, b) => (STATUS_PRIORITY[b.status] ?? 0) - (STATUS_PRIORITY[a.status] ?? 0))[0]
+
+  const idVerification = pickVerification('id')
+  const creditVerification = pickVerification('credit')
+  const criminalVerification = pickVerification('criminal')
 
   // Calculate trust quotient
   const trustFactors = [

@@ -249,6 +249,7 @@ export function mapCertnStatus(
       return 'completed'
     case 'CANCELLED':
     case 'EXPIRED':
+    case 'APPLICANT_EXPIRED':
       return 'failed'
     // CASE_ORDERED, AWAITING_APPLICANT_SUBMISSION, IN_PROGRESS, etc.
     default:
