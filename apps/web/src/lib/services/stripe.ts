@@ -1,4 +1,5 @@
 import Stripe from 'stripe'
+import { logger } from '@/lib/logger'
 
 // Lazy initialization of Stripe to avoid errors during build
 let _stripe: Stripe | null = null
@@ -13,6 +14,29 @@ function getStripe(): Stripe {
     })
   }
   return _stripe
+}
+
+function logStripeError(operation: string, err: unknown, context?: Record<string, unknown>): void {
+  if (err instanceof Stripe.errors.StripeError) {
+    logger.error(`Stripe error during ${operation}`, err, {
+      ...context,
+      action: 'stripe_call',
+      operation,
+      stripeType: err.type,
+      stripeCode: err.code,
+      stripeStatusCode: err.statusCode,
+      stripeRequestId: err.requestId,
+      stripeDeclineCode: (err as Stripe.errors.StripeCardError).decline_code,
+      stripeRaw: err.raw,
+    })
+    return
+  }
+
+  logger.error(`Non-Stripe error during ${operation}`, err as Error, {
+    ...context,
+    action: 'stripe_call',
+    operation,
+  })
 }
 
 // Platform fee percentage (e.g., 5%)
@@ -115,25 +139,26 @@ export async function getOrCreateCustomer(
   email: string,
   name?: string
 ): Promise<Stripe.Customer> {
-  // Search for existing customer by metadata
-  const existingCustomers = await getStripe().customers.search({
-    query: `metadata['nestmatch_user_id']:'${userId}'`,
-  })
+  try {
+    const existingCustomers = await getStripe().customers.search({
+      query: `metadata['nestmatch_user_id']:'${userId}'`,
+    })
 
-  if (existingCustomers.data.length > 0) {
-    return existingCustomers.data[0]
+    if (existingCustomers.data.length > 0) {
+      return existingCustomers.data[0]
+    }
+
+    return await getStripe().customers.create({
+      email,
+      name: name || undefined,
+      metadata: {
+        nestmatch_user_id: userId,
+      },
+    })
+  } catch (err) {
+    logStripeError('getOrCreateCustomer', err, { userId, email })
+    throw err
   }
-
-  // Create new customer
-  const customer = await getStripe().customers.create({
-    email,
-    name: name || undefined,
-    metadata: {
-      nestmatch_user_id: userId,
-    },
-  })
-
-  return customer
 }
 
 /**
@@ -409,21 +434,30 @@ export async function createVerificationCheckoutSession({
   successUrl: string
   cancelUrl: string
 }): Promise<Stripe.Checkout.Session> {
-  return getStripe().checkout.sessions.create({
-    customer: customerId,
-    mode: 'payment',
-    line_items: [{
-      price_data: {
-        currency: 'cad',
-        product_data: { name: productName },
-        unit_amount: priceInCents,
-      },
-      quantity: 1,
-    }],
-    metadata,
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-  })
+  try {
+    return await getStripe().checkout.sessions.create({
+      customer: customerId,
+      mode: 'payment',
+      line_items: [{
+        price_data: {
+          currency: 'cad',
+          product_data: { name: productName },
+          unit_amount: priceInCents,
+        },
+        quantity: 1,
+      }],
+      metadata,
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+    })
+  } catch (err) {
+    logStripeError('createVerificationCheckoutSession', err, {
+      customerId,
+      productName,
+      priceInCents,
+    })
+    throw err
+  }
 }
 
 /**

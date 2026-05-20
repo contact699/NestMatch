@@ -188,18 +188,25 @@ export default function VerifyPage() {
       })
       const data = await response.json()
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start checkout')
+        const code = typeof data.error === 'object' ? data.error?.code : undefined
+        const message =
+          (typeof data.error === 'object' ? data.error?.message : data.error) ||
+          'Failed to start checkout'
+        const requestId = (typeof data.error === 'object' ? data.error?.requestId : data.requestId) || response.headers.get('X-Request-ID') || undefined
+        const isStripeError = code === 'EXTERNAL_SERVICE_ERROR' || /stripe/i.test(message)
+        const friendly = isStripeError
+          ? `Payments are temporarily unavailable. Please try again in a moment, or contact support@nestmatch.ca${requestId ? ` (ref: ${requestId})` : ''}.`
+          : message
+        if (type === 'id') setIdError(friendly)
+        else if (type === 'criminal') setCriminalError(friendly)
+        else if (type === 'credit') setCreditError(friendly)
+        return
       }
       if (data.url) {
         window.location.href = data.url
       }
     } catch (err) {
-      const raw = err instanceof Error ? err.message : ''
-      const isStripeConnectionIssue =
-        /stripe/i.test(raw) && /(connection|retried|network|timeout)/i.test(raw)
-      const msg = isStripeConnectionIssue
-        ? 'Payments are temporarily unavailable. Please try again in a moment, or contact support@nestmatch.ca if the issue persists.'
-        : raw || 'Failed to start checkout'
+      const msg = err instanceof Error ? err.message : 'Failed to start checkout'
       if (type === 'id') setIdError(msg)
       else if (type === 'criminal') setCriminalError(msg)
       else if (type === 'credit') setCreditError(msg)

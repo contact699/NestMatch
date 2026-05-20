@@ -1,4 +1,6 @@
+import Stripe from 'stripe'
 import { withApiHandler, apiResponse, NotFoundError } from '@/lib/api/with-handler'
+import { ExternalServiceError } from '@/lib/error-reporter'
 import { getOrCreateCustomer, createVerificationCheckoutSession } from '@/lib/services/stripe'
 import { getProduct, getCheckTypes, isCheckType, isPackageType, type VerificationProductType } from '@/lib/verification-pricing'
 
@@ -49,10 +51,6 @@ export const POST = withApiHandler(
       return apiResponse({ error: 'All selected verifications are already completed or in progress' }, 409, requestId)
     }
 
-    // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(payingUserId, payerProfile.email, payerProfile.name || undefined)
-
-    // Build success/cancel URLs
     const appUrl = process.env.NEXT_PUBLIC_APP_URL
     if (!appUrl) {
       throw new Error('NEXT_PUBLIC_APP_URL is not configured')
@@ -60,20 +58,28 @@ export const POST = withApiHandler(
     const successUrl = `${appUrl}/api/verify/checkout/complete?session_id={CHECKOUT_SESSION_ID}`
     const cancelUrl = `${appUrl}/verify`
 
-    // Create checkout session
-    const session = await createVerificationCheckoutSession({
-      customerId: customer.id,
-      productName: product.name,
-      priceInCents: product.price,
-      metadata: {
-        verification_type: type,
-        subject_user_id: subjectUserId,
-        paid_by: payingUserId,
-        checks_needed: JSON.stringify(checksNeeded),
-      },
-      successUrl,
-      cancelUrl,
-    })
+    let session: Awaited<ReturnType<typeof createVerificationCheckoutSession>>
+    try {
+      const customer = await getOrCreateCustomer(payingUserId, payerProfile.email, payerProfile.name || undefined)
+      session = await createVerificationCheckoutSession({
+        customerId: customer.id,
+        productName: product.name,
+        priceInCents: product.price,
+        metadata: {
+          verification_type: type,
+          subject_user_id: subjectUserId,
+          paid_by: payingUserId,
+          checks_needed: JSON.stringify(checksNeeded),
+        },
+        successUrl,
+        cancelUrl,
+      })
+    } catch (err) {
+      if (err instanceof Stripe.errors.StripeError) {
+        throw new ExternalServiceError('Stripe', err.message)
+      }
+      throw err
+    }
 
     return apiResponse({ url: session.url }, 200, requestId)
   },

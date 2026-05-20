@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
 import { Input } from '@/components/ui/input'
 import { AlertCircle } from 'lucide-react'
+import { InAppBrowserBanner, useIsInAppBrowser } from '@/components/auth/in-app-browser-banner'
 
 const loginSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -34,6 +35,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState<'login' | 'signup'>('login')
+  const { isInApp, name: inAppName } = useIsInAppBrowser()
 
   const {
     register,
@@ -203,10 +205,14 @@ export function LoginForm() {
         </div>
       </div>
 
+      {isInApp && <InAppBrowserBanner name={inAppName} />}
+
       <button
         type="button"
         onClick={handleGoogleLogin}
-        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-outline-variant/20 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors active:scale-95 duration-200"
+        disabled={isInApp}
+        aria-disabled={isInApp}
+        className="w-full flex items-center justify-center gap-3 py-3 px-4 border border-outline-variant/20 rounded-xl bg-surface-container-lowest hover:bg-surface-container-low transition-colors active:scale-95 duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-container-lowest"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card'
 import { Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react'
+import { InAppBrowserBanner, useIsInAppBrowser } from '@/components/auth/in-app-browser-banner'
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -34,6 +35,7 @@ export function SignupForm() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const { isInApp, name: inAppName } = useIsInAppBrowser()
 
   const {
     register,
@@ -178,11 +180,18 @@ export function SignupForm() {
           </div>
         </div>
 
+        {isInApp && (
+          <div className="mb-4">
+            <InAppBrowserBanner name={inAppName} />
+          </div>
+        )}
+
         <Button
           type="button"
           variant="outline"
           className="w-full"
           onClick={handleGoogleSignup}
+          disabled={isInApp}
         >
           <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24">
             <path
