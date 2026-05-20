@@ -60,7 +60,7 @@ export const POST = withApiHandler(
 
     let session: Awaited<ReturnType<typeof createVerificationCheckoutSession>>
     try {
-      const customer = await getOrCreateCustomer(payingUserId, payerProfile.email, payerProfile.name || undefined)
+      const customer = await getOrCreateCustomer(supabase, payingUserId, payerProfile.email, payerProfile.name || undefined)
       session = await createVerificationCheckoutSession({
         customerId: customer.id,
         productName: product.name,

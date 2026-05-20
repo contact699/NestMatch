@@ -1,5 +1,7 @@
 import Stripe from 'stripe'
 import { logger } from '@/lib/logger'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/database'
 
 // Lazy initialization of Stripe to avoid errors during build
 let _stripe: Stripe | null = null
@@ -132,29 +134,60 @@ export async function createConnectLoginLink(
 // ============================================
 
 /**
- * Create or retrieve a Stripe customer for a user
+ * Get or create a Stripe customer for a user.
+ *
+ * Reads `profiles.stripe_customer_id` first and calls `customers.retrieve`
+ * if set; otherwise creates a new customer and persists the id back to the
+ * profile. Avoids `customers.search`, whose endpoint is on Stripe's
+ * eventually-consistent Search infrastructure and was throwing
+ * StripeConnectionError from Vercel's iad1 region.
  */
 export async function getOrCreateCustomer(
+  supabase: SupabaseClient<Database>,
   userId: string,
   email: string,
   name?: string
 ): Promise<Stripe.Customer> {
   try {
-    const existingCustomers = await getStripe().customers.search({
-      query: `metadata['nestmatch_user_id']:'${userId}'`,
-    })
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id')
+      .eq('user_id', userId)
+      .single()
 
-    if (existingCustomers.data.length > 0) {
-      return existingCustomers.data[0]
+    if (profileError) throw profileError
+
+    if (profile?.stripe_customer_id) {
+      const existing = await getStripe().customers.retrieve(profile.stripe_customer_id)
+      if (!existing.deleted) {
+        return existing as Stripe.Customer
+      }
+      // Stored id points at a deleted customer — fall through and create a new one.
     }
 
-    return await getStripe().customers.create({
+    const created = await getStripe().customers.create({
       email,
       name: name || undefined,
       metadata: {
         nestmatch_user_id: userId,
       },
     })
+
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ stripe_customer_id: created.id })
+      .eq('user_id', userId)
+
+    if (updateError) {
+      logger.error('Failed to persist stripe_customer_id', updateError as Error, {
+        userId,
+        stripeCustomerId: created.id,
+      })
+      // Customer exists in Stripe; we'll search-by-id won't work next time but
+      // the next call will just create another. Don't fail the user-facing flow.
+    }
+
+    return created
   } catch (err) {
     logStripeError('getOrCreateCustomer', err, { userId, email })
     throw err

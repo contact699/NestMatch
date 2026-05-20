@@ -39,7 +39,7 @@ export const GET = withApiHandler(
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(userId!, profile.email, profile.name ?? undefined)
+    const customer = await getOrCreateCustomer(supabase, userId!, profile.email, profile.name ?? undefined)
 
     // Get payment methods from Stripe
     const stripePaymentMethods = await listPaymentMethods(customer.id)
@@ -113,7 +113,7 @@ export const POST = withApiHandler(
     }
 
     // Get or create Stripe customer
-    const customer = await getOrCreateCustomer(userId!, profile.email, profile.name ?? undefined)
+    const customer = await getOrCreateCustomer(supabase, userId!, profile.email, profile.name ?? undefined)
 
     // Attach payment method to customer
     const paymentMethod = await attachPaymentMethod(payment_method_id, customer.id)
