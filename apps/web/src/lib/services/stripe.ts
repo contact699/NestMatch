@@ -13,6 +13,12 @@ function getStripe(): Stripe {
     }
     _stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2026-01-28.clover',
+      // Fail fast inside the Vercel function budget instead of hanging until
+      // the platform kills the invocation. When Stripe is unreachable the SDK
+      // would otherwise retry past the function timeout, so we never get a
+      // clean error log. 8s leaves headroom for the rest of the handler.
+      timeout: 8000,
+      maxNetworkRetries: 0,
     })
   }
   return _stripe
