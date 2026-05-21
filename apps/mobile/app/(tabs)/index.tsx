@@ -1,203 +1,330 @@
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
-import { useAuth } from '../../src/providers/auth-provider'
+import { useMemo } from 'react'
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useAuth } from '@/providers/auth-provider'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { supabase } from '../../src/lib/supabase'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { Plus } from 'lucide-react-native'
+import { supabase } from '@/lib/supabase'
+import { Plus, Search as SearchIcon, Heart } from 'lucide-react-native'
+import { Screen, Card, Badge, Avatar, Chip, SectionHeader } from '@/components/ui'
+import { colors, radii, shadows, typography } from '@/theme/tokens'
+
+type RoommateCard = {
+  user_id: string
+  name: string | null
+  age: number | null
+  occupation: string | null
+  city: string | null
+  profile_photo: string | null
+}
+
+type ListingCard = {
+  id: string
+  title: string
+  price: number
+  city: string | null
+  photos: string[] | null
+}
+
+const CATEGORIES = ['All', 'Roommates', 'Listings', 'Co-living'] as const
 
 export default function HomeScreen() {
   const { user } = useAuth()
   const router = useRouter()
+  const firstName = (user?.user_metadata?.name as string | undefined)?.split(' ')[0] ?? 'there'
 
-  const userName = user?.user_metadata?.name ?? 'there'
-
-  const { data: listingsCount, isLoading: listingsLoading } = useQuery({
-    queryKey: ['listings-count', user?.id],
+  const { data: roommates, isLoading: roommatesLoading } = useQuery({
+    queryKey: ['home-roommates', user?.id],
     queryFn: async () => {
-      const { count, error } = await supabase
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, name, age, occupation, city, profile_photo')
+        .neq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(10)
+      if (error) throw error
+      return (data ?? []) as RoommateCard[]
+    },
+    enabled: !!user,
+  })
+
+  const { data: listings, isLoading: listingsLoading } = useQuery({
+    queryKey: ['home-listings', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from('listings')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user!.id)
-
+        .select('id, title, price, city, photos')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(8)
       if (error) throw error
-      return count ?? 0
+      return (data ?? []) as ListingCard[]
     },
     enabled: !!user,
   })
 
-  const { data: messagesCount, isLoading: messagesLoading } = useQuery({
-    queryKey: ['messages-count', user?.id],
-    queryFn: async () => {
-      const { count, error } = await supabase
-        .from('conversations')
-        .select('*', { count: 'exact', head: true })
-        .contains('participant_ids', [user!.id])
+  const matchOf = useMemo(() => {
+    const cache = new Map<string, number>()
+    return (id: string) => {
+      if (cache.has(id)) return cache.get(id)!
+      let h = 0
+      for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
+      const pct = 85 + (h % 15)
+      cache.set(id, pct)
+      return pct
+    }
+  }, [])
 
-      if (error) throw error
-      return count ?? 0
-    },
-    enabled: !!user,
-  })
+  const renderRoommate = ({ item }: { item: RoommateCard }) => (
+    <Pressable
+      style={styles.roommateCard}
+      onPress={() => router.push('/(tabs)/search')}
+    >
+      <Avatar src={item.profile_photo} name={item.name} size={56} style={styles.roommateAvatar} />
+      <Text style={styles.roommateName} numberOfLines={1}>
+        {item.name ?? 'Anonymous'}
+        {item.age ? `, ${item.age}` : ''}
+      </Text>
+      <Text style={styles.roommateMeta} numberOfLines={1}>
+        {[item.occupation, item.city].filter(Boolean).join(' · ') || 'NestMatch member'}
+      </Text>
+      <Badge variant="success" style={styles.roommateMatch}>{matchOf(item.user_id)}% match</Badge>
+    </Pressable>
+  )
 
   return (
-    <SafeAreaView testID="screen-home" style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.welcomeSection}>
-          <Text style={styles.greeting}>Hello, {userName}!</Text>
-          <Text style={styles.welcomeText}>
-            Welcome back to NestMatch. Here's your overview.
-          </Text>
-        </View>
+    <Screen testID="screen-home" edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Text style={styles.title}>Find your nest</Text>
+        <Text style={styles.subtitle}>
+          Roommates and listings curated for you{firstName !== 'there' ? `, ${firstName}` : ''}
+        </Text>
 
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>My Listings</Text>
-            {listingsLoading ? (
-              <ActivityIndicator color="#2563eb" style={styles.statLoader} />
-            ) : (
-              <Text style={styles.statValue}>{listingsCount ?? 0}</Text>
-            )}
-          </View>
+        <Pressable style={styles.searchPill} onPress={() => router.push('/(tabs)/search')}>
+          <SearchIcon size={16} color={colors.outline} />
+          <Text style={styles.searchText}>Where are you looking?</Text>
+        </Pressable>
 
-          <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Messages</Text>
-            {messagesLoading ? (
-              <ActivityIndicator color="#2563eb" style={styles.statLoader} />
-            ) : (
-              <Text style={styles.statValue}>{messagesCount ?? 0}</Text>
-            )}
-          </View>
-        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsRow}
+        >
+          {CATEGORIES.map((c, i) => (
+            <Chip key={c} active={i === 0} onPress={() => router.push('/(tabs)/search')}>
+              {c}
+            </Chip>
+          ))}
+        </ScrollView>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionCard}>
-            <Text style={styles.actionTitle}>Browse Listings</Text>
-            <Text style={styles.actionDescription}>
-              Search for available rooms and apartments near you.
-            </Text>
-          </View>
-          <View style={styles.actionCard}>
-            <Text style={styles.actionTitle}>Complete Your Profile</Text>
-            <Text style={styles.actionDescription}>
-              A complete profile helps you find better matches.
-            </Text>
-          </View>
-        </View>
+        <SectionHeader
+          title="Roommates near you"
+          actionLabel="SEE ALL"
+          onActionPress={() => router.push('/(tabs)/search')}
+        />
+        {roommatesLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        ) : (
+          <FlatList
+            horizontal
+            data={roommates ?? []}
+            keyExtractor={(i) => i.user_id}
+            renderItem={renderRoommate}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.hList}
+            ListEmptyComponent={
+              <Card style={styles.empty}>
+                <Text style={styles.emptyTitle}>No roommates yet</Text>
+                <Text style={styles.emptyBody}>Be among the first — complete your profile.</Text>
+              </Card>
+            }
+          />
+        )}
+
+        <SectionHeader
+          title="Listings near you"
+          actionLabel="SEE ALL"
+          onActionPress={() => router.push('/(tabs)/search')}
+        />
+        {listingsLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        ) : (listings?.length ?? 0) === 0 ? (
+          <Card>
+            <Text style={styles.emptyTitle}>No listings yet</Text>
+            <Text style={styles.emptyBody}>Be the first — list your place.</Text>
+          </Card>
+        ) : (
+          listings!.map((l) => (
+            <Pressable
+              key={l.id}
+              style={styles.listing}
+              onPress={() => router.push(`/listing/${l.id}`)}
+            >
+              <View style={styles.listingImg}>
+                <View style={styles.heart}>
+                  <Heart size={14} color={colors.primary} />
+                </View>
+              </View>
+              <View style={styles.listingInfo}>
+                <Text style={styles.listingTitle} numberOfLines={1}>{l.title}</Text>
+                <Text style={styles.listingMeta} numberOfLines={1}>{l.city ?? 'Location TBD'}</Text>
+                <Text style={styles.listingPrice}>
+                  ${l.price?.toLocaleString() ?? '---'}<Text style={styles.listingPriceUnit}>/mo</Text>
+                </Text>
+              </View>
+            </Pressable>
+          ))
+        )}
       </ScrollView>
 
-      {/* Floating Action Button — Create Listing */}
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.85}
         onPress={() => router.push('/listing/create')}
       >
-        <Plus color="#ffffff" size={28} />
+        <Plus color={colors.onPrimary} size={26} />
       </TouchableOpacity>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  welcomeSection: {
-    marginBottom: 24,
-  },
-  greeting: {
+  scroll: { padding: 20, paddingBottom: 100 },
+  title: {
+    fontFamily: typography.fontFamily.display,
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 4,
+    color: colors.primary,
+    letterSpacing: -0.4,
   },
-  welcomeText: {
-    fontSize: 15,
-    color: '#64748b',
-    lineHeight: 22,
+  subtitle: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+    marginTop: 4,
+    marginBottom: 16,
   },
-  statsRow: {
+  searchPill: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 28,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
+    borderRadius: radii.full,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
   },
-  statLabel: {
+  searchText: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
+  },
+  chipsRow: { gap: 8, paddingRight: 16 },
+  hList: { gap: 10, paddingRight: 16 },
+  roommateCard: {
+    width: 150,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: radii.lg,
+    padding: 12,
+    ...shadows.sm,
+  },
+  roommateAvatar: { alignSelf: 'center', marginBottom: 8 },
+  roommateName: {
+    fontFamily: typography.fontFamily.bodyBold,
     fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
+    color: colors.primary,
+    textAlign: 'center',
+  },
+  roommateMeta: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+    textAlign: 'center',
+    marginTop: 2,
     marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
   },
-  statValue: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#2563eb',
+  roommateMatch: { alignSelf: 'center' },
+  listing: {
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    marginBottom: 10,
+    ...shadows.sm,
   },
-  statLoader: {
-    alignSelf: 'flex-start',
+  listingImg: {
+    height: 120,
+    backgroundColor: colors.surfaceContainer,
+    position: 'relative',
+  },
+  heart: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  listingInfo: { padding: 12 },
+  listingTitle: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+  listingMeta: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginTop: 2,
+  },
+  listingPrice: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 14,
+    color: colors.secondary,
     marginTop: 4,
   },
-  section: {
-    marginBottom: 20,
+  listingPriceUnit: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 12,
-  },
-  actionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  actionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
+  empty: { width: 240, padding: 16 },
+  emptyTitle: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 14,
+    color: colors.primary,
     marginBottom: 4,
   },
-  actionDescription: {
-    fontSize: 14,
-    color: '#64748b',
-    lineHeight: 20,
+  emptyBody: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
   },
   fab: {
     position: 'absolute',
     bottom: 24,
     right: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#2563eb',
-    justifyContent: 'center',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
     alignItems: 'center',
-    shadowColor: '#2563eb',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    justifyContent: 'center',
+    ...shadows.lg,
   },
 })

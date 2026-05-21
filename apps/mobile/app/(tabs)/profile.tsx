@@ -1,25 +1,28 @@
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native'
-import { useAuth } from '../../src/providers/auth-provider'
+import { useAuth } from '@/providers/auth-provider'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../../src/lib/supabase'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { supabase } from '@/lib/supabase'
 import { useRouter } from 'expo-router'
-import { Settings, ShieldCheck, ChevronRight } from 'lucide-react-native'
+import { Settings, ShieldCheck, ChevronRight, Bookmark, Home as HomeIcon } from 'lucide-react-native'
+import { ReactNode } from 'react'
+import { Screen, Avatar, Badge, Button, Card } from '@/components/ui'
+import { colors, radii, shadows, typography } from '@/theme/tokens'
 
 type Profile = {
   id: string
+  user_id: string
   name: string | null
   email: string | null
   profile_photo: string | null
-  verification_level: string | null
+  verification_level: 'basic' | 'verified' | 'trusted' | null
   bio: string | null
   created_at: string | null
 }
@@ -28,19 +31,14 @@ export default function ProfileScreen() {
   const { user, signOut } = useAuth()
   const router = useRouter()
 
-  const {
-    data: profile,
-    isLoading,
-    error,
-  } = useQuery({
+  const { data: profile, isLoading, error } = useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, email, profile_photo, verification_level, bio, created_at')
+        .select('id, user_id, name, email, profile_photo, verification_level, bio, created_at')
         .eq('user_id', user!.id)
         .single()
-
       if (error) throw error
       return data as Profile
     },
@@ -50,278 +48,154 @@ export default function ProfileScreen() {
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Sign Out',
-        style: 'destructive',
-        onPress: () => signOut(),
-      },
+      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
     ])
-  }
-
-  const formatDate = (dateStr: string | null) => {
-    if (!dateStr) return 'N/A'
-    return new Date(dateStr).toLocaleDateString(undefined, {
-      month: 'long',
-      year: 'numeric',
-    })
-  }
-
-  const getVerificationBadge = (level: string | null) => {
-    switch (level) {
-      case 'verified':
-        return { label: 'Verified', color: '#16a34a', bg: '#f0fdf4' }
-      case 'pending':
-        return { label: 'Pending', color: '#ca8a04', bg: '#fefce8' }
-      default:
-        return { label: 'Unverified', color: '#64748b', bg: '#f1f5f9' }
-    }
   }
 
   if (isLoading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#2563eb" />
-      </View>
+      <Screen testID="screen-profile">
+        <View style={styles.center}><ActivityIndicator size="large" color={colors.primary} /></View>
+      </Screen>
     )
   }
 
   if (error) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>Failed to load profile.</Text>
-      </View>
+      <Screen testID="screen-profile">
+        <View style={styles.center}><Text style={styles.errorText}>Failed to load profile.</Text></View>
+      </Screen>
     )
   }
 
-  const badge = getVerificationBadge(profile?.verification_level ?? null)
+  const level = profile?.verification_level ?? 'basic'
+  const verifyVariant: 'success' | 'info' | 'neutral' = level === 'trusted'
+    ? 'success'
+    : level === 'verified'
+      ? 'info'
+      : 'neutral'
+  const verifyLabel = level === 'trusted' ? 'Trusted' : level === 'verified' ? 'Verified' : 'Unverified'
+  const trustPct = level === 'trusted' ? 80 : level === 'verified' ? 50 : 20
 
   return (
-    <SafeAreaView testID="screen-profile" style={styles.container} edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.profileHeader}>
-          <View style={styles.avatarLarge}>
-            <Text style={styles.avatarLargeText}>
-              {(profile?.name ?? user?.email ?? '?').charAt(0).toUpperCase()}
-            </Text>
+    <Screen testID="screen-profile" edges={['bottom']}>
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <Card style={styles.headerCard}>
+          <Avatar src={profile?.profile_photo} name={profile?.name} size={80} />
+          <Text style={styles.name}>{profile?.name ?? 'No name set'}</Text>
+          <Text style={styles.email}>{profile?.email ?? user?.email}</Text>
+          <Badge variant={verifyVariant} style={{ marginTop: 8 }}>{verifyLabel}</Badge>
+        </Card>
+
+        <Card style={styles.trustCard} variant="primary">
+          <Text style={styles.trustLabel}>TRUST QUOTIENT</Text>
+          <Text style={styles.trustPct}>{trustPct}%</Text>
+          <View style={styles.trustBarBg}>
+            <View style={[styles.trustBarFill, { width: `${trustPct}%` }]} />
           </View>
-          <Text style={styles.profileName}>
-            {profile?.name ?? 'No name set'}
+          <Text style={styles.trustHint}>
+            {trustPct < 80 ? 'Add more verifications to reach Trusted' : 'You are fully verified'}
           </Text>
-          <Text style={styles.profileEmail}>
-            {profile?.email ?? user?.email ?? ''}
-          </Text>
-          <View style={[styles.badge, { backgroundColor: badge.bg }]}>
-            <Text style={[styles.badgeText, { color: badge.color }]}>
-              {badge.label}
-            </Text>
-          </View>
-        </View>
+        </Card>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Bio</Text>
-            <Text style={styles.infoValue}>
-              {profile?.bio ?? 'No bio added yet.'}
-            </Text>
-          </View>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Member since</Text>
-            <Text style={styles.infoValue}>
-              {formatDate(profile?.created_at ?? null)}
-            </Text>
-          </View>
-        </View>
+        <Card style={styles.navCard}>
+          <NavRow icon={<HomeIcon size={18} color={colors.primary} />} label="My Listings" sub="Manage your listings" onPress={() => router.push('/(tabs)/search')} />
+          <Sep />
+          <NavRow icon={<Bookmark size={18} color={colors.primary} />} label="Saved" sub="Listings you bookmarked" onPress={() => router.push('/(tabs)/search')} />
+          <Sep />
+          <NavRow icon={<ShieldCheck size={18} color={colors.secondary} />} label="Trust Center" sub={`${verifyLabel} — view verifications`} onPress={() => router.push('/verify')} />
+          <Sep />
+          <NavRow icon={<Settings size={18} color={colors.onSurfaceVariant} />} label="Settings" sub="Privacy and account" onPress={() => router.push('/settings')} />
+        </Card>
 
-        <View style={styles.section}>
-          <View style={styles.navCard}>
-            <TouchableOpacity
-              style={styles.navRow}
-              onPress={() => router.push('/verify')}
-            >
-              <View style={styles.navRowLeft}>
-                <View style={[styles.navIconCircle, { backgroundColor: '#f0fdf4' }]}>
-                  <ShieldCheck color="#16a34a" size={18} />
-                </View>
-                <View>
-                  <Text style={styles.navRowLabel}>Trust Center</Text>
-                  <Text style={styles.navRowSub}>
-                    {badge.label} — view verifications
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight color="#94a3b8" size={20} />
-            </TouchableOpacity>
-
-            <View style={styles.navSeparator} />
-
-            <TouchableOpacity
-              style={styles.navRow}
-              onPress={() => router.push('/settings')}
-            >
-              <View style={styles.navRowLeft}>
-                <View style={[styles.navIconCircle, { backgroundColor: '#f1f5f9' }]}>
-                  <Settings color="#64748b" size={18} />
-                </View>
-                <View>
-                  <Text style={styles.navRowLabel}>Settings</Text>
-                  <Text style={styles.navRowSub}>
-                    Profile, privacy, notifications
-                  </Text>
-                </View>
-              </View>
-              <ChevronRight color="#94a3b8" size={20} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-          <Text style={styles.signOutText}>Sign Out</Text>
-        </TouchableOpacity>
+        <Button variant="danger" fullWidth onPress={handleSignOut} style={{ marginTop: 14 }}>
+          Sign Out
+        </Button>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   )
 }
 
+function NavRow({ icon, label, sub, onPress }: { icon: ReactNode; label: string; sub: string; onPress: () => void }) {
+  return (
+    <Pressable style={styles.navRow} onPress={onPress}>
+      <View style={styles.navIcon}>{icon}</View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.navLabel}>{label}</Text>
+        <Text style={styles.navSub}>{sub}</Text>
+      </View>
+      <ChevronRight size={18} color={colors.outline} />
+    </Pressable>
+  )
+}
+
+function Sep() {
+  return <View style={styles.sep} />
+}
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollContent: {
-    padding: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 15,
-    color: '#dc2626',
-  },
-  profileHeader: {
-    alignItems: 'center',
-    marginBottom: 28,
-  },
-  avatarLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#2563eb',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  avatarLargeText: {
-    color: '#ffffff',
-    fontSize: 32,
-    fontWeight: '700',
-  },
-  profileName: {
+  scroll: { padding: 20, paddingBottom: 32 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40 },
+  errorText: { fontFamily: typography.fontFamily.body, fontSize: 14, color: colors.error },
+  headerCard: { alignItems: 'center', paddingVertical: 22 },
+  name: {
+    fontFamily: typography.fontFamily.display,
     fontSize: 22,
-    fontWeight: '700',
-    color: '#0f172a',
-    marginBottom: 2,
+    color: colors.primary,
+    marginTop: 12,
   },
-  profileEmail: {
-    fontSize: 15,
-    color: '#64748b',
-    marginBottom: 12,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  badgeText: {
+  email: {
+    fontFamily: typography.fontFamily.body,
     fontSize: 13,
-    fontWeight: '600',
+    color: colors.onSurfaceVariant,
+    marginTop: 2,
   },
-  section: {
-    marginBottom: 24,
+  trustCard: { marginTop: 14 },
+  trustLabel: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 11,
+    color: colors.onPrimary,
+    opacity: 0.7,
+    letterSpacing: 1,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 12,
+  trustPct: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 36,
+    color: colors.onPrimary,
+    marginTop: 4,
   },
-  infoCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  infoLabel: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: '#64748b',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  infoValue: {
-    fontSize: 15,
-    color: '#0f172a',
-    lineHeight: 22,
-  },
-  navCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  trustBarBg: {
+    height: 6,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    borderRadius: 3,
     overflow: 'hidden',
+    marginTop: 10,
   },
+  trustBarFill: { height: '100%', backgroundColor: colors.secondaryContainer, borderRadius: 3 },
+  trustHint: {
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.onPrimary,
+    opacity: 0.85,
+    marginTop: 10,
+  },
+  navCard: { padding: 0, marginTop: 14 },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
+    gap: 12,
   },
-  navRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  navIconCircle: {
+  navIcon: {
     width: 34,
     height: 34,
     borderRadius: 17,
+    backgroundColor: colors.surfaceContainerLow,
+    alignItems: 'center',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
   },
-  navRowLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 1,
-  },
-  navRowSub: {
-    fontSize: 13,
-    color: '#64748b',
-  },
-  navSeparator: {
-    height: 1,
-    backgroundColor: '#e2e8f0',
-    marginLeft: 62,
-  },
-  signOutButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    marginTop: 8,
-  },
-  signOutText: {
-    color: '#dc2626',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  navLabel: { fontFamily: typography.fontFamily.bodyBold, fontSize: 14, color: colors.primary },
+  navSub: { fontFamily: typography.fontFamily.body, fontSize: 12, color: colors.onSurfaceVariant, marginTop: 1 },
+  sep: { height: 1, backgroundColor: colors.outlineVariant, marginLeft: 62 },
 })
