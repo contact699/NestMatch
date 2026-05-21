@@ -12,7 +12,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#fcf2d9"
+      "backgroundColor": "#f8f9fa"
     },
     "ios": {
       "supportsTablet": true,
@@ -27,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#fcf2d9"
+        "backgroundColor": "#f8f9fa"
       },
       "package": "com.nestmatch.app",
       "edgeToEdgeEnabled": false,
