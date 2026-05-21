@@ -32,6 +32,7 @@ import {
   CreditCard,
   HandHelping,
 } from 'lucide-react-native'
+import { colors, radii, typography } from '@/theme/tokens'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const PHOTO_HEIGHT = 280
@@ -257,7 +258,7 @@ export default function ListingDetailScreen() {
               disabled={saveMutation.isPending}
             >
               <Heart
-                color={isSaved ? '#ef4444' : '#0f172a'}
+                color={isSaved ? '#ef4444' : colors.primary}
                 fill={isSaved ? '#ef4444' : 'none'}
                 size={22}
               />
@@ -474,7 +475,7 @@ export default function ListingDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   scrollView: {
     flex: 1,
@@ -484,27 +485,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   errorText: {
     fontSize: 15,
-    color: '#dc2626',
+    color: colors.error,
     textAlign: 'center',
     marginBottom: 16,
   },
   backButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 10,
   },
   backButtonText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 15,
     fontWeight: '600',
   },
@@ -513,7 +514,7 @@ const styles = StyleSheet.create({
   photoSection: {
     position: 'relative',
     height: PHOTO_HEIGHT,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
   },
   photo: {
     width: SCREEN_WIDTH,
@@ -524,11 +525,11 @@ const styles = StyleSheet.create({
     height: PHOTO_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
   },
   photoPlaceholderText: {
     fontSize: 16,
-    color: '#94a3b8',
+    color: colors.outline,
   },
   photoIndicators: {
     position: 'absolute',
@@ -546,7 +547,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
   },
   indicatorActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     width: 20,
   },
   navBackButton: {
@@ -591,7 +592,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   typeBadge: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primaryFixed,
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 6,
@@ -601,12 +602,12 @@ const styles = StyleSheet.create({
   typeBadgeText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2563eb',
+    color: colors.primary,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 8,
   },
   locationRow: {
@@ -617,22 +618,22 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 15,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   price: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#2563eb',
+    color: colors.primary,
     marginBottom: 4,
   },
   priceUnit: {
     fontSize: 16,
     fontWeight: '400',
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   utilitiesNote: {
     fontSize: 13,
-    color: '#16a34a',
+    color: colors.secondary,
     fontWeight: '500',
     marginBottom: 8,
   },
@@ -645,7 +646,7 @@ const styles = StyleSheet.create({
   },
   availableText: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
 
   // Sections
@@ -653,12 +654,12 @@ const styles = StyleSheet.create({
     marginTop: 24,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.outlineVariant,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 12,
   },
   descriptionText: {
@@ -674,12 +675,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceContainerLow,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
   },
   chipText: {
     fontSize: 14,
@@ -702,11 +703,11 @@ const styles = StyleSheet.create({
 
   // Host Card
   hostCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: 14,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.04,
@@ -727,13 +728,13 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 14,
   },
   hostPhotoPlaceholderText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 22,
     fontWeight: '700',
   },
@@ -743,7 +744,7 @@ const styles = StyleSheet.create({
   hostName: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 2,
   },
   verificationRow: {
@@ -754,16 +755,16 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 13,
-    color: '#16a34a',
+    color: colors.secondary,
     fontWeight: '500',
   },
   unverifiedText: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.outline,
   },
   memberSince: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.outline,
   },
 
   // Bottom Bar
@@ -778,9 +779,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     paddingBottom: 28,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.outlineVariant,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.06,
@@ -794,24 +795,24 @@ const styles = StyleSheet.create({
   bottomBarPriceText: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.primary,
   },
   bottomBarPriceUnit: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     marginLeft: 2,
   },
   messageButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
   },
   messageButtonText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 16,
     fontWeight: '600',
   },

@@ -2,18 +2,16 @@ import { useState } from 'react'
 import {
   View,
   Text,
-  TextInput,
-  TouchableOpacity,
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  ActivityIndicator,
-  Linking,
 } from 'react-native'
 import { Link } from 'expo-router'
-import { useAuth } from '../../src/providers/auth-provider'
-import { signInWithGoogle } from '../../src/lib/google-auth'
+import { useAuth } from '@/providers/auth-provider'
+import { signInWithGoogle } from '@/lib/google-auth'
+import { Screen, Input, Button } from '@/components/ui'
+import { colors, typography } from '@/theme/tokens'
 
 export default function SignupScreen() {
   const { signUp } = useAuth()
@@ -28,9 +26,7 @@ export default function SignupScreen() {
     setError(null)
     setGoogleLoading(true)
     const { error: googleError } = await signInWithGoogle()
-    if (googleError) {
-      setError(googleError.message)
-    }
+    if (googleError) setError(googleError.message)
     setGoogleLoading(false)
   }
 
@@ -39,286 +35,137 @@ export default function SignupScreen() {
       setError('Please fill in all fields.')
       return
     }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters.')
       return
     }
-
     setError(null)
     setLoading(true)
-
     const { error: signUpError } = await signUp(email, password, name)
-
-    if (signUpError) {
-      setError(signUpError.message)
-    }
-
+    if (signUpError) setError(signUpError.message)
     setLoading(false)
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+    <Screen testID="screen-signup">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.header}>
-          <Text style={styles.logo}>NestMatch</Text>
-          <Text style={styles.subtitle}>Find your perfect home</Text>
-        </View>
-
-        <View style={styles.form}>
-          <Text style={styles.title}>Create Account</Text>
-
-          {error && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{error}</Text>
-            </View>
-          )}
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Jane Doe"
-              placeholderTextColor="#94a3b8"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              autoComplete="name"
-            />
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+          <View style={styles.brand}>
+            <Text style={styles.wordmark}>NestMatch</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="you@example.com"
-              placeholderTextColor="#94a3b8"
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-            />
-          </View>
+          <Text style={styles.title}>Create your account</Text>
+          <Text style={styles.subtitle}>Find roommates and homes you can trust.</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="At least 6 characters"
-              placeholderTextColor="#94a3b8"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="new-password"
-            />
-          </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
-          <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
-            onPress={handleSignUp}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#ffffff" />
-            ) : (
-              <Text style={styles.buttonText}>Create Account</Text>
-            )}
-          </TouchableOpacity>
+          <Input
+            label="Full name"
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+          />
+          <Input
+            label="Email"
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="you@example.com"
+          />
+          <Input
+            label="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholder="At least 6 characters"
+          />
 
-          <View style={styles.divider}>
-            <View style={styles.dividerLine} />
+          <Button variant="primary" size="lg" fullWidth loading={loading} onPress={handleSignUp}>
+            Create account
+          </Button>
+
+          <View style={styles.dividerRow}>
+            <View style={styles.divider} />
             <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
+            <View style={styles.divider} />
           </View>
 
-          <TouchableOpacity
-            style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
-            onPress={handleGoogleSignIn}
-            disabled={googleLoading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color="#0f172a" />
-            ) : (
-              <Text style={styles.googleButtonText}>Continue with Google</Text>
-            )}
-          </TouchableOpacity>
+          <Button variant="outline" size="lg" fullWidth loading={googleLoading} onPress={handleGoogleSignIn}>
+            Continue with Google
+          </Button>
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Already have an account? </Text>
-            <Link href="/(auth)/login" asChild>
-              <TouchableOpacity>
-                <Text style={styles.linkText}>Sign In</Text>
-              </TouchableOpacity>
+            <Link href="/(auth)/login" style={styles.footerLink}>
+              Sign in
             </Link>
           </View>
-
-          <View style={styles.terms}>
-            <Text style={styles.termsText}>
-              By creating an account, you agree to our{' '}
-            </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.nestmatch.app/terms')}>
-              <Text style={styles.termsLink}>Terms of Service</Text>
-            </TouchableOpacity>
-            <Text style={styles.termsText}> and </Text>
-            <TouchableOpacity onPress={() => Linking.openURL('https://www.nestmatch.app/privacy')}>
-              <Text style={styles.termsLink}>Privacy Policy</Text>
-            </TouchableOpacity>
-            <Text style={styles.termsText}>.</Text>
-          </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Screen>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 24,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#2563eb',
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#64748b',
-    marginTop: 4,
-  },
-  form: {
-    backgroundColor: '#ffffff',
-    borderRadius: 16,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+  scroll: { padding: 24, paddingTop: 60, gap: 12 },
+  brand: { alignItems: 'center', marginBottom: 24 },
+  wordmark: {
+    fontFamily: typography.fontFamily.display,
+    fontSize: 32,
+    color: colors.primary,
+    letterSpacing: -0.5,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    color: '#0f172a',
-    marginBottom: 24,
+    fontFamily: typography.fontFamily.display,
+    fontSize: 26,
+    color: colors.primary,
+    letterSpacing: -0.4,
   },
-  errorContainer: {
-    backgroundColor: '#fef2f2',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-  },
-  errorText: {
-    color: '#dc2626',
+  subtitle: {
+    fontFamily: typography.fontFamily.body,
     fontSize: 14,
-  },
-  inputGroup: {
+    color: colors.onSurfaceVariant,
     marginBottom: 16,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#0f172a',
-    marginBottom: 6,
-  },
-  input: {
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
+  error: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: 13,
+    color: colors.error,
+    backgroundColor: colors.errorContainer,
+    padding: 10,
     borderRadius: 10,
-    padding: 14,
-    fontSize: 16,
-    color: '#0f172a',
+    marginBottom: 4,
   },
-  button: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  buttonDisabled: {
-    opacity: 0.7,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  divider: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: 20,
+    gap: 12,
+    marginVertical: 14,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#e2e8f0',
-  },
+  divider: { flex: 1, height: 1, backgroundColor: colors.outlineVariant },
   dividerText: {
-    marginHorizontal: 12,
-    color: '#94a3b8',
-    fontSize: 13,
-  },
-  googleButton: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  googleButtonText: {
-    color: '#0f172a',
-    fontSize: 16,
-    fontWeight: '600',
+    fontFamily: typography.fontFamily.body,
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 20,
   },
   footerText: {
-    color: '#64748b',
-    fontSize: 14,
+    fontFamily: typography.fontFamily.body,
+    fontSize: 13,
+    color: colors.onSurfaceVariant,
   },
-  linkText: {
-    color: '#2563eb',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  terms: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 16,
-  },
-  termsText: {
-    color: '#94a3b8',
-    fontSize: 12,
-  },
-  termsLink: {
-    color: '#2563eb',
-    fontSize: 12,
-    fontWeight: '500',
+  footerLink: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 13,
+    color: colors.secondary,
   },
 })

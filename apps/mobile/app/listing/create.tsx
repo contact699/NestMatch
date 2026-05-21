@@ -18,6 +18,7 @@ import { supabase } from '../../src/lib/supabase'
 import { useAuth } from '../../src/providers/auth-provider'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ChevronLeft, Camera } from 'lucide-react-native'
+import { colors, radii, typography } from '@/theme/tokens'
 import * as ImagePicker from 'expo-image-picker'
 
 type ListingType = 'room' | 'shared_room' | 'entire_place'
@@ -619,7 +620,7 @@ export default function CreateListingScreen() {
               style={{ marginRight: 8 }}
             >
               <Image source={{ uri }} style={{ width: 80, height: 80, borderRadius: 8 }} />
-              <Text style={{ textAlign: 'center', fontSize: 10, color: '#94a3b8', marginTop: 2 }}>
+              <Text style={{ textAlign: 'center', fontSize: 10, color: colors.outline, marginTop: 2 }}>
                 Remove
               </Text>
             </TouchableOpacity>
@@ -739,7 +740,7 @@ export default function CreateListingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -752,9 +753,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.outlineVariant,
   },
   topBarBack: {
     width: 40,
@@ -765,7 +766,7 @@ const styles = StyleSheet.create({
   topBarTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
   },
 
   // Step Indicator
@@ -775,7 +776,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     paddingHorizontal: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
   },
   stepRow: {
     flexDirection: 'row',
@@ -786,32 +787,32 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
     justifyContent: 'center',
     alignItems: 'center',
   },
   stepDotActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
   stepDotCompleted: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
   stepDotText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#94a3b8',
+    color: colors.outline,
   },
   stepDotTextActive: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
   },
   stepLine: {
     flex: 1,
     height: 2,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
     marginHorizontal: 8,
   },
   stepLineActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
 
   // Scroll Content
@@ -824,12 +825,12 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 4,
   },
   stepSubtitle: {
     fontSize: 15,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     marginBottom: 24,
     lineHeight: 22,
   },
@@ -838,56 +839,56 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     borderRadius: 10,
     padding: 14,
     fontSize: 16,
-    color: '#0f172a',
+    color: colors.primary,
   },
   inputError: {
-    borderColor: '#dc2626',
+    borderColor: colors.error,
   },
   textArea: {
     minHeight: 100,
   },
   errorText: {
     fontSize: 13,
-    color: '#dc2626',
+    color: colors.error,
     marginTop: 4,
   },
 
   // Type Cards
   typeCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     borderRadius: 12,
     padding: 16,
     marginBottom: 10,
   },
   typeCardSelected: {
-    borderColor: '#2563eb',
-    backgroundColor: '#eff6ff',
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryFixed,
   },
   typeCardTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 2,
   },
   typeCardTitleSelected: {
-    color: '#2563eb',
+    color: colors.primary,
   },
   typeCardDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
 
   // Province Chips
@@ -898,14 +899,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     marginRight: 8,
   },
   provinceChipSelected: {
-    backgroundColor: '#2563eb',
-    borderColor: '#2563eb',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   provinceChipText: {
     fontSize: 14,
@@ -913,7 +914,7 @@ const styles = StyleSheet.create({
     color: '#334155',
   },
   provinceChipTextSelected: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
   },
 
   // Amenity Chips
@@ -926,20 +927,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
   },
   amenityChipSelected: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#2563eb',
+    backgroundColor: colors.primaryFixed,
+    borderColor: colors.primary,
   },
   amenityChipText: {
     fontSize: 14,
     color: '#334155',
   },
   amenityChipTextSelected: {
-    color: '#2563eb',
+    color: colors.primary,
     fontWeight: '500',
   },
 
@@ -950,7 +951,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.surfaceContainerLow,
   },
   toggleLabel: {
     fontSize: 15,
@@ -961,18 +962,18 @@ const styles = StyleSheet.create({
     width: 48,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
     justifyContent: 'center',
     paddingHorizontal: 2,
   },
   toggleSwitchActive: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
   },
   toggleThumb: {
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -985,9 +986,9 @@ const styles = StyleSheet.create({
 
   // Photo Upload
   photoUploadArea: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     borderStyle: 'dashed',
     borderRadius: 14,
     padding: 40,
@@ -998,11 +999,11 @@ const styles = StyleSheet.create({
   photoUploadText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   photoUploadHint: {
     fontSize: 13,
-    color: '#94a3b8',
+    color: colors.outline,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 18,
@@ -1013,28 +1014,28 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   reviewCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
   },
   reviewRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
+    borderBottomColor: colors.surfaceContainerLow,
   },
   reviewLabel: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     flex: 1,
   },
   reviewValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.primary,
     flex: 2,
     textAlign: 'right',
   },
@@ -1045,35 +1046,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 14,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.outlineVariant,
   },
   backNavButton: {
     paddingHorizontal: 24,
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
   },
   backNavButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   nextButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
   },
   nextButtonText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 16,
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 12,
@@ -1084,7 +1085,7 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   submitButtonText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 16,
     fontWeight: '600',
   },

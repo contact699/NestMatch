@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../src/lib/supabase'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ArrowLeft, Send } from 'lucide-react-native'
+import { colors, radii, typography } from '@/theme/tokens'
 import { useState } from 'react'
 
 type Message = {
@@ -309,9 +310,9 @@ export default function ConversationScreen() {
               <ArrowLeft size={24} color="#0f172a" />
             </TouchableOpacity>
           ),
-          headerStyle: { backgroundColor: '#ffffff' },
+          headerStyle: { backgroundColor: colors.surfaceContainerLowest },
           headerTitleStyle: {
-            color: '#0f172a',
+            color: colors.primary,
             fontWeight: '600',
             fontSize: 17,
           },
@@ -391,7 +392,7 @@ export default function ConversationScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   keyboardAvoid: {
     flex: 1,
@@ -438,11 +439,11 @@ const styles = StyleSheet.create({
     borderRadius: 18,
   },
   bubbleLeft: {
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceContainerLow,
     borderBottomLeftRadius: 4,
   },
   bubbleRight: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
   },
   messageText: {
@@ -450,17 +451,17 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   messageTextLeft: {
-    color: '#0f172a',
+    color: colors.primary,
   },
   messageTextRight: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
   },
   messageTime: {
     fontSize: 11,
     marginTop: 4,
   },
   messageTimeLeft: {
-    color: '#94a3b8',
+    color: colors.outline,
   },
   messageTimeRight: {
     color: 'rgba(255, 255, 255, 0.7)',
@@ -473,11 +474,11 @@ const styles = StyleSheet.create({
   dateLine: {
     flex: 1,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
   },
   dateText: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: colors.outline,
     marginHorizontal: 12,
     fontWeight: '500',
   },
@@ -486,28 +487,28 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#e2e8f0',
+    borderTopColor: colors.outlineVariant,
   },
   textInput: {
     flex: 1,
     minHeight: 40,
     maxHeight: 120,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: colors.surfaceContainerLow,
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingTop: 10,
     paddingBottom: 10,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.primary,
     marginRight: 10,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -523,16 +524,16 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
   },
   errorText: {
     fontSize: 15,
-    color: '#dc2626',
+    color: colors.error,
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 15,
-    color: '#94a3b8',
+    color: colors.outline,
     textAlign: 'center',
   },
 })

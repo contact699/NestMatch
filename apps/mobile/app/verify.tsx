@@ -19,6 +19,7 @@ import {
   Clock,
   ExternalLink,
 } from 'lucide-react-native'
+import { colors, radii, typography } from '@/theme/tokens'
 import { useAuth } from '../src/providers/auth-provider'
 import { supabase } from '../src/lib/supabase'
 
@@ -143,11 +144,11 @@ export default function VerifyScreen() {
   const getStatusColor = (status: VerificationStatus) => {
     switch (status) {
       case 'verified':
-        return { bg: '#f0fdf4', border: '#bbf7d0', text: '#16a34a' }
+        return { bg: colors.successContainer, border: '#bbf7d0', text: colors.secondary }
       case 'pending':
-        return { bg: '#fefce8', border: '#fef08a', text: '#d97706' }
+        return { bg: '#fefce8', border: '#fef08a', text: colors.onWarningContainer }
       default:
-        return { bg: '#fef2f2', border: '#fecaca', text: '#dc2626' }
+        return { bg: colors.errorContainer, border: colors.error, text: colors.error }
     }
   }
 
@@ -167,9 +168,9 @@ export default function VerifyScreen() {
   }
 
   const getTrustColor = () => {
-    if (trustScore >= 80) return '#16a34a'
-    if (trustScore >= 50) return '#d97706'
-    return '#dc2626'
+    if (trustScore >= 80) return colors.secondary
+    if (trustScore >= 50) return colors.onWarningContainer
+    return colors.error
   }
 
   if (loading) {
@@ -266,7 +267,7 @@ export default function VerifyScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -274,9 +275,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.outlineVariant,
   },
   backButton: {
     padding: 4,
@@ -284,7 +285,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
   },
   headerSpacer: {
     width: 32,
@@ -298,24 +299,24 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   scoreCard: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     marginBottom: 24,
   },
   scoreCircle: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
     borderWidth: 2,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
   },
   scoreValue: {
     fontSize: 36,
@@ -325,35 +326,35 @@ const styles = StyleSheet.create({
   scoreLabel: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 8,
   },
   scoreDescription: {
     fontSize: 14,
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     textAlign: 'center',
     lineHeight: 20,
   },
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 8,
     marginLeft: 4,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     overflow: 'hidden',
     marginBottom: 20,
   },
   separator: {
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
     marginLeft: 62,
   },
   verificationRow: {
@@ -383,7 +384,7 @@ const styles = StyleSheet.create({
   verificationLabel: {
     fontSize: 15,
     fontWeight: '500',
-    color: '#0f172a',
+    color: colors.primary,
     marginBottom: 2,
   },
   verificationStatus: {
@@ -393,7 +394,7 @@ const styles = StyleSheet.create({
   verifyWebButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primaryFixed,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -402,10 +403,10 @@ const styles = StyleSheet.create({
   verifyWebButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#2563eb',
+    color: colors.primary,
   },
   infoCard: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: colors.primaryFixed,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,

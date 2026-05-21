@@ -15,6 +15,7 @@ import {
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ChevronLeft } from 'lucide-react-native'
+import { colors, radii, typography } from '@/theme/tokens'
 import { useAuth } from '../src/providers/auth-provider'
 import { supabase } from '../src/lib/supabase'
 import { useQueryClient } from '@tanstack/react-query'
@@ -180,11 +181,11 @@ export default function EditProfileScreen() {
             {photoUri ? (
               <Image source={{ uri: photoUri }} style={{ width: 100, height: 100, borderRadius: 50 }} />
             ) : (
-              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: '#e2e8f0', justifyContent: 'center', alignItems: 'center' }}>
-                <Text style={{ fontSize: 36, color: '#94a3b8' }}>+</Text>
+              <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: colors.outlineVariant, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 36, color: colors.outline }}>+</Text>
               </View>
             )}
-            <Text style={{ fontSize: 13, color: '#2563eb', fontWeight: '600', marginTop: 8 }}>
+            <Text style={{ fontSize: 13, color: colors.primary, fontWeight: '600', marginTop: 8 }}>
               Change Photo
             </Text>
           </TouchableOpacity>
@@ -228,7 +229,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: colors.background,
   },
   flex: {
     flex: 1,
@@ -239,9 +240,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    borderBottomColor: colors.outlineVariant,
   },
   backButton: {
     padding: 4,
@@ -249,7 +250,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: '#0f172a',
+    color: colors.primary,
   },
   headerSpacer: {
     width: 32,
@@ -268,28 +269,28 @@ const styles = StyleSheet.create({
   fieldLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#64748b',
+    color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 6,
     marginLeft: 4,
   },
   input: {
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.surfaceContainerLowest,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
-    color: '#0f172a',
+    color: colors.primary,
   },
   inputMultiline: {
     minHeight: 100,
     paddingTop: 14,
   },
   saveButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   saveButtonText: {
-    color: '#ffffff',
+    color: colors.surfaceContainerLowest,
     fontSize: 16,
     fontWeight: '600',
   },

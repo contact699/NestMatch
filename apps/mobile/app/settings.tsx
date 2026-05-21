@@ -25,8 +25,9 @@ import {
   Trash2,
 } from 'lucide-react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useAuth } from '../src/providers/auth-provider'
-import { supabase } from '../src/lib/supabase'
+import { useAuth } from '@/providers/auth-provider'
+import { supabase } from '@/lib/supabase'
+import { colors, radii, typography } from '@/theme/tokens'
 
 export default function SettingsScreen() {
   const router = useRouter()
@@ -136,7 +137,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <ChevronLeft color="#0f172a" size={24} />
+          <ChevronLeft color={colors.primary} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Settings</Text>
         <View style={styles.headerSpacer} />
@@ -151,12 +152,12 @@ export default function SettingsScreen() {
             onPress={() => router.push('/edit-profile')}
           >
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#eff6ff' }]}>
-                <UserPen color="#2563eb" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.primaryFixed }]}>
+                <UserPen color={colors.primary} size={18} />
               </View>
               <Text style={styles.rowLabel}>Edit Profile</Text>
             </View>
-            <ChevronRight color="#94a3b8" size={20} />
+            <ChevronRight color={colors.outline} size={20} />
           </TouchableOpacity>
 
           <View style={styles.separator} />
@@ -166,12 +167,12 @@ export default function SettingsScreen() {
             onPress={() => router.push('/verify')}
           >
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f0fdf4' }]}>
-                <ShieldCheck color="#16a34a" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.successContainer }]}>
+                <ShieldCheck color={colors.secondary} size={18} />
               </View>
               <Text style={styles.rowLabel}>Verification / Trust Center</Text>
             </View>
-            <ChevronRight color="#94a3b8" size={20} />
+            <ChevronRight color={colors.outline} size={20} />
           </TouchableOpacity>
         </View>
 
@@ -180,16 +181,16 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fef3c7' }]}>
-                <Bell color="#d97706" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.warningContainer }]}>
+                <Bell color={colors.onWarningContainer} size={18} />
               </View>
               <Text style={styles.rowLabel}>Push Notifications</Text>
             </View>
             <Switch
               value={pushEnabled}
               onValueChange={togglePushEnabled}
-              trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
-              thumbColor={pushEnabled ? '#2563eb' : '#94a3b8'}
+              trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
+              thumbColor={pushEnabled ? colors.secondary : colors.outline}
             />
           </View>
 
@@ -197,16 +198,16 @@ export default function SettingsScreen() {
 
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fef3c7' }]}>
-                <Bell color="#d97706" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.warningContainer }]}>
+                <Bell color={colors.onWarningContainer} size={18} />
               </View>
               <Text style={styles.rowLabel}>Email Notifications</Text>
             </View>
             <Switch
               value={emailEnabled}
               onValueChange={toggleEmailEnabled}
-              trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
-              thumbColor={emailEnabled ? '#2563eb' : '#94a3b8'}
+              trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
+              thumbColor={emailEnabled ? colors.secondary : colors.outline}
             />
           </View>
         </View>
@@ -216,19 +217,19 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f5f3ff' }]}>
-                <Eye color="#7c3aed" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.surfaceContainerLow }]}>
+                <Eye color={colors.primary} size={18} />
               </View>
               <Text style={styles.rowLabel}>Show Verification Badges</Text>
             </View>
             {loadingPrivacy ? (
-              <ActivityIndicator size="small" color="#2563eb" />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
               <Switch
                 value={showBadges}
                 onValueChange={toggleShowBadges}
-                trackColor={{ false: '#e2e8f0', true: '#93c5fd' }}
-                thumbColor={showBadges ? '#2563eb' : '#94a3b8'}
+                trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
+                thumbColor={showBadges ? colors.secondary : colors.outline}
               />
             )}
           </View>
@@ -242,12 +243,12 @@ export default function SettingsScreen() {
             onPress={() => Linking.openURL('https://www.nestmatch.app/terms')}
           >
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f1f5f9' }]}>
-                <FileText color="#64748b" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.surfaceContainerLow }]}>
+                <FileText color={colors.onSurfaceVariant} size={18} />
               </View>
               <Text style={styles.rowLabel}>Terms of Service</Text>
             </View>
-            <ChevronRight color="#94a3b8" size={20} />
+            <ChevronRight color={colors.outline} size={20} />
           </TouchableOpacity>
 
           <View style={styles.separator} />
@@ -257,12 +258,12 @@ export default function SettingsScreen() {
             onPress={() => Linking.openURL('https://www.nestmatch.app/privacy')}
           >
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#f1f5f9' }]}>
-                <Lock color="#64748b" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.surfaceContainerLow }]}>
+                <Lock color={colors.onSurfaceVariant} size={18} />
               </View>
               <Text style={styles.rowLabel}>Privacy Policy</Text>
             </View>
-            <ChevronRight color="#94a3b8" size={20} />
+            <ChevronRight color={colors.outline} size={20} />
           </TouchableOpacity>
         </View>
 
@@ -271,10 +272,10 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <TouchableOpacity style={styles.row} onPress={handleSignOut}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fef2f2' }]}>
-                <LogOut color="#dc2626" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.errorContainer }]}>
+                <LogOut color={colors.error} size={18} />
               </View>
-              <Text style={[styles.rowLabel, { color: '#dc2626' }]}>Sign Out</Text>
+              <Text style={[styles.rowLabel, { color: colors.error }]}>Sign Out</Text>
             </View>
           </TouchableOpacity>
 
@@ -282,10 +283,10 @@ export default function SettingsScreen() {
 
           <TouchableOpacity style={styles.row} onPress={handleDeleteAccount}>
             <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: '#fef2f2' }]}>
-                <Trash2 color="#dc2626" size={18} />
+              <View style={[styles.iconCircle, { backgroundColor: colors.errorContainer }]}>
+                <Trash2 color={colors.error} size={18} />
               </View>
-              <Text style={[styles.rowLabel, { color: '#dc2626' }]}>Delete Account</Text>
+              <Text style={[styles.rowLabel, { color: colors.error }]}>Delete Account</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -297,49 +298,40 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8fafc',
-  },
+  container: { flex: 1, backgroundColor: colors.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e2e8f0',
+    backgroundColor: colors.surfaceContainerLowest,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.outlineVariant,
   },
-  backButton: {
-    padding: 4,
-  },
+  backButton: { padding: 4 },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#0f172a',
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 16,
+    color: colors.primary,
   },
-  headerSpacer: {
-    width: 32,
-  },
-  scrollContent: {
-    padding: 16,
-  },
+  headerSpacer: { width: 32 },
+  scrollContent: { padding: 16, paddingBottom: 40 },
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#64748b',
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
     marginBottom: 8,
-    marginTop: 16,
+    marginTop: 18,
     marginLeft: 4,
   },
   card: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: colors.outlineVariant,
     overflow: 'hidden',
   },
   row: {
@@ -349,11 +341,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
   },
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
+  rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   iconCircle: {
     width: 34,
     height: 34,
@@ -363,16 +351,14 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   rowLabel: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: '#0f172a',
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: 14,
+    color: colors.primary,
   },
   separator: {
     height: 1,
-    backgroundColor: '#e2e8f0',
+    backgroundColor: colors.outlineVariant,
     marginLeft: 62,
   },
-  bottomPadding: {
-    height: 40,
-  },
+  bottomPadding: { height: 24 },
 })
