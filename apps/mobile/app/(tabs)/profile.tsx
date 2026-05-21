@@ -38,7 +38,7 @@ export default function ProfileScreen() {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email, profile_photo, verification_level, bio, created_at')
-        .eq('id', user!.id)
+        .eq('user_id', user!.id)
         .single()
 
       if (error) throw error
