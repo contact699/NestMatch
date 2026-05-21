@@ -42,14 +42,20 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      ["expo-router", { "root": "./app" }],
+      [
+        "expo-router",
+        {
+          "root": "./app"
+        }
+      ],
       "expo-secure-store",
       [
         "expo-image-picker",
         {
           "photosPermission": "NestMatch needs access to your photos to add images to your listing."
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "router": {},
