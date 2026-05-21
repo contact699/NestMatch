@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -169,6 +170,9 @@ export default function HomeScreen() {
               onPress={() => router.push(`/listing/${l.id}`)}
             >
               <View style={styles.listingImg}>
+                {l.photos && l.photos[0] ? (
+                  <Image source={{ uri: l.photos[0] }} style={styles.listingPhoto} />
+                ) : null}
                 <View style={styles.heart}>
                   <Heart size={14} color={colors.primary} />
                 </View>
@@ -268,6 +272,10 @@ const styles = StyleSheet.create({
     height: 120,
     backgroundColor: colors.surfaceContainer,
     position: 'relative',
+  },
+  listingPhoto: {
+    width: '100%',
+    height: '100%',
   },
   heart: {
     position: 'absolute',

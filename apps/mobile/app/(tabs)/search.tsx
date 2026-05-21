@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -131,6 +132,9 @@ export default function SearchScreen() {
           renderItem={({ item }) => (
             <Pressable style={styles.listing} onPress={() => router.push(`/listing/${item.id}`)}>
               <View style={styles.listingImg}>
+                {item.photos && item.photos[0] ? (
+                  <Image source={{ uri: item.photos[0] }} style={styles.listingPhoto} />
+                ) : null}
                 <View style={styles.heart}><Heart size={14} color={colors.primary} /></View>
               </View>
               <View style={styles.listingInfo}>
@@ -231,6 +235,7 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   listingImg: { height: 140, backgroundColor: colors.surfaceContainer, position: 'relative' },
+  listingPhoto: { width: '100%', height: '100%' },
   heart: {
     position: 'absolute',
     top: 10,

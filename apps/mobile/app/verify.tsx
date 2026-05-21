@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Linking,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import * as WebBrowser from 'expo-web-browser'
 import {
   ChevronLeft,
   ShieldCheck,
@@ -20,8 +20,8 @@ import {
   ExternalLink,
 } from 'lucide-react-native'
 import { colors, radii, typography } from '@/theme/tokens'
-import { useAuth } from '../src/providers/auth-provider'
-import { supabase } from '../src/lib/supabase'
+import { useAuth } from '@/providers/auth-provider'
+import { supabase } from '@/lib/supabase'
 
 type VerificationStatus = 'verified' | 'pending' | 'unverified'
 
@@ -29,7 +29,14 @@ type VerificationItem = {
   label: string
   key: string
   status: VerificationStatus
-  certn: boolean // requires web-based Certn flow
+  certn: boolean // requires Stripe + Certn flow (opens in-app browser)
+  priceCents?: number
+}
+
+const PRICE_BY_KEY: Record<string, number> = {
+  id: 1500,
+  criminal: 2500,
+  credit: 3000,
 }
 
 type ProfileVerification = {
@@ -59,7 +66,7 @@ export default function VerifyScreen() {
         supabase
           .from('profiles')
           .select('email_verified, phone_verified, verification_level')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .single(),
         supabase
           .from('verifications')
@@ -92,22 +99,25 @@ export default function VerifyScreen() {
           certn: false,
         },
         {
-          label: 'ID Verified',
+          label: 'Government ID',
           key: 'id',
           status: getVerificationStatus('id'),
           certn: true,
+          priceCents: PRICE_BY_KEY.id,
         },
         {
           label: 'Background Check',
           key: 'criminal',
           status: getVerificationStatus('criminal'),
           certn: true,
+          priceCents: PRICE_BY_KEY.criminal,
         },
         {
           label: 'Credit Check',
           key: 'credit',
           status: getVerificationStatus('credit'),
           certn: true,
+          priceCents: PRICE_BY_KEY.credit,
         },
       ]
 
@@ -163,8 +173,23 @@ export default function VerifyScreen() {
     }
   }
 
-  const handleVerifyOnWeb = () => {
-    Linking.openURL('https://www.nestmatch.app/verify')
+  const handleStartVerification = async (key: string) => {
+    // Opens the web verify page in an in-app browser (Custom Tab on Android,
+    // SFSafariViewController on iOS). The user completes Stripe Checkout +
+    // Certn flow there; returning to the app, the data is refreshed.
+    // Future iteration: fetch checkout URL directly via authenticated API
+    // call and open Stripe Checkout for a fully native flow.
+    try {
+      await WebBrowser.openBrowserAsync(`https://www.nestmatch.app/verify?focus=${key}`, {
+        toolbarColor: colors.primary,
+        controlsColor: colors.onPrimary,
+        showInRecents: true,
+      })
+      // Refresh status when the browser closes
+      await loadVerificationData()
+    } catch {
+      Alert.alert('Could not open the verification flow. Please try again.')
+    }
   }
 
   const getTrustColor = () => {
@@ -219,18 +244,18 @@ export default function VerifyScreen() {
         <Text style={styles.sectionLabel}>Verifications</Text>
         <View style={styles.card}>
           {items.map((item, index) => {
-            const colors = getStatusColor(item.status)
+            const statusColors = getStatusColor(item.status)
             return (
               <View key={item.key}>
                 {index > 0 && <View style={styles.separator} />}
                 <View style={styles.verificationRow}>
                   <View style={styles.verificationLeft}>
-                    <View style={[styles.statusDot, { backgroundColor: colors.bg, borderColor: colors.border }]}>
+                    <View style={[styles.statusDot, { backgroundColor: statusColors.bg, borderColor: statusColors.border }]}>
                       {getStatusIcon(item.status)}
                     </View>
                     <View style={styles.verificationInfo}>
                       <Text style={styles.verificationLabel}>{item.label}</Text>
-                      <Text style={[styles.verificationStatus, { color: colors.text }]}>
+                      <Text style={[styles.verificationStatus, { color: statusColors.text }]}>
                         {getStatusLabel(item.status)}
                       </Text>
                     </View>
@@ -238,10 +263,20 @@ export default function VerifyScreen() {
                   {item.certn && item.status === 'unverified' && (
                     <TouchableOpacity
                       style={styles.verifyWebButton}
-                      onPress={handleVerifyOnWeb}
+                      onPress={() => handleStartVerification(item.key)}
                     >
-                      <Text style={styles.verifyWebButtonText}>Verify on web</Text>
-                      <ExternalLink color="#2563eb" size={14} />
+                      <Text style={styles.verifyWebButtonText}>
+                        Start{item.priceCents ? ` — $${(item.priceCents / 100).toFixed(0)}` : ''}
+                      </Text>
+                      <ExternalLink color={colors.primary} size={14} />
+                    </TouchableOpacity>
+                  )}
+                  {item.certn && item.status === 'pending' && (
+                    <TouchableOpacity
+                      style={styles.verifyWebButton}
+                      onPress={loadVerificationData}
+                    >
+                      <Text style={styles.verifyWebButtonText}>Refresh</Text>
                     </TouchableOpacity>
                   )}
                 </View>

@@ -25,6 +25,13 @@ type Profile = {
   verification_level: 'basic' | 'verified' | 'trusted' | null
   bio: string | null
   created_at: string | null
+  email_verified: boolean | null
+  phone_verified: boolean | null
+}
+
+type VerificationRecord = {
+  type: 'id' | 'credit' | 'criminal' | 'reference'
+  status: 'pending' | 'completed' | 'failed'
 }
 
 export default function ProfileScreen() {
@@ -36,11 +43,24 @@ export default function ProfileScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, name, email, profile_photo, verification_level, bio, created_at')
+        .select('id, user_id, name, email, profile_photo, verification_level, bio, created_at, email_verified, phone_verified')
         .eq('user_id', user!.id)
         .single()
       if (error) throw error
       return data as Profile
+    },
+    enabled: !!user,
+  })
+
+  const { data: verifications } = useQuery({
+    queryKey: ['profile-verifications', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('verifications')
+        .select('type, status')
+        .eq('user_id', user!.id)
+      if (error) throw error
+      return (data ?? []) as VerificationRecord[]
     },
     enabled: !!user,
   })
@@ -75,7 +95,18 @@ export default function ProfileScreen() {
       ? 'info'
       : 'neutral'
   const verifyLabel = level === 'trusted' ? 'Trusted' : level === 'verified' ? 'Verified' : 'Unverified'
-  const trustPct = level === 'trusted' ? 80 : level === 'verified' ? 50 : 20
+
+  // Trust quotient = % of the 5 verification factors completed.
+  // Matches the calculation in verify.tsx so the two screens never disagree.
+  const factors = [
+    profile?.email_verified === true,
+    profile?.phone_verified === true,
+    verifications?.some((v) => v.type === 'id' && v.status === 'completed'),
+    verifications?.some((v) => v.type === 'criminal' && v.status === 'completed'),
+    verifications?.some((v) => v.type === 'credit' && v.status === 'completed'),
+  ]
+  const completedFactors = factors.filter(Boolean).length
+  const trustPct = Math.round((completedFactors / factors.length) * 100)
 
   return (
     <Screen testID="screen-profile" edges={['bottom']}>
@@ -94,7 +125,9 @@ export default function ProfileScreen() {
             <View style={[styles.trustBarFill, { width: `${trustPct}%` }]} />
           </View>
           <Text style={styles.trustHint}>
-            {trustPct < 80 ? 'Add more verifications to reach Trusted' : 'You are fully verified'}
+            {trustPct >= 100
+              ? 'You are fully verified'
+              : `${completedFactors} of ${factors.length} factors complete · tap Trust Center to finish`}
           </Text>
         </Card>
 
