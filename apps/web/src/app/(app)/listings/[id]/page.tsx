@@ -244,6 +244,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <ListingPhotoGallery
             photos={listing.photos || []}
             title={listing.title}
+            city={listing.city}
+            price={listing.price}
             mainPhotoBadges={
               <>
                 {listing.newcomer_friendly && (

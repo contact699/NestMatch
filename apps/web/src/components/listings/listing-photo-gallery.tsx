@@ -7,6 +7,8 @@ import { PhotoLightbox } from './photo-lightbox'
 interface ListingPhotoGalleryProps {
   photos: string[]
   title: string
+  city: string
+  price: number
   /** Badges overlaid on the main (first) photo — server-rendered, passed as children */
   mainPhotoBadges?: ReactNode
 }
@@ -19,6 +21,8 @@ interface ListingPhotoGalleryProps {
 export function ListingPhotoGallery({
   photos,
   title,
+  city,
+  price,
   mainPhotoBadges,
 }: ListingPhotoGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -30,6 +34,9 @@ export function ListingPhotoGallery({
       </div>
     )
   }
+
+  const altFor = (i: number) =>
+    `Room for rent in ${city} — $${price.toLocaleString('en-CA')} CAD/mo — photo ${i + 1} of ${photos.length}`
 
   return (
     <>
@@ -43,7 +50,7 @@ export function ListingPhotoGallery({
         >
           <img
             src={photos[0]}
-            alt={title}
+            alt={altFor(0)}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           {mainPhotoBadges && (
@@ -64,7 +71,7 @@ export function ListingPhotoGallery({
           >
             <img
               src={photo}
-              alt={`${title} - Photo ${i + 2}`}
+              alt={altFor(i + 1)}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             {/* "+ N more" overlay on the last visible thumbnail when there are extras */}
