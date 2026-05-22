@@ -22,7 +22,7 @@ export async function listingsSitemap(): Promise<MetadataRoute.Sitemap> {
       return []
     }
 
-    return data.map((row: any) => ({
+    return data.map((row: { id: string; updated_at: string | null }) => ({
       url: `${baseUrl}/listings/${row.id}`,
       lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
       changeFrequency: 'daily' as const,

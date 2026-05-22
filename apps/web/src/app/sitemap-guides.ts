@@ -22,7 +22,7 @@ export async function guidesSitemap(): Promise<MetadataRoute.Sitemap> {
       return []
     }
 
-    return data.map((row: any) => ({
+    return data.map((row: { slug: string; updated_at: string | null; is_published: boolean }) => ({
       url: `${baseUrl}/resources/guides/${row.slug}`,
       lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
       changeFrequency: 'weekly' as const,
