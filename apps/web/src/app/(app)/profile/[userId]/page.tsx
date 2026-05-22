@@ -38,7 +38,7 @@ export async function generateMetadata({ params }: ProfilePageProps) {
     .single()) as { data: any }
 
   if (!profile) {
-    return { title: 'Profile Not Found' }
+    return { title: 'Profile Not Found', robots: { index: false, follow: true } }
   }
 
   return {
@@ -46,6 +46,7 @@ export async function generateMetadata({ params }: ProfilePageProps) {
     description: profile.city
       ? `${profile.name} from ${profile.city}, ${profile.province}`
       : `View ${profile.name}'s profile on NestMatch`,
+    robots: { index: false, follow: true },
   }
 }
 

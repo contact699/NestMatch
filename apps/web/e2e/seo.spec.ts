@@ -53,4 +53,11 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(html).toContain('listing is no longer available')
     expect(html.toLowerCase()).toContain('noindex')
   })
+
+  test('profile page emits noindex meta', async ({ request }) => {
+    // Any UUID is fine; we just want to confirm the metadata is on the route.
+    const response = await request.get('/profile/00000000-0000-0000-0000-000000000000')
+    const html = await response.text()
+    expect(html.toLowerCase()).toContain('noindex')
+  })
 })
