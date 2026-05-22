@@ -41,4 +41,13 @@ test.describe('SEO surfaces (anonymous)', () => {
     const html = await response.text()
     expect(html).toMatch(/Guide|Resource/i)
   })
+
+  test('unknown listing renders not-found with noindex meta', async ({ request }) => {
+    const response = await request.get('/listings/00000000-0000-0000-0000-000000000000')
+    // In dev mode returns 200; in production returns 404. Both are acceptable.
+    expect([200, 404]).toContain(response.status())
+    const html = await response.text()
+    expect(html).toContain('listing is no longer available')
+    expect(html.toLowerCase()).toContain('noindex')
+  })
 })
