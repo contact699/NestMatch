@@ -20,4 +20,12 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(page.url()).toContain('/resources/guides')
     expect(page.url()).not.toContain('/login')
   })
+
+  test('listing 404 page renders with landing nav for anonymous user', async ({ page }) => {
+    await page.goto('/listings/00000000-0000-0000-0000-000000000000')
+    // LandingNav has a "Discover" link; the authed Navbar does not.
+    // Note: LandingNav does not have a "Get Started" link — "Discover" is the
+    // unique identifier present only in the landing nav component.
+    await expect(page.getByRole('link', { name: /discover/i })).toBeVisible()
+  })
 })
