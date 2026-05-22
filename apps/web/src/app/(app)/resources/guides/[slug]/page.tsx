@@ -12,6 +12,7 @@ import {
   ShareButton,
 } from '@/components/resources'
 import { Resource } from '@/types/database'
+import { ArticleJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 
 export async function generateMetadata({
   params,
@@ -134,7 +135,26 @@ export default async function GuidePage({
 
   if (!resource) notFound()
 
+  const url = `https://www.nestmatch.app/resources/guides/${slug}`
+
   return (
+    <>
+      {/* No image column exists on the resources table; pass image={null} */}
+      <ArticleJsonLd
+        url={url}
+        title={resource.title}
+        description={resource.excerpt}
+        image={null}
+        datePublished={resource.created_at}
+        dateModified={resource.updated_at}
+      />
+      <BreadcrumbListJsonLd
+        items={[
+          { name: 'Home', url: 'https://www.nestmatch.app' },
+          { name: 'Guides', url: 'https://www.nestmatch.app/resources/guides' },
+          { name: resource.title, url },
+        ]}
+      />
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
       <nav className="mb-6 flex items-center gap-1.5 text-sm text-on-surface-variant">
@@ -235,5 +255,6 @@ export default async function GuidePage({
         </div>
       </div>
     </div>
+    </>
   )
 }
