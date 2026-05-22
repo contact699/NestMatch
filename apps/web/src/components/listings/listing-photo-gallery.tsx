@@ -52,6 +52,8 @@ export function ListingPhotoGallery({
             src={photos[0]}
             alt={altFor(0)}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            fetchPriority="high"
+            decoding="async"
           />
           {mainPhotoBadges && (
             <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
@@ -73,6 +75,8 @@ export function ListingPhotoGallery({
               src={photo}
               alt={altFor(i + 1)}
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              loading="lazy"
+              decoding="async"
             />
             {/* "+ N more" overlay on the last visible thumbnail when there are extras */}
             {i === 3 && photos.length > 5 && (

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { preload } from 'react-dom'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
@@ -122,6 +123,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
   if (error || !listing) {
     logger.error(`Listing fetch error for ID: ${id}`, error instanceof Error ? error : new Error(String(error)))
     notFound()
+  }
+
+  // Preload the LCP image (main listing photo) so the browser fetches it early,
+  // reducing Largest Contentful Paint time. react-dom's preload() emits a
+  // <link rel="preload"> in the HTML head from inside a Server Component.
+  if (listing.photos?.[0]) {
+    preload(listing.photos[0], { as: 'image', fetchPriority: 'high' })
   }
 
   // Fetch host profile separately
