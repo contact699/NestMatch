@@ -34,4 +34,11 @@ test.describe('SEO surfaces (anonymous)', () => {
     const html = await response.text()
     expect(html).toContain('live with')
   })
+
+  test('guides index contains "Resources" or "Guide" heading in initial HTML', async ({ request }) => {
+    const response = await request.get('/resources/guides')
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    expect(html).toMatch(/Guide|Resource/i)
+  })
 })
