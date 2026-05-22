@@ -164,6 +164,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
         available_date={listing.available_date}
         amenities={listing.amenities}
         hostName={profile?.name}
+        petsAllowed={listing.pets_allowed}
       />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button */}

@@ -17,6 +17,8 @@ interface ListingJsonLdProps {
   available_date?: string | null
   amenities?: string[] | null
   hostName?: string | null
+  petsAllowed?: boolean | null
+  numberOfRooms?: number | null
 }
 
 export function ListingJsonLd({
@@ -31,6 +33,8 @@ export function ListingJsonLd({
   available_date,
   amenities,
   hostName,
+  petsAllowed,
+  numberOfRooms,
 }: ListingJsonLdProps) {
   const typeLabels: Record<string, string> = {
     room: 'Private Room',
@@ -38,35 +42,48 @@ export function ListingJsonLd({
     entire_place: 'Entire Place',
   }
 
+  const accommodation = {
+    '@type': 'Accommodation',
+    name: title,
+    ...(description ? { description } : {}),
+    ...(photos && photos.length > 0 ? { image: photos } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: city,
+      addressRegion: province,
+      addressCountry: 'CA',
+    },
+    ...(numberOfRooms ? { numberOfRooms } : {}),
+    ...(petsAllowed != null ? { petsAllowed } : {}),
+    ...(amenities && amenities.length > 0
+      ? {
+          amenityFeature: amenities.map((a) => ({
+            '@type': 'LocationFeatureSpecification',
+            name: a,
+            value: true,
+          })),
+        }
+      : {}),
+    accommodationCategory: typeLabels[type] || type,
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Offer',
     name: title,
-    ...(description ? { description } : {}),
     price: String(price),
     priceCurrency: 'CAD',
     availability: 'https://schema.org/InStock',
     url: `https://www.nestmatch.app/listings/${id}`,
-    ...(photos && photos.length > 0 ? { image: photos } : {}),
     ...(available_date ? { availabilityStarts: available_date } : {}),
-    ...(amenities && amenities.length > 0
-      ? { additionalProperty: amenities.map((a) => ({ '@type': 'PropertyValue', name: a })) }
-      : {}),
-    itemOffered: {
-      '@type': 'Accommodation',
-      name: typeLabels[type] || type,
-      description: `${typeLabels[type] || type} for rent in ${city}, ${province}`,
-    },
+    itemOffered: accommodation,
     areaServed: {
       '@type': 'Place',
       name: `${city}, ${province}`,
     },
     ...(hostName
       ? {
-          seller: {
-            '@type': 'Person',
-            name: hostName,
-          },
+          seller: { '@type': 'Person', name: hostName },
         }
       : {}),
   }
