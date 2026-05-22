@@ -1,6 +1,3 @@
-'use client'
-
-import { useEffect, useRef } from 'react'
 import {
   LandingNav,
   HeroSection,
@@ -12,32 +9,13 @@ import {
 import { FeaturedListingsSection } from '@/components/landing/featured-listings-section'
 import { LatestMembersSection } from '@/components/landing/latest-members-section'
 import { OrganizationJsonLd } from '@/components/json-ld'
+import { HomeScrollAnimations } from './page-client'
 
 export default function HomePage() {
-  const observerRef = useRef<IntersectionObserver | null>(null)
-
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible')
-          }
-        })
-      },
-      { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
-    )
-
-    document.querySelectorAll('[data-animate]').forEach((el) => {
-      observerRef.current?.observe(el)
-    })
-
-    return () => observerRef.current?.disconnect()
-  }, [])
-
   return (
     <div className="min-h-screen bg-background overflow-hidden">
       <OrganizationJsonLd />
+      <HomeScrollAnimations />
       <LandingNav />
       <main className="pt-24">
         <HeroSection />

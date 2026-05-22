@@ -28,4 +28,10 @@ test.describe('SEO surfaces (anonymous)', () => {
     // unique identifier present only in the landing nav component.
     await expect(page.getByRole('link', { name: /discover/i })).toBeVisible()
   })
+
+  test('homepage hero text is present in initial HTML (SSR)', async ({ request }) => {
+    const response = await request.get('/')
+    const html = await response.text()
+    expect(html).toContain('live with')
+  })
 })
