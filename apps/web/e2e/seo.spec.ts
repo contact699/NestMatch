@@ -44,7 +44,10 @@ test.describe('SEO surfaces (anonymous)', () => {
 
   test('unknown listing renders not-found with noindex meta', async ({ request }) => {
     const response = await request.get('/listings/00000000-0000-0000-0000-000000000000')
-    // In dev mode returns 200; in production returns 404. Both are acceptable.
+    // KNOWN ISSUE: notFound() currently returns 200 in this Next.js 16 + supabase
+    // middleware setup. The not-found.tsx body still renders with noindex meta,
+    // which is what Google actually reads — but the 404 status would accelerate
+    // deindexing. Follow-up: investigate why notFound() doesn't propagate status.
     expect([200, 404]).toContain(response.status())
     const html = await response.text()
     expect(html).toContain('listing is no longer available')
