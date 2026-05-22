@@ -97,4 +97,11 @@ test.describe('SEO surfaces (anonymous)', () => {
       expect(xml).toMatch(/<sitemap>/)
     }
   })
+
+  test('FAQ page renders FAQPage JSON-LD in initial HTML', async ({ request }) => {
+    const response = await request.get('/resources/faq')
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    expect(html).toContain('"@type":"FAQPage"')
+  })
 })
