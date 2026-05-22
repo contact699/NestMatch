@@ -40,19 +40,66 @@ export async function generateMetadata({ params }: ListingPageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: listing } = await supabase
+  const { data: listing } = (await supabase
     .from('listings')
-    .select('title, city, province, price')
+    .select('title, city, province, price, photos, description, amenities, is_active, type, bathroom_type')
     .eq('id', id)
-    .single() as { data: any }
+    .single()) as { data: any }
 
   if (!listing) {
-    return { title: 'Listing Not Found' }
+    return { title: 'Listing Not Found', robots: { index: false, follow: false } }
   }
 
+  const priceStr =
+    typeof listing.price === 'number' ? `$${listing.price.toLocaleString('en-CA')}` : ''
+  const titleSeg =
+    listing.city && priceStr
+      ? `Room for Rent in ${listing.city} - ${priceStr}/mo`
+      : listing.title || 'Room for Rent'
+
+  const topAmenities = (listing.amenities ?? []).slice(0, 3).join(', ')
+  const descParts = [
+    `Room for rent in ${listing.city}, ${listing.province}`,
+    priceStr ? `${priceStr} CAD/mo` : null,
+    topAmenities ? `Includes ${topAmenities}` : null,
+    listing.description ? listing.description.slice(0, 80) : null,
+  ].filter(Boolean)
+  const description = descParts.join('. ').slice(0, 160)
+
+  const canonical = `https://www.nestmatch.app/listings/${id}`
+  const firstPhoto = Array.isArray(listing.photos) ? listing.photos[0] : null
+
   return {
-    title: `${listing.title} - ${listing.city}, ${listing.province}`,
-    description: `${formatPrice(listing.price)}/mo room for rent in ${listing.city}, ${listing.province}`,
+    title: titleSeg,
+    description,
+    alternates: { canonical },
+    robots: listing.is_active
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
+    openGraph: {
+      title: titleSeg,
+      description,
+      url: canonical,
+      type: 'website',
+      ...(firstPhoto
+        ? {
+            images: [
+              {
+                url: firstPhoto,
+                width: 1200,
+                height: 630,
+                alt: `Room for rent in ${listing.city}`,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: titleSeg,
+      description,
+      ...(firstPhoto ? { images: [firstPhoto] } : {}),
+    },
   }
 }
 
