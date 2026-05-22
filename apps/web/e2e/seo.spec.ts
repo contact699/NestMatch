@@ -60,4 +60,20 @@ test.describe('SEO surfaces (anonymous)', () => {
     const html = await response.text()
     expect(html.toLowerCase()).toContain('noindex')
   })
+
+  test('static sitemap chunk returns valid XML', async ({ request }) => {
+    // In Next.js 16 dev mode, generateSitemaps chunks are served at /sitemap/[id].xml.
+    // The sitemap index at /sitemap.xml is only emitted at build/production time.
+    const response = await request.get('/sitemap/0.xml')
+    expect(response.status()).toBe(200)
+    const xml = await response.text()
+    expect(xml).toContain('<urlset')
+  })
+
+  test('listings sitemap chunk returns valid XML', async ({ request }) => {
+    const response = await request.get('/sitemap/1.xml')
+    expect(response.status()).toBe(200)
+    const xml = await response.text()
+    expect(xml).toContain('<urlset')
+  })
 })
