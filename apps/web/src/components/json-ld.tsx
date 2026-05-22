@@ -113,3 +113,105 @@ export function OrganizationJsonLd() {
     />
   )
 }
+
+interface ArticleJsonLdProps {
+  url: string
+  title: string
+  description?: string | null
+  image?: string | null
+  datePublished: string
+  dateModified?: string | null
+  authorName?: string | null
+}
+
+export function ArticleJsonLd({
+  url,
+  title,
+  description,
+  image,
+  datePublished,
+  dateModified,
+  authorName,
+}: ArticleJsonLdProps) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    headline: title,
+    ...(description ? { description } : {}),
+    ...(image ? { image: [image] } : {}),
+    datePublished,
+    dateModified: dateModified ?? datePublished,
+    author: {
+      '@type': 'Organization',
+      name: authorName ?? 'NestMatch',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'NestMatch',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.nestmatch.app/icon.png',
+      },
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+export interface BreadcrumbItem {
+  name: string
+  url: string
+}
+
+export function BreadcrumbListJsonLd({ items }: { items: BreadcrumbItem[] }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
+export function FAQPageJsonLd({ items }: { items: FaqItem[] }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
