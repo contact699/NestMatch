@@ -29,7 +29,7 @@ import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
 import { ListingPhotoGallery } from '@/components/listings/listing-photo-gallery'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
-import { ListingJsonLd } from '@/components/json-ld'
+import { ListingJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
 
 interface ListingPageProps {
@@ -165,6 +165,20 @@ export default async function ListingPage({ params }: ListingPageProps) {
         amenities={listing.amenities}
         hostName={profile?.name}
         petsAllowed={listing.pets_allowed}
+      />
+      <BreadcrumbListJsonLd
+        items={[
+          { name: 'Home', url: 'https://www.nestmatch.app' },
+          { name: 'Rooms', url: 'https://www.nestmatch.app/search' },
+          {
+            name: `${listing.city}, ${listing.province}`,
+            url: `https://www.nestmatch.app/search?city=${encodeURIComponent(listing.city)}`,
+          },
+          {
+            name: listing.title,
+            url: `https://www.nestmatch.app/listings/${id}`,
+          },
+        ]}
       />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button */}
