@@ -1,12 +1,12 @@
 import type { MetadataRoute } from 'next'
-import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
 import { logger } from '@/lib/logger'
 
 export async function listingsSitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.nestmatch.app'
 
   try {
-    const supabase = await createClient()
+    const supabase = createServiceClient()
     const { data, error } = await supabase
       .from('listings')
       .select('id, updated_at')
