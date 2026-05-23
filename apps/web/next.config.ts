@@ -1,6 +1,17 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        // Serve the sitemap index at the canonical /sitemap.xml URL.
+        // The app/sitemap.xml/ folder approach collides with Next.js 16's
+        // metadata-file convention, so we use an API route + rewrite instead.
+        source: '/sitemap.xml',
+        destination: '/api/sitemap-index',
+      },
+    ]
+  },
   async headers() {
     return [
       {

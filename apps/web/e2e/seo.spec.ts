@@ -94,18 +94,15 @@ test.describe('SEO surfaces (anonymous)', () => {
     }
   })
 
-  test('sitemap index at /sitemap.xml lists sub-sitemaps', async ({ request }) => {
-    // In Next.js 16 dev mode, generateSitemaps chunks are served at /sitemap/[id].xml.
-    // The sitemap index at /sitemap.xml is only emitted at build/production time.
-    // At build time, it should contain sitemapindex and references to all sub-sitemaps.
+  test('sitemap index at /sitemap.xml lists all 3 chunk URLs', async ({ request }) => {
     const response = await request.get('/sitemap.xml')
-    // In dev mode this may be 404, but in production (build) it should exist.
-    // This test will pass in production and be skipped in dev if needed.
-    if (response.status() === 200) {
-      const xml = await response.text()
-      expect(xml).toContain('sitemapindex')
-      expect(xml).toMatch(/<sitemap>/)
-    }
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('xml')
+    const xml = await response.text()
+    expect(xml).toContain('<sitemapindex')
+    expect(xml).toContain('https://www.nestmatch.app/sitemap/0.xml')
+    expect(xml).toContain('https://www.nestmatch.app/sitemap/1.xml')
+    expect(xml).toContain('https://www.nestmatch.app/sitemap/2.xml')
   })
 
   test('FAQ page renders FAQPage JSON-LD in initial HTML', async ({ request }) => {
