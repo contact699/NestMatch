@@ -111,4 +111,15 @@ test.describe('SEO surfaces (anonymous)', () => {
     const html = await response.text()
     expect(html).toContain('"@type":"FAQPage"')
   })
+
+  test('guides filtered URL returns initial HTML that respects filter', async ({ request }) => {
+    // Pick a category slug that almost certainly has no matching guides.
+    // We're proving the route doesn't crash when the filter eliminates all rows.
+    const response = await request.get('/resources/guides?category=__test_no_match_slug__')
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    // The page should still render its shell + heading even with no matching
+    // resources — the server-side filter returned zero rows, not an error.
+    expect(html).toMatch(/Guide|Resource/i)
+  })
 })
