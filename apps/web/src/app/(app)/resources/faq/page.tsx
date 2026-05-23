@@ -20,15 +20,46 @@ export default async function FAQPage({
 
   const now = new Date().toISOString()
 
+  // Resolve category slug → id before building the main query
+  let categoryId: string | null = null
+  if (params.category) {
+    const { data: categoryData } = await supabase
+      .from('resource_categories')
+      .select('id')
+      .eq('slug', params.category)
+      .single()
+    categoryId = categoryData?.id ?? null
+  }
+
+  let faqsQuery = supabase
+    .from('faqs')
+    .select('*')
+    .eq('is_published', true)
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
+
+  if (params.q) {
+    faqsQuery = faqsQuery.textSearch('search_vector', params.q, {
+      type: 'websearch',
+      config: 'english',
+    })
+  }
+
+  if (categoryId) {
+    faqsQuery = faqsQuery.eq('category_id', categoryId)
+  }
+
+  if (params.province) {
+    // Include FAQs that apply to this province OR are universal (empty provinces array)
+    faqsQuery = faqsQuery.or(`provinces.cs.{${params.province}},provinces.eq.{}`)
+  }
+
+  faqsQuery = faqsQuery
+    .order('display_order', { ascending: true })
+    .order('helpful_count', { ascending: false })
+
   const [{ data: faqs }, { data: categories }] = await Promise.all([
-    supabase
-      .from('faqs')
-      .select('*')
-      .eq('is_published', true)
-      .or(`publish_at.is.null,publish_at.lte.${now}`)
-      .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
-      .order('display_order', { ascending: true })
-      .order('helpful_count', { ascending: false }),
+    faqsQuery,
     supabase.from('resource_categories').select('*').order('name'),
   ])
 

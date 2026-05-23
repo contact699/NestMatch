@@ -12,10 +12,11 @@ export async function generateSitemaps() {
 export default async function sitemap({
   id,
 }: {
-  id: number
+  id: number | string | Promise<number | string>
 }): Promise<MetadataRoute.Sitemap> {
-  if (id === 0) return staticSitemap()
-  if (id === 1) return listingsSitemap()
-  if (id === 2) return guidesSitemap()
+  const chunkId = Number(await id)
+  if (chunkId === 0) return staticSitemap()
+  if (chunkId === 1) return listingsSitemap()
+  if (chunkId === 2) return guidesSitemap()
   return []
 }
