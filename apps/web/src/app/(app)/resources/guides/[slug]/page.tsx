@@ -22,10 +22,15 @@ export async function generateMetadata({
   const { slug } = await params
   const supabase = await createClient()
 
+  const now = new Date().toISOString()
+
   const { data: resource } = await supabase
     .from('resources')
     .select('title, excerpt, tags')
     .eq('slug', slug)
+    .eq('is_published', true)
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     .single()
 
   if (!resource) return { title: 'Resource Not Found' }
@@ -127,10 +132,15 @@ export default async function GuidePage({
   const { slug } = await params
   const supabase = await createClient()
 
+  const now = new Date().toISOString()
+
   const { data: resource } = await supabase
     .from('resources')
     .select('*')
     .eq('slug', slug)
+    .eq('is_published', true)
+    .or(`publish_at.is.null,publish_at.lte.${now}`)
+    .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
     .single()
 
   if (!resource) notFound()
