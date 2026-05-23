@@ -136,3 +136,8 @@ At that point we measure delta vs this baseline and decide:
   to the LCP image and `loading="lazy"` to the rest. Full `next/image` migration would require
   whitelisting the Supabase storage domain in `next.config.ts` and deciding on widths/heights for
   non-uniform photo aspect ratios. Defer to a follow-up CWV plan.
+- **Sitemap chunks must be verified against prod build, not dev server.** The
+  Playwright dev-mode tests don't reproduce the static-generation bug. After
+  any sitemap-related change, run `npm run build --prefix apps/web` then
+  `npm run verify:sitemap --prefix apps/web` to confirm the chunk artifacts
+  contain real URLs.
