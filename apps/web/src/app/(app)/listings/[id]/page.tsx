@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { preload } from 'react-dom'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { logger } from '@/lib/logger'
@@ -29,7 +30,7 @@ import { BATHROOM_TYPES, BATHROOM_SIZES } from '@/lib/utils'
 import { ListingActions } from './listing-actions'
 import { ListingPhotoGallery } from '@/components/listings/listing-photo-gallery'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
-import { ListingJsonLd } from '@/components/json-ld'
+import { ListingJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
 
 interface ListingPageProps {
@@ -40,19 +41,66 @@ export async function generateMetadata({ params }: ListingPageProps) {
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: listing } = await supabase
+  const { data: listing } = (await supabase
     .from('listings')
-    .select('title, city, province, price')
+    .select('title, city, province, price, photos, description, amenities, is_active, type, bathroom_type')
     .eq('id', id)
-    .single() as { data: any }
+    .single()) as { data: any }
 
   if (!listing) {
-    return { title: 'Listing Not Found' }
+    return { title: 'Listing Not Found', robots: { index: false, follow: false } }
   }
 
+  const priceStr =
+    typeof listing.price === 'number' ? `$${listing.price.toLocaleString('en-CA')}` : ''
+  const titleSeg =
+    listing.city && priceStr
+      ? `Room for Rent in ${listing.city} - ${priceStr}/mo`
+      : listing.title || 'Room for Rent'
+
+  const topAmenities = (listing.amenities ?? []).slice(0, 3).join(', ')
+  const descParts = [
+    `Room for rent in ${listing.city}, ${listing.province}`,
+    priceStr ? `${priceStr} CAD/mo` : null,
+    topAmenities ? `Includes ${topAmenities}` : null,
+    listing.description ? listing.description.slice(0, 80) : null,
+  ].filter(Boolean)
+  const description = descParts.join('. ').slice(0, 160)
+
+  const canonical = `https://www.nestmatch.app/listings/${id}`
+  const firstPhoto = Array.isArray(listing.photos) ? listing.photos[0] : null
+
   return {
-    title: `${listing.title} - ${listing.city}, ${listing.province}`,
-    description: `${formatPrice(listing.price)}/mo room for rent in ${listing.city}, ${listing.province}`,
+    title: titleSeg,
+    description,
+    alternates: { canonical },
+    robots: listing.is_active
+      ? { index: true, follow: true }
+      : { index: false, follow: true },
+    openGraph: {
+      title: titleSeg,
+      description,
+      url: canonical,
+      type: 'website',
+      ...(firstPhoto
+        ? {
+            images: [
+              {
+                url: firstPhoto,
+                width: 1200,
+                height: 630,
+                alt: `Room for rent in ${listing.city}`,
+              },
+            ],
+          }
+        : {}),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: titleSeg,
+      description,
+      ...(firstPhoto ? { images: [firstPhoto] } : {}),
+    },
   }
 }
 
@@ -75,6 +123,13 @@ export default async function ListingPage({ params }: ListingPageProps) {
   if (error || !listing) {
     logger.error(`Listing fetch error for ID: ${id}`, error instanceof Error ? error : new Error(String(error)))
     notFound()
+  }
+
+  // Preload the LCP image (main listing photo) so the browser fetches it early,
+  // reducing Largest Contentful Paint time. react-dom's preload() emits a
+  // <link rel="preload"> in the HTML head from inside a Server Component.
+  if (listing.photos?.[0]) {
+    preload(listing.photos[0], { as: 'image', fetchPriority: 'high' })
   }
 
   // Fetch host profile separately
@@ -164,6 +219,21 @@ export default async function ListingPage({ params }: ListingPageProps) {
         available_date={listing.available_date}
         amenities={listing.amenities}
         hostName={profile?.name}
+        petsAllowed={listing.pets_allowed}
+      />
+      <BreadcrumbListJsonLd
+        items={[
+          { name: 'Home', url: 'https://www.nestmatch.app' },
+          { name: 'Rooms', url: 'https://www.nestmatch.app/search' },
+          {
+            name: `${listing.city}, ${listing.province}`,
+            url: `https://www.nestmatch.app/search?city=${encodeURIComponent(listing.city)}`,
+          },
+          {
+            name: listing.title,
+            url: `https://www.nestmatch.app/listings/${id}`,
+          },
+        ]}
       />
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back button */}
@@ -182,6 +252,8 @@ export default async function ListingPage({ params }: ListingPageProps) {
           <ListingPhotoGallery
             photos={listing.photos || []}
             title={listing.title}
+            city={listing.city}
+            price={listing.price}
             mainPhotoBadges={
               <>
                 {listing.newcomer_friendly && (

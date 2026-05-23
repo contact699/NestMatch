@@ -60,57 +60,46 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes - redirect to login if not authenticated
-  // All routes under (app) group require authentication
   const protectedRoutes = [
-    // Core app pages
     '/dashboard',
-    '/profile',
+    '/profile/edit',
     '/discover',
-    '/search',
     '/roommates',
     '/quiz',
     '/verify',
 
-    // Listings
+    // Listings — specific protected paths only.
+    // `/listings/[id]` is PUBLIC (SEO surface).
     '/listings/new',
-    '/listings/', // covers /listings/[id] and /listings/[id]/edit
     '/my-listings',
     '/saved',
 
-    // Messaging
     '/messages',
-
-    // Groups
     '/groups',
-
-    // Financial
     '/payments',
     '/expenses',
     '/reviews',
-
-    // Settings
     '/settings',
 
-    // Resources (protected sections)
+    // Resources — bookmarks/tools/agreement/submit-question stay gated.
+    // `/resources/guides`, `/resources/guides/[slug]`, `/resources/faq` are PUBLIC.
     '/resources/bookmarks',
     '/resources/agreement',
     '/resources/submit-question',
     '/resources/tools',
-    '/resources/guides',
-    '/resources/faq',
 
-    // Admin (all admin routes)
     '/admin',
-
-    // Matching preferences
     '/matching-preferences',
-
-    // Onboarding
     '/onboarding',
   ]
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  )
+
+  // Edit route for listings is also protected, matched separately because
+  // the listing detail route shares the `/listings/` prefix.
+  const editListingPattern = /^\/listings\/[^/]+\/edit\/?$/
+
+  const isProtectedRoute =
+    protectedRoutes.some((route) => request.nextUrl.pathname.startsWith(route)) ||
+    editListingPattern.test(request.nextUrl.pathname)
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()

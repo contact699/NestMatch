@@ -20,7 +20,7 @@ export default defineConfig({
     // Unauthenticated tests run without any setup
     {
       name: 'public',
-      testMatch: /\/(landing|auth)\.spec\.ts/,
+      testMatch: /\/(landing|auth|seo)\.spec\.ts/,
     },
     // Auth setup — logs in and saves storageState
     {
@@ -35,7 +35,7 @@ export default defineConfig({
         storageState: './e2e/.auth/user.json',
       },
       dependencies: ['setup'],
-      testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts)/,
+      testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts|seo\.spec\.ts)/,
     },
     // Multi-browser in CI only
     ...(process.env.CI ? [
@@ -46,7 +46,7 @@ export default defineConfig({
           storageState: './e2e/.auth/user.json',
         },
         dependencies: ['setup'],
-        testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts)/,
+        testIgnore: /(.*\.setup\.ts|landing\.spec\.ts|auth\.spec\.ts|seo\.spec\.ts)/,
       },
     ] : []),
   ],

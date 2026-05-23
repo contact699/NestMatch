@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
 import { Sidebar } from '@/components/layout/sidebar'
+import { LandingNav } from '@/components/landing'
 
 export default async function AppLayout({
   children,
@@ -11,6 +12,15 @@ export default async function AppLayout({
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <LandingNav />
+        <main className="pt-24">{children}</main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">

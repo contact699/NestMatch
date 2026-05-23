@@ -17,6 +17,8 @@ interface ListingJsonLdProps {
   available_date?: string | null
   amenities?: string[] | null
   hostName?: string | null
+  petsAllowed?: boolean | null
+  numberOfRooms?: number | null
 }
 
 export function ListingJsonLd({
@@ -31,6 +33,8 @@ export function ListingJsonLd({
   available_date,
   amenities,
   hostName,
+  petsAllowed,
+  numberOfRooms,
 }: ListingJsonLdProps) {
   const typeLabels: Record<string, string> = {
     room: 'Private Room',
@@ -38,35 +42,48 @@ export function ListingJsonLd({
     entire_place: 'Entire Place',
   }
 
+  const accommodation = {
+    '@type': 'Accommodation',
+    name: title,
+    ...(description ? { description } : {}),
+    ...(photos && photos.length > 0 ? { image: photos } : {}),
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: city,
+      addressRegion: province,
+      addressCountry: 'CA',
+    },
+    ...(numberOfRooms ? { numberOfRooms } : {}),
+    ...(petsAllowed != null ? { petsAllowed } : {}),
+    ...(amenities && amenities.length > 0
+      ? {
+          amenityFeature: amenities.map((a) => ({
+            '@type': 'LocationFeatureSpecification',
+            name: a,
+            value: true,
+          })),
+        }
+      : {}),
+    accommodationCategory: typeLabels[type] || type,
+  }
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Offer',
     name: title,
-    ...(description ? { description } : {}),
     price: String(price),
     priceCurrency: 'CAD',
     availability: 'https://schema.org/InStock',
     url: `https://www.nestmatch.app/listings/${id}`,
-    ...(photos && photos.length > 0 ? { image: photos } : {}),
     ...(available_date ? { availabilityStarts: available_date } : {}),
-    ...(amenities && amenities.length > 0
-      ? { additionalProperty: amenities.map((a) => ({ '@type': 'PropertyValue', name: a })) }
-      : {}),
-    itemOffered: {
-      '@type': 'Accommodation',
-      name: typeLabels[type] || type,
-      description: `${typeLabels[type] || type} for rent in ${city}, ${province}`,
-    },
+    itemOffered: accommodation,
     areaServed: {
       '@type': 'Place',
       name: `${city}, ${province}`,
     },
     ...(hostName
       ? {
-          seller: {
-            '@type': 'Person',
-            name: hostName,
-          },
+          seller: { '@type': 'Person', name: hostName },
         }
       : {}),
   }
@@ -87,6 +104,108 @@ export function OrganizationJsonLd() {
     url: 'https://www.nestmatch.app',
     description: 'Find your perfect roommate in Canada',
     sameAs: [],
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+interface ArticleJsonLdProps {
+  url: string
+  title: string
+  description?: string | null
+  image?: string | null
+  datePublished: string
+  dateModified?: string | null
+  authorName?: string | null
+}
+
+export function ArticleJsonLd({
+  url,
+  title,
+  description,
+  image,
+  datePublished,
+  dateModified,
+  authorName,
+}: ArticleJsonLdProps) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    mainEntityOfPage: { '@type': 'WebPage', '@id': url },
+    headline: title,
+    ...(description ? { description } : {}),
+    ...(image ? { image: [image] } : {}),
+    datePublished,
+    dateModified: dateModified ?? datePublished,
+    author: {
+      '@type': 'Organization',
+      name: authorName ?? 'NestMatch',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'NestMatch',
+      logo: {
+        '@type': 'ImageObject',
+        url: 'https://www.nestmatch.app/icon.png',
+      },
+    },
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+export interface BreadcrumbItem {
+  name: string
+  url: string
+}
+
+export function BreadcrumbListJsonLd({ items }: { items: BreadcrumbItem[] }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
+
+export interface FaqItem {
+  question: string
+  answer: string
+}
+
+export function FAQPageJsonLd({ items }: { items: FaqItem[] }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
   }
 
   return (

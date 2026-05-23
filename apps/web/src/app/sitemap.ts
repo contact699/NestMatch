@@ -1,14 +1,21 @@
 import type { MetadataRoute } from 'next'
+import { staticSitemap } from './sitemap-static'
+import { listingsSitemap } from './sitemap-listings'
+import { guidesSitemap } from './sitemap-guides'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://www.nestmatch.app'
+export const revalidate = 3600
 
-  return [
-    { url: baseUrl, lastModified: new Date(), changeFrequency: 'weekly', priority: 1 },
-    { url: `${baseUrl}/search`, lastModified: new Date(), changeFrequency: 'daily', priority: 0.9 },
-    { url: `${baseUrl}/login`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/signup`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${baseUrl}/terms`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-    { url: `${baseUrl}/privacy`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
-  ]
+export async function generateSitemaps() {
+  return [{ id: 0 }, { id: 1 }, { id: 2 }]
+}
+
+export default async function sitemap({
+  id,
+}: {
+  id: number
+}): Promise<MetadataRoute.Sitemap> {
+  if (id === 0) return staticSitemap()
+  if (id === 1) return listingsSitemap()
+  if (id === 2) return guidesSitemap()
+  return []
 }
