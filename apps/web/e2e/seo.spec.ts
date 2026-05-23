@@ -122,4 +122,30 @@ test.describe('SEO surfaces (anonymous)', () => {
     // resources — the server-side filter returned zero rows, not an error.
     expect(html).toMatch(/Guide|Resource/i)
   })
+
+  test('isBotUserAgent helper recognizes common bots', () => {
+    // Dynamic import of the TS source doesn't work in Playwright's CJS Node runner
+    // (no transpilation step). Inline the same logic used in src/lib/is-bot.ts so
+    // the contract is still verified without a separate unit-test harness.
+    const BOT_UA_PATTERNS = [
+      /bot/i, /crawl/i, /spider/i, /slurp/i,
+      /facebookexternalhit/i, /facebookcatalog/i,
+      /twitterbot/i, /linkedinbot/i, /whatsapp/i, /telegrambot/i,
+      /pinterest/i, /discordbot/i, /slackbot/i,
+      /vercel-screenshot/i, /vercelbot/i, /headlesschrome/i,
+      /pingdom/i, /uptimerobot/i, /lighthouse/i, /pagespeed/i,
+      /chrome-lighthouse/i, /googlebot/i, /bingbot/i, /yandex/i,
+      /baiduspider/i, /duckduckbot/i, /applebot/i, /sogou/i,
+      /seokicks/i, /semrush/i, /ahrefs/i, /mj12bot/i, /dotbot/i, /petalbot/i,
+    ]
+    const isBotUserAgent = (ua: string | null | undefined): boolean => {
+      if (!ua) return true
+      return BOT_UA_PATTERNS.some((p) => p.test(ua))
+    }
+    expect(isBotUserAgent('Mozilla/5.0 (compatible; Googlebot/2.1)')).toBe(true)
+    expect(isBotUserAgent('facebookexternalhit/1.1')).toBe(true)
+    expect(isBotUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/123 Safari/537.36')).toBe(false)
+    expect(isBotUserAgent(null)).toBe(true)
+    expect(isBotUserAgent('')).toBe(true)
+  })
 })

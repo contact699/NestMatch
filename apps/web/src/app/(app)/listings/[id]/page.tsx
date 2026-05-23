@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { preload } from 'react-dom'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
@@ -32,6 +33,7 @@ import { ListingPhotoGallery } from '@/components/listings/listing-photo-gallery
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { ListingJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
+import { isBotUserAgent } from '@/lib/is-bot'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -155,11 +157,17 @@ export default async function ListingPage({ params }: ListingPageProps) {
     isSaved = !!savedListing
   }
 
+  // Detect bots/crawlers by User-Agent before incrementing view count.
+  // This is a heuristic, not a security boundary — see src/lib/is-bot.ts.
+  const headerList = await headers()
+  const userAgent = headerList.get('user-agent')
+  const isBot = isBotUserAgent(userAgent)
+
   // Increment view count via SECURITY DEFINER RPC. A direct UPDATE here is
   // silently blocked by the listings UPDATE policy (`auth.uid() = user_id`),
   // which is why the counter was stuck at 0 for everyone but the owner.
   let displayedViews = listing.views_count || 0
-  if (!isOwner) {
+  if (!isOwner && !isBot) {
     // Cast: this RPC was added in migration 023 — the generated Database type
     // doesn't know about it yet. Regenerate types after applying the migration.
     await (supabase.rpc as any)('increment_listing_views', { p_listing_id: id })
