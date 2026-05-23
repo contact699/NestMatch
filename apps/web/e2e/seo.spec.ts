@@ -61,27 +61,37 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(html.toLowerCase()).toContain('noindex')
   })
 
-  test('static sitemap chunk returns valid XML', async ({ request }) => {
+  test('static sitemap chunk returns valid XML with homepage', async ({ request }) => {
     // In Next.js 16 dev mode, generateSitemaps chunks are served at /sitemap/[id].xml.
     // The sitemap index at /sitemap.xml is only emitted at build/production time.
     const response = await request.get('/sitemap/0.xml')
     expect(response.status()).toBe(200)
     const xml = await response.text()
     expect(xml).toContain('<urlset')
+    expect(xml).toContain('https://www.nestmatch.app</loc>')
   })
 
-  test('listings sitemap chunk returns valid XML', async ({ request }) => {
+  test('listings sitemap chunk returns valid XML with listing URLs or empty', async ({ request }) => {
     const response = await request.get('/sitemap/1.xml')
     expect(response.status()).toBe(200)
     const xml = await response.text()
     expect(xml).toContain('<urlset')
+    // If non-empty, URLs must be in the expected shape:
+    const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+    for (const url of urls) {
+      expect(url).toMatch(/^https:\/\/www\.nestmatch\.app\/listings\/[^/]+$/)
+    }
   })
 
-  test('guides sitemap chunk returns valid XML', async ({ request }) => {
+  test('guides sitemap chunk returns valid XML with guide URLs or empty', async ({ request }) => {
     const response = await request.get('/sitemap/2.xml')
     expect(response.status()).toBe(200)
     const xml = await response.text()
     expect(xml).toContain('<urlset')
+    const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1])
+    for (const url of urls) {
+      expect(url).toMatch(/^https:\/\/www\.nestmatch\.app\/resources\/guides\/[^/]+$/)
+    }
   })
 
   test('sitemap index at /sitemap.xml lists sub-sitemaps', async ({ request }) => {
