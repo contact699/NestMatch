@@ -12,7 +12,9 @@
     "backfill:listing-coords": "npx tsx scripts/backfill-listing-coords.ts",
     "check:migration-state": "npx tsx scripts/check-migration-state.ts",
     "verify:sitemap": "npx tsx scripts/verify-sitemap.ts",
-    "check:sitemap": "npx tsx scripts/verify-sitemap.ts"
+    "check:sitemap": "npx tsx scripts/verify-sitemap.ts",
+    "scan:mojibake": "npx tsx scripts/scan-mojibake.ts",
+    "check:mojibake": "npx tsx scripts/scan-mojibake.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
