@@ -35,6 +35,7 @@ import { ListingJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
 import { isBotUserAgent } from '@/lib/is-bot'
 import { flagshipSlugForCity } from '@/lib/cities'
+import { MoreInCity } from '@/components/listings/more-in-city'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -637,6 +638,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
           </div>
         </div>
       </div>
+      <MoreInCity city={listing.city} excludeListingId={id} />
     </AnimatedPage>
   )
 }
