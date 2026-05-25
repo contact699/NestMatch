@@ -34,7 +34,7 @@ const TARGETS: ScanTarget[] = [
   {
     table: 'resources',
     idColumn: 'id',
-    textColumns: ['title', 'excerpt'],
+    textColumns: ['title', 'subtitle', 'excerpt'],
     jsonColumns: ['content'], // guide article body (rendered on detail page)
   },
   { table: 'faqs', idColumn: 'id', textColumns: ['question', 'answer'] },
@@ -81,6 +81,7 @@ async function scanTarget(target: ScanTarget): Promise<Hit[]> {
     const { data, error } = await supabase
       .from(target.table)
       .select(columns)
+      .order(target.idColumn, { ascending: true })
       .range(from, to)
 
     if (error) {
