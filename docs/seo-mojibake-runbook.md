@@ -59,8 +59,17 @@ it's fixed.
 Add to `.github/workflows/<your-workflow>.yml` after the install step:
 
 ```yaml
-- name: Check DB for mojibake
+- name: Check DB for mojibake (pre-build)
   run: npm run check:mojibake --prefix apps/web
+  env:
+    NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+    SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+- name: Build
+  run: npm run build:web
+
+- name: Verify sitemap artifacts (post-build)
+  run: npm run check:sitemap --prefix apps/web
   env:
     NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
     SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -68,14 +77,23 @@ Add to `.github/workflows/<your-workflow>.yml` after the install step:
 
 ### Vercel build
 
-Add to project settings → Build & Development → Build command:
+The repo uses a monorepo with `npm run build:web` as the canonical build command
+(see root `package.json`). Vercel runs from the repo root.
+
+In Vercel project settings → Build & Development → Build command, set:
 
 ```
-npm run check:mojibake --prefix apps/web && next build
+npm run check:mojibake --prefix apps/web && npm run build:web && npm run check:sitemap --prefix apps/web
 ```
 
-(Pair this with the existing `npm run check:sitemap --prefix apps/web` step from
-SEO Plan 1 Hotfix 8, so both checks gate every deploy.)
+Ordering matters:
+
+1. `check:mojibake` first — fails fast if the DB has mojibake content, before
+   spending time on a build.
+2. `build:web` — builds the app, including the sitemap chunk artifacts under
+   `apps/web/.next/server/app/sitemap/`.
+3. `check:sitemap` AFTER the build — reads the artifacts and asserts each
+   sitemap chunk has the expected URL count. Must run post-build.
 
 ### Nightly cron alternative
 

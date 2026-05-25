@@ -14,7 +14,8 @@
     "verify:sitemap": "npx tsx scripts/verify-sitemap.ts",
     "check:sitemap": "npx tsx scripts/verify-sitemap.ts",
     "scan:mojibake": "npx tsx scripts/scan-mojibake.ts",
-    "check:mojibake": "npx tsx scripts/scan-mojibake.ts"
+    "check:mojibake": "npx tsx scripts/scan-mojibake.ts",
+    "test:mojibake-patterns": "npx tsx scripts/test-mojibake-patterns.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

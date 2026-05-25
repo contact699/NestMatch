@@ -1,68 +1,175 @@
 /**
- * Common mojibake sequences caused by interpreting UTF-8 bytes as Latin-1
- * and re-encoding them as UTF-8 (the classic "double encoded" bug).
+ * Mojibake replacement table — generated programmatically.
  *
- * Sources: Wikipedia "Mojibake" article + manual observation of NestMatch
- * Quebec/French-Canadian content where mojibake is most visible.
+ * Mojibake = UTF-8 bytes mistakenly decoded as Windows-1252 (a.k.a. "double
+ * encoded" or "Latin-1 corruption"). Example: `é` (U+00E9, UTF-8 = 0xC3 0xA9)
+ * gets re-decoded as Windows-1252, where 0xC3 = `Ã` and 0xA9 = `©`. Result:
+ * the string `Ã©` where you wanted `é`.
  *
- * Order matters: longer sequences first so we don't partial-match.
+ * This module reverses single-encoding mojibake. Double-encoded mojibake (e.g.
+ * `ÃƒÂ©` for `é`) is NOT fixed by a single pass — it would need a second pass.
+ * fixMojibake() is idempotent on clean strings.
+ *
+ * Generation strategy:
+ *   1. Start from a list of correct characters known to mojibake.
+ *   2. For each: encode as UTF-8, then read those bytes as Windows-1252 chars.
+ *   3. The Windows-1252-decoded string is the mojibake form.
+ *
+ * This eliminates the order-sensitivity and duplicate-pattern bugs that
+ * came from hand-maintaining the table.
  */
-export const MOJIBAKE_REPLACEMENTS: ReadonlyArray<[string, string]> = [
-  // 3-byte mojibake (longer matches first)
-  ['â€™', '’'], // right single quote
-  ['â€˜', '‘'], // left single quote
-  ['â€œ', '“'], // left double quote
-  ['â€', '”'],  // right double quote (3-byte; precedes the 2-byte â€)
-  ['â€"', '—'], // em dash
-  ['â€"', '–'], // en dash
-  ['â€¦', '…'], // ellipsis
-  ['â€¢', '•'], // bullet
 
-  // 2-byte accented Latin (alphabetic order of correct character)
-  ['Ã€', 'À'],
-  ['Ã‚', 'Â'],
-  ['Ã„', 'Ä'],
-  ['Ã‡', 'Ç'],
-  ['ÃˆÂ ', 'È'],
-  ['Ã‰', 'É'],
-  ['ÃŠ', 'Ê'],
-  ['Ã‹', 'Ë'],
-  ['ÃŽ', 'Î'],
-  ['Ã', 'Í'],
-  ['Ã"', 'Ô'],
-  ['Ã–', 'Ö'],
-  ['Ã™', 'Ù'],
-  ['Ãœ', 'Ü'],
-  ['Ã', 'ß'],
-  ['Ã ', 'à'],
-  ['Ã¡', 'á'],
-  ['Ã¢', 'â'],
-  ['Ã¤', 'ä'],
-  ['Ã§', 'ç'],
-  ['Ã¨', 'è'],
-  ['Ã©', 'é'],
-  ['Ãª', 'ê'],
-  ['Ã«', 'ë'],
-  ['Ã®', 'î'],
-  ['Ã¯', 'ï'],
-  ['Ã´', 'ô'],
-  ['Ã¶', 'ö'],
-  ['Ã¹', 'ù'],
-  ['Ã»', 'û'],
-  ['Ã¼', 'ü'],
+/**
+ * Encoding for the 8-bit code points 0x80–0x9F in Windows-1252. The first
+ * column is the byte value (decimal); the second is the Windows-1252 char.
+ * Values that map to U+FFFD (undefined) in Windows-1252 are omitted — those
+ * bytes don't appear in well-formed UTF-8 anyway.
+ */
+const WIN1252_HIGH: Record<number, string> = {
+  0x80: '€', // €
+  0x82: '‚', // ‚
+  0x83: 'ƒ', // ƒ
+  0x84: '„', // „
+  0x85: '…', // …
+  0x86: '†', // †
+  0x87: '‡', // ‡
+  0x88: 'ˆ', // ˆ
+  0x89: '‰', // ‰
+  0x8A: 'Š', // Š
+  0x8B: '‹', // ‹
+  0x8C: 'Œ', // Œ
+  0x8E: 'Ž', // Ž
+  0x91: '‘', // '
+  0x92: '’', // '
+  0x93: '“', // "
+  0x94: '”', // "
+  0x95: '•', // •
+  0x96: '–', // –
+  0x97: '—', // —
+  0x98: '˜', // ˜
+  0x99: '™', // ™
+  0x9A: 'š', // š
+  0x9B: '›', // ›
+  0x9C: 'œ', // œ
+  0x9E: 'ž', // ž
+  0x9F: 'Ÿ', // Ÿ
+}
+
+/** Decode a single byte the way Windows-1252 does. */
+function decodeWin1252Byte(byte: number): string | null {
+  if (byte < 0x80) return String.fromCharCode(byte) // ASCII
+  if (byte >= 0xA0) return String.fromCharCode(byte) // identical to Latin-1
+  return WIN1252_HIGH[byte] ?? null // unmapped 0x80-0x9F slots return null
+}
+
+/**
+ * Returns the Windows-1252-misdecoded form of `correct` — i.e. the mojibake
+ * string that would appear if `correct`'s UTF-8 bytes were displayed as
+ * Windows-1252.
+ *
+ * Returns `null` if any UTF-8 byte falls in an unmapped Windows-1252 slot
+ * (rare; means this character can't produce a stable mojibake form).
+ */
+function mojibakeFor(correct: string): string | null {
+  // Encode `correct` as UTF-8 bytes.
+  const utf8 = new TextEncoder().encode(correct)
+  let out = ''
+  for (const byte of utf8) {
+    const ch = decodeWin1252Byte(byte)
+    if (ch === null) return null
+    out += ch
+  }
+  return out
+}
+
+/**
+ * Correct characters known to mojibake in NestMatch content (French-Canadian
+ * accented Latin, typographic punctuation, common symbols). Add more here if
+ * the scanner reports patterns that aren't in this list.
+ */
+const CORRECT_CHARS: ReadonlyArray<string> = [
+  // Typographic punctuation
+  '‘', // ' left single quote
+  '’', // ' right single quote
+  '“', // " left double quote
+  '”', // " right double quote
+  '–', // – en dash
+  '—', // — em dash
+  '…', // … ellipsis
+  '•', // • bullet
+
+  // Accented Latin uppercase
+  'À', 'Á', 'Â', 'Ã', 'Ä', 'Å',
+  'Ç',
+  'È', 'É', 'Ê', 'Ë',
+  'Ì', 'Í', 'Î', 'Ï',
+  'Ñ',
+  'Ò', 'Ó', 'Ô', 'Õ', 'Ö',
+  'Ù', 'Ú', 'Û', 'Ü',
+  'Ý', 'Ÿ',
+  'ß',
+
+  // Accented Latin lowercase
+  'à', 'á', 'â', 'ã', 'ä', 'å',
+  'ç',
+  'è', 'é', 'ê', 'ë',
+  'ì', 'í', 'î', 'ï',
+  'ñ',
+  'ò', 'ó', 'ô', 'õ', 'ö',
+  'ù', 'ú', 'û', 'ü',
+  'ý', 'ÿ',
+
+  // Symbols
+  '©', '®', '°', '±', '½', '¼', '¾',
 ]
 
 /**
- * Returns true if the string contains any known mojibake sequence.
+ * Replacement table: [mojibake_form, correct_char].
+ *
+ * Generated by mojibakeFor() — duplicates would mean two correct chars produce
+ * the same mojibake (impossible by construction since mojibake is deterministic),
+ * so this table is automatically dedupe-safe.
+ *
+ * Sort order: by mojibake LENGTH descending, so longer patterns are tried first
+ * (3-byte mojibake before 2-byte). This is the correct order for safe iteration
+ * in fixMojibake().
  */
+export const MOJIBAKE_REPLACEMENTS: ReadonlyArray<[string, string]> = (() => {
+  const seen = new Set<string>()
+  const entries: Array<[string, string]> = []
+  for (const ch of CORRECT_CHARS) {
+    const mojibake = mojibakeFor(ch)
+    if (!mojibake) continue
+    if (mojibake === ch) continue // ASCII chars don't produce mojibake
+    if (seen.has(mojibake)) {
+      // Should never happen if CORRECT_CHARS is unique, but defensive.
+      throw new Error(
+        `mojibake-patterns: duplicate mojibake ${JSON.stringify(mojibake)} ` +
+          `for ${JSON.stringify(ch)}`
+      )
+    }
+    seen.add(mojibake)
+    entries.push([mojibake, ch])
+  }
+  // Longer mojibake patterns first, so fixMojibake doesn't partial-match.
+  entries.sort((a, b) => b[0].length - a[0].length)
+  return entries
+})()
+
+/** Returns true if the string contains any known mojibake sequence. */
 export function hasMojibake(s: string | null | undefined): boolean {
   if (!s) return false
   return MOJIBAKE_REPLACEMENTS.some(([pat]) => s.includes(pat))
 }
 
 /**
- * Returns the string with all known mojibake sequences replaced. Idempotent —
- * running it twice on a clean string is a no-op.
+ * Returns the string with all known mojibake sequences replaced.
+ *
+ * Handles single-encoding mojibake. Double-encoded inputs (e.g. `ÃƒÂ©`) will
+ * be partially fixed on a single pass — call again until the output stops
+ * changing if you need to handle arbitrary nesting.
+ *
+ * Idempotent on clean strings.
  */
 export function fixMojibake(s: string | null | undefined): string {
   if (!s) return s ?? ''
