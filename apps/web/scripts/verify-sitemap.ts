@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { config } from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
+import { FLAGSHIP_CITIES } from '../src/lib/cities'
 
 config({ path: resolve(__dirname, '../.env.local') })
 
@@ -63,6 +64,28 @@ const CHUNKS: ChunkCheck[] = [
         throw new Error(`Failed to count published guides: ${error.message}`)
       }
       return count ?? 0
+    },
+  },
+  {
+    id: 3,
+    label: 'cities',
+    expected: async () => {
+      // Count flagship cities at-or-above the 5-listing threshold.
+      // Must match sitemap-cities.ts logic.
+      const THRESHOLD = 5
+      let qualifying = 0
+      for (const city of FLAGSHIP_CITIES) {
+        const { count, error } = await supabase
+          .from('listings')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true)
+          .ilike('city', city.dbName)
+        if (error) {
+          throw new Error(`verify-sitemap: failed counting ${city.slug}: ${error.message}`)
+        }
+        if ((count ?? 0) >= THRESHOLD) qualifying++
+      }
+      return qualifying
     },
   },
 ]
