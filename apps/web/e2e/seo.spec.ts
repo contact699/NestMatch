@@ -94,7 +94,7 @@ test.describe('SEO surfaces (anonymous)', () => {
     }
   })
 
-  test('sitemap index at /sitemap.xml lists all 3 chunk URLs', async ({ request }) => {
+  test('sitemap index at /sitemap.xml lists all 4 chunk URLs', async ({ request }) => {
     const response = await request.get('/sitemap.xml')
     expect(response.status()).toBe(200)
     expect(response.headers()['content-type']).toContain('xml')
@@ -103,6 +103,7 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(xml).toContain('https://www.nestmatch.app/sitemap/0.xml')
     expect(xml).toContain('https://www.nestmatch.app/sitemap/1.xml')
     expect(xml).toContain('https://www.nestmatch.app/sitemap/2.xml')
+    expect(xml).toContain('https://www.nestmatch.app/sitemap/3.xml')
   })
 
   test('FAQ page renders FAQPage JSON-LD in initial HTML', async ({ request }) => {
