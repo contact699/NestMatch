@@ -1,38 +1,28 @@
 import type { MetadataRoute } from 'next'
 import { createServiceClient } from '@/lib/supabase/service'
-import { logger } from '@/lib/logger'
 
 export async function listingsSitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = 'https://www.nestmatch.app'
 
-  try {
-    const supabase = createServiceClient()
-    const { data, error } = await supabase
-      .from('listings')
-      .select('id, updated_at')
-      .eq('is_active', true)
-      .order('updated_at', { ascending: false })
-      .limit(50000)
+  const supabase = createServiceClient()
+  const { data, error } = await supabase
+    .from('listings')
+    .select('id, updated_at')
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(50000)
 
-    if (error || !data) {
-      logger.error(
-        'sitemap-listings fetch failed',
-        error instanceof Error ? error : new Error(String(error))
-      )
-      return []
-    }
-
-    return data.map((row: { id: string; updated_at: string | null }) => ({
-      url: `${baseUrl}/listings/${row.id}`,
-      lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    }))
-  } catch (err) {
-    logger.error(
-      'sitemap-listings exception',
-      err instanceof Error ? err : new Error(String(err))
-    )
-    return []
+  if (error) {
+    throw new Error(`sitemap-listings: Supabase query failed: ${error.message}`)
   }
+  if (!data) {
+    throw new Error('sitemap-listings: Supabase returned no data and no error')
+  }
+
+  return data.map((row: { id: string; updated_at: string | null }) => ({
+    url: `${baseUrl}/listings/${row.id}`,
+    lastModified: row.updated_at ? new Date(row.updated_at) : new Date(),
+    changeFrequency: 'daily' as const,
+    priority: 0.7,
+  }))
 }

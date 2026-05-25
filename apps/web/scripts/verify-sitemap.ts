@@ -8,7 +8,7 @@ config({ path: resolve(__dirname, '../.env.local') })
 interface ChunkCheck {
   id: number
   label: string
-  /** Returns the expected minimum URL count by querying the DB. */
+  /** Returns the expected URL count by querying the DB. Throws on DB error. */
   expected: () => Promise<number>
 }
 
@@ -43,8 +43,7 @@ const CHUNKS: ChunkCheck[] = [
         .select('id', { count: 'exact', head: true })
         .eq('is_active', true)
       if (error) {
-        console.error('Failed to count active listings:', error.message)
-        return -1
+        throw new Error(`Failed to count active listings: ${error.message}`)
       }
       return count ?? 0
     },
@@ -61,8 +60,7 @@ const CHUNKS: ChunkCheck[] = [
         .or(`publish_at.is.null,publish_at.lte.${now}`)
         .or(`unpublish_at.is.null,unpublish_at.gt.${now}`)
       if (error) {
-        console.error('Failed to count published guides:', error.message)
-        return -1
+        throw new Error(`Failed to count published guides: ${error.message}`)
       }
       return count ?? 0
     },
@@ -94,16 +92,10 @@ async function main() {
     }
 
     const expected = await chunk.expected()
-    if (expected < 0) {
-      // DB query failed; treat as unknown but don't fail the build for this chunk
-      console.warn(
-        `WARN chunk ${chunk.id} (${chunk.label}): could not query DB, found ${result.found} URLs in artifact`
-      )
-      continue
-    }
 
-    const ok = result.found >= expected
-    const line = `${ok ? 'OK  ' : 'FAIL'} chunk ${chunk.id} (${chunk.label}): found ${result.found} URLs, expected >= ${expected}`
+    const target = Math.min(expected, 50000) // sitemap queries limit to 50000
+    const ok = result.found === target
+    const line = `${ok ? 'OK  ' : 'FAIL'} chunk ${chunk.id} (${chunk.label}): found ${result.found} URLs, expected ${target}`
     if (ok) {
       console.log(line)
     } else {
