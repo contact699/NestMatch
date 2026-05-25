@@ -34,6 +34,7 @@ import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { ListingJsonLd, BreadcrumbListJsonLd } from '@/components/json-ld'
 import { computeMatchedLifestyleFactors } from '@/lib/lifestyle-match'
 import { isBotUserAgent } from '@/lib/is-bot'
+import { flagshipSlugForCity } from '@/lib/cities'
 
 interface ListingPageProps {
   params: Promise<{ id: string }>
@@ -213,6 +214,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
     entire_place: 'Entire Place',
   }
 
+  const cityFlagshipSlug = flagshipSlugForCity(listing.city)
+  const cityCrumbUrl = cityFlagshipSlug
+    ? `https://www.nestmatch.app/c/${cityFlagshipSlug}`
+    : `https://www.nestmatch.app/search?city=${encodeURIComponent(listing.city)}`
+
   return (
     <AnimatedPage>
       <ListingJsonLd
@@ -235,7 +241,7 @@ export default async function ListingPage({ params }: ListingPageProps) {
           { name: 'Rooms', url: 'https://www.nestmatch.app/search' },
           {
             name: `${listing.city}, ${listing.province}`,
-            url: `https://www.nestmatch.app/search?city=${encodeURIComponent(listing.city)}`,
+            url: cityCrumbUrl,
           },
           {
             name: listing.title,
