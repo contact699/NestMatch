@@ -94,7 +94,7 @@ test.describe('SEO surfaces (anonymous)', () => {
     }
   })
 
-  test('sitemap index at /sitemap.xml lists all 3 chunk URLs', async ({ request }) => {
+  test('sitemap index at /sitemap.xml lists all 4 chunk URLs', async ({ request }) => {
     const response = await request.get('/sitemap.xml')
     expect(response.status()).toBe(200)
     expect(response.headers()['content-type']).toContain('xml')
@@ -103,6 +103,7 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(xml).toContain('https://www.nestmatch.app/sitemap/0.xml')
     expect(xml).toContain('https://www.nestmatch.app/sitemap/1.xml')
     expect(xml).toContain('https://www.nestmatch.app/sitemap/2.xml')
+    expect(xml).toContain('https://www.nestmatch.app/sitemap/3.xml')
   })
 
   test('FAQ page renders FAQPage JSON-LD in initial HTML', async ({ request }) => {
@@ -147,5 +148,43 @@ test.describe('SEO surfaces (anonymous)', () => {
     expect(isBotUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/123 Safari/537.36')).toBe(false)
     expect(isBotUserAgent(null)).toBe(true)
     expect(isBotUserAgent('')).toBe(true)
+  })
+
+  test('flagship city page above threshold renders ItemList + Breadcrumb + FAQPage JSON-LD', async ({ request }) => {
+    // Ottawa is the only flagship currently at or above the 5-listing threshold
+    // in our dev DB. If the inventory shifts, this test may need updating.
+    const response = await request.get('/c/ottawa')
+    expect(response.status()).toBe(200)
+    const html = await response.text()
+    expect(html).toContain('"@type":"ItemList"')
+    expect(html).toContain('"@type":"FAQPage"')
+    expect(html).toContain('"@type":"BreadcrumbList"')
+    expect(html).toContain('Find a Roommate in Ottawa')
+  })
+
+  test('flagship city below threshold returns not-found with noindex', async ({ request }) => {
+    // Toronto has only 2 active listings (below threshold 5).
+    // notFound() in Next.js 16 with this middleware setup returns 200 (per the
+    // documented bug in commit 1414525); test accepts either 200 or 404 and
+    // asserts noindex is present in the HTML — what actually matters for SEO.
+    const response = await request.get('/c/toronto')
+    expect([200, 404]).toContain(response.status())
+    const html = await response.text()
+    expect(html.toLowerCase()).toContain('noindex')
+  })
+
+  test('unknown city slug renders not-found with noindex', async ({ request }) => {
+    const response = await request.get('/c/this-is-not-a-real-city')
+    expect([200, 404]).toContain(response.status())
+    const html = await response.text()
+    expect(html.toLowerCase()).toContain('noindex')
+  })
+
+  test('cities sitemap chunk includes Ottawa', async ({ request }) => {
+    const response = await request.get('/sitemap/3.xml')
+    expect(response.status()).toBe(200)
+    const xml = await response.text()
+    expect(xml).toContain('<urlset')
+    expect(xml).toContain('https://www.nestmatch.app/c/ottawa</loc>')
   })
 })

@@ -6,7 +6,7 @@ export const revalidate = 3600
 const BASE_URL = 'https://www.nestmatch.app'
 
 // IDs must mirror what generateSitemaps() returns in sitemap.ts.
-const CHUNK_IDS = [0, 1, 2]
+const CHUNK_IDS = [0, 1, 2, 3]
 
 export async function GET() {
   const now = new Date().toISOString()

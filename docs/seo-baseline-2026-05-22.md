@@ -115,6 +115,25 @@ view); this section is just the canonical list.
 - "tenant rights for roommates Ontario"
 - "how to avoid rental scams Canada"
 
+## Plan 3 — city landing pages (shipped 2026-05-25)
+
+Five flagship city pages at `/c/[slug]` with 5-listing threshold. Cities chunk is sitemap id 3.
+
+At ship time:
+- **Cities above threshold (rendered + in sitemap):** `ottawa` (8 active listings)
+- **Cities below threshold (404 + omitted from sitemap):** `toronto` (2), `vancouver` (1), `calgary` (1), `montreal` (0)
+
+The 4 below-threshold cities will activate automatically as inventory grows past 5 active listings (sitemap regenerates hourly via ISR). All 5 cities are linked from the expanded footer regardless of threshold — the 404 with branded not-found page is a graceful degradation that points users at the other cities.
+
+Verifier output post-build:
+
+```
+OK   chunk 0 (static): found 6 URLs, expected 6
+OK   chunk 1 (listings): found 15 URLs, expected 15
+OK   chunk 2 (guides): found 13 URLs, expected 13
+OK   chunk 3 (cities): found 1 URLs, expected 1
+```
+
 ## Re-snapshot date
 
 90 days from baseline → **2026-08-20**.

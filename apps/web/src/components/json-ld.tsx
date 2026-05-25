@@ -215,3 +215,36 @@ export function FAQPageJsonLd({ items }: { items: FaqItem[] }) {
     />
   )
 }
+
+export interface ItemListEntry {
+  url: string
+  name: string
+}
+
+export function ItemListJsonLd({
+  name,
+  items,
+}: {
+  name: string
+  items: ItemListEntry[]
+}) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    numberOfItems: items.length,
+    itemListElement: items.map((item, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: item.url,
+      name: item.name,
+    })),
+  }
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  )
+}
