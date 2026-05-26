@@ -48,7 +48,7 @@ const FAQS = [
   },
   {
     q: 'Can I see who else is verified?',
-    a: 'Yes — every member and listing shows their verification status as a badge. Use the "Verified only" filter on a city page to narrow your search.',
+    a: 'Yes — every member and listing shows their verification status as a badge in search results and profile pages.',
   },
 ]
 
@@ -98,10 +98,8 @@ export default function HowVerificationWorksPage() {
           </h2>
           <ul className="space-y-3 text-on-surface-variant">
             {[
-              'Trust badge on your profile and listings',
-              '"Verified only" filter visibility — reach the renters and hosts who care most',
-              'Priority placement in matching results',
-              'Access to verified-only group chats and high-trust listings',
+              'Trust badge on your profile and listings, visible to anyone browsing search results.',
+              'Higher placement in roommate matching suggestions — verified and trusted profiles get a score boost in our compatibility ranking.',
             ].map((b) => (
               <li key={b} className="flex items-start gap-3">
                 <Check className="w-5 h-5 text-secondary mt-0.5 flex-shrink-0" />
