@@ -22,6 +22,16 @@ const createGroupSchema = z.object({
     return true
   },
   { message: 'Minimum budget must be less than or equal to maximum budget', path: ['combined_budget_max'] }
+).refine(
+  (data) => {
+    if (!data.target_move_date) return true
+    // String comparison is safe for ISO YYYY-MM-DD dates. UTC-based "today"
+    // here may briefly disagree with a client's local date around midnight;
+    // we accept that small edge to avoid timezone-passing complexity.
+    const todayUTC = new Date().toISOString().slice(0, 10)
+    return data.target_move_date >= todayUTC
+  },
+  { message: 'Move-in date must be today or in the future', path: ['target_move_date'] }
 )
 
 // Get user's co-renter groups
@@ -120,8 +130,10 @@ export const POST = withApiHandler(
     let groupData: z.infer<typeof createGroupSchema>
     try {
       groupData = await parseBody(req, createGroupSchema)
-    } catch {
-      throw new ValidationError('Invalid group data')
+    } catch (err) {
+      // Surface the first Zod issue's message so the client can render it inline.
+      const issue = (err as { issues?: Array<{ message?: string }> })?.issues?.[0]
+      throw new ValidationError(issue?.message || 'Invalid group data')
     }
 
     const {
