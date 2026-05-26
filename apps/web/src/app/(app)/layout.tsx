@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/layout/navbar'
 import { Sidebar } from '@/components/layout/sidebar'
 import { LandingNav } from '@/components/landing'
+import { IdleLogoutWatcher } from '@/components/auth/idle-logout-watcher'
 
 export default async function AppLayout({
   children,
@@ -24,6 +25,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen bg-background">
+      <IdleLogoutWatcher />
       <Navbar user={user} />
       <div className="flex">
         <Sidebar user={user} />
