@@ -35,25 +35,41 @@ void rpc
 interface Probe {
   migration: string
   description: string
-  check: () => Promise<{ applied: boolean; detail: string }>
+  check: () => Promise<{ applied: boolean | null; detail: string }>
 }
+
+interface ProbeError {
+  code?: string
+  message?: string
+}
+
+interface RestProbeClient {
+  from(name: string): {
+    select(columns: string): {
+      limit(count: number): Promise<{ error: ProbeError | null }>
+    }
+  }
+  rpc(name: string, args: Record<string, unknown>): Promise<{ error: ProbeError | null }>
+}
+
+const probeClient = supabase as unknown as RestProbeClient
 
 async function tableExists(name: string): Promise<boolean> {
   // PostgREST returns 404 if a table doesn't exist on .from().select('id')
-  const { error } = await (supabase as any).from(name).select('*').limit(1)
+  const { error } = await probeClient.from(name).select('*').limit(1)
   if (!error) return true
   // 42P01 = relation doesn't exist; PGRST205 = relation not found in schema cache
   return !(error.code === '42P01' || error.code === 'PGRST205' || /not exist|not found/i.test(error.message))
 }
 
 async function columnExists(table: string, column: string): Promise<boolean> {
-  const { error } = await (supabase as any).from(table).select(column).limit(1)
+  const { error } = await probeClient.from(table).select(column).limit(1)
   if (!error) return true
   return !/column .* does not exist|not found/i.test(error.message)
 }
 
 async function rpcExists(name: string, args: Record<string, unknown> = {}): Promise<{ exists: boolean; reason: string }> {
-  const { error } = await (supabase.rpc as any)(name, args)
+  const { error } = await probeClient.rpc(name, args)
   if (!error) return { exists: true, reason: 'callable' }
   // 42883 = function does not exist
   if (error.code === '42883' || /function .* does not exist/i.test(error.message)) {
@@ -136,23 +152,32 @@ const probes: Probe[] = [
   },
   {
     migration: '032_scope_chat_policies_and_use_helper',
-    description: 'is_active_group_member helper RPC',
+    description: 'chat RLS policies rebuilt on is_group_member()',
     check: async () => {
-      const { exists } = await rpcExists('is_active_group_member', {
+      // Migration 032 rebuilds policies; it does not create a new
+      // table/column/RPC. This REST-only probe cannot inspect pg_policies, so
+      // do not report a false APPLIED result here.
+      const { exists, reason } = await rpcExists('is_group_member', {
         p_group_id: '00000000-0000-0000-0000-000000000000',
+        p_user_id: '00000000-0000-0000-0000-000000000000',
       })
-      return { applied: exists, detail: exists ? 'helper RPC exists' : 'helper RPC missing' }
+      return {
+        applied: null,
+        detail: exists
+          ? 'helper RPC exists; verify policies via pg_policies or a browser chat smoke test'
+          : `helper RPC ${reason}`,
+      }
     },
   },
   {
     migration: '033_secure_pay_expense_share',
     description: 'pay_expense_share function (security-definer hardened)',
     check: async () => {
-      const { exists } = await rpcExists('pay_expense_share', {
-        p_share_id: '00000000-0000-0000-0000-000000000000',
-        p_payment_method_id: '00000000-0000-0000-0000-000000000000',
+      const { exists, reason } = await rpcExists('pay_expense_share', {
+        p_expense_id: '00000000-0000-0000-0000-000000000000',
+        p_user_id: '00000000-0000-0000-0000-000000000000',
       })
-      return { applied: exists, detail: exists ? 'RPC callable' : 'RPC missing' }
+      return { applied: exists, detail: exists ? `RPC exists (${reason})` : 'RPC missing' }
     },
   },
 ]
@@ -162,7 +187,7 @@ async function main() {
   for (const probe of probes) {
     try {
       const { applied, detail } = await probe.check()
-      const mark = applied ? 'APPLIED   ' : 'MISSING   '
+      const mark = applied === null ? 'UNKNOWN   ' : applied ? 'APPLIED   ' : 'MISSING   '
       console.log(`${mark} ${probe.migration}  — ${probe.description}\n             ${detail}`)
     } catch (err) {
       console.log(`ERROR     ${probe.migration}  — ${probe.description}\n             ${(err as Error).message}`)

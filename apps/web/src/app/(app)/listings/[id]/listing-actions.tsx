@@ -183,9 +183,11 @@ export function ListingActions({
         disabled={isContacting}
       >
         {isContacting ? (
-          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+          <Loader2 className="h-5 w-5 mr-2.5 animate-spin" />
         ) : (
-          <MessageCircle className="h-5 w-5 mr-2" />
+          <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-primary-container text-on-primary-container mr-2.5">
+            <MessageCircle className="h-4 w-4" />
+          </span>
         )}
         Contact Host
       </Button>
