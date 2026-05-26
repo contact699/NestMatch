@@ -88,7 +88,7 @@ export function CTASection() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  href="/search"
+                  href="/c/toronto"
                   className="px-6 py-4 bg-white/10 text-on-primary border border-white/20 font-semibold rounded-xl hover:bg-white/20 transition-colors backdrop-blur text-center"
                 >
                   Browse listings

@@ -234,7 +234,7 @@ export function FeaturedListingsSection() {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Link
-                  href="/search"
+                  href="/c/toronto"
                   className="px-5 py-3 text-sm font-semibold rounded-xl ring-1 ring-outline-variant/40 text-primary bg-background hover:bg-surface-container-low flex items-center justify-center gap-2 transition-colors"
                 >
                   Browse all listings

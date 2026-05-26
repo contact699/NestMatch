@@ -11,7 +11,7 @@ const FEATURES = [
     description:
       'Government ID check via Persona. Verified members display a trust badge — filter to verified-only in one tap.',
     cta: 'How verification works',
-    href: '/verify',
+    href: '/how-verification-works',
   },
   {
     icon: Home,
@@ -20,7 +20,7 @@ const FEATURES = [
     description:
       'We verify ownership before a listing goes live. No bait-and-switch, no phantom apartments, no wasted viewings.',
     cta: 'See verified listings',
-    href: '/search',
+    href: '/c/toronto',
   },
   {
     icon: Users,
@@ -29,7 +29,7 @@ const FEATURES = [
     description:
       'Sleep, cleanliness, noise, guests, pets, work-from-home — many dimensions, weighted by what matters to you.',
     cta: 'Take the quiz',
-    href: '/quiz',
+    href: '/signup?intent=quiz',
   },
 ]
 
