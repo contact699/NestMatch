@@ -25,11 +25,19 @@ const createGroupSchema = z.object({
 ).refine(
   (data) => {
     if (!data.target_move_date) return true
-    // String comparison is safe for ISO YYYY-MM-DD dates. UTC-based "today"
-    // here may briefly disagree with a client's local date around midnight;
-    // we accept that small edge to avoid timezone-passing complexity.
-    const todayUTC = new Date().toISOString().slice(0, 10)
-    return data.target_move_date >= todayUTC
+    // Floor against the earliest Canadian timezone (America/Vancouver). A
+    // user in Vancouver picking "today" at 9pm local has already rolled
+    // past midnight UTC and past midnight in Toronto, but their date
+    // picker still shows their local today — we must accept that. Using
+    // Pacific time as the server floor means every valid client-local
+    // date in any Canadian timezone passes. en-CA formats as YYYY-MM-DD.
+    const todayInPacific = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Vancouver',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+    return data.target_move_date >= todayInPacific
   },
   { message: 'Move-in date must be today or in the future', path: ['target_move_date'] }
 )
