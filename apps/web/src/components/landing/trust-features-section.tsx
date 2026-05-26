@@ -9,7 +9,7 @@ const FEATURES = [
     iconBg: 'bg-primary',
     title: 'Optional ID verification',
     description:
-      'Government ID check via Persona. Verified members display a trust badge — filter to verified-only in one tap.',
+      'Government ID check via Certn. Verified members display a trust badge — filter to verified-only in one tap.',
     cta: 'How verification works',
     href: '/how-verification-works',
   },

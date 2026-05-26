@@ -7,7 +7,7 @@ const WHAT_YOU_GET = [
   {
     icon: ShieldCheck,
     title: 'Optional ID verification',
-    description: 'Trust badge on your profile after a Persona check.',
+    description: 'Trust badge on your profile after a Certn ID check.',
   },
   {
     icon: Home,

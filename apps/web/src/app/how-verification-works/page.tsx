@@ -6,7 +6,7 @@ import { LandingNav, Footer } from '@/components/landing'
 export const metadata: Metadata = {
   title: 'How verification works | NestMatch',
   description:
-    'NestMatch verifies identity, ownership, and trust signals before members go live. Learn what we check, who does the checking, and why verification is optional but valuable.',
+    'NestMatch verifies identity and background through Certn, a Canadian screening provider. Learn what we check, what we store, and why verification is optional but valuable.',
   alternates: { canonical: 'https://www.nestmatch.app/how-verification-works' },
 }
 
@@ -14,7 +14,7 @@ const CHECKS = [
   {
     icon: FileCheck,
     title: 'Government ID',
-    body: 'Persona (an Anthropic-grade KYC provider) confirms your government-issued ID matches the photo you upload. We never see your ID document directly.',
+    body: 'Identity verification runs through Certn, a Canadian-based screening provider. You complete the check via a link Certn emails you — your ID document is uploaded directly to Certn, not to NestMatch.',
   },
   {
     icon: Smartphone,
@@ -28,23 +28,23 @@ const CHECKS = [
   },
   {
     icon: Scale,
-    title: 'Sanctions & watchlists',
-    body: 'Hosts running high-trust listings pass a background screen through Certn — sanctions, sex-offender registry, and global watchlists.',
+    title: 'Credit & criminal record (optional, for hosts)',
+    body: 'Hosts who want a high-trust badge can add a Canadian credit report and a basic criminal record check, also through Certn. These are opt-in and gated behind a separate consent step inside the app.',
   },
 ]
 
 const FAQS = [
   {
     q: 'Is verification required?',
-    a: 'No. You can browse, match, and message without verifying. Verified members get a trust badge and reach more people — so most active users opt in.',
+    a: 'No. You can browse, match, and message without verifying. Verified members get a trust badge and reach more people, so most active users opt in.',
   },
   {
     q: 'Who pays for verification?',
-    a: 'NestMatch covers basic identity verification. Hosts pay a small fee for the deeper Certn background screen, which is required to display the "Trusted Host" badge.',
+    a: 'Pricing depends on the check. Hosts pay for the deeper credit and criminal record checks, since those are what unlock the "Trusted Host" badge. Pricing is shown inside the app before you start a check.',
   },
   {
-    q: 'What data do you store?',
-    a: 'We store the pass/fail result, a verification timestamp, and a Persona reference ID. We do NOT store your ID document, photos, or biometric data on our servers — those stay with Persona under their SOC 2 controls.',
+    q: 'What does NestMatch store about my verification?',
+    a: 'For each completed check we store the provider name (Certn), the Certn case ID, the check type (ID / credit / criminal), and the status. We do not store your ID document, photos, biometric data, or report contents on our servers — those stay with Certn.',
   },
   {
     q: 'Can I see who else is verified?',
@@ -66,8 +66,8 @@ export default function HowVerificationWorksPage() {
             How verification works
           </h1>
           <p className="mt-5 text-lg text-on-surface-variant leading-relaxed">
-            NestMatch is built on trust, not hope. Here&apos;s exactly what we
-            check, who does the checking, and why we keep verification optional.
+            NestMatch is built on trust, not hope. Here&apos;s what we check,
+            who runs the checks, and why we keep verification optional.
           </p>
         </section>
 
