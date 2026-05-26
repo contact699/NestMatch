@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   ArrowRight,
@@ -11,11 +12,40 @@ import {
   MapPin,
   Check,
 } from 'lucide-react'
+import { FLAGSHIP_CITIES } from '@/lib/cities'
 
-const POPULAR = ['Liberty Village', 'Mile End', 'Kitsilano', 'Plateau']
+const POPULAR: Array<{ label: string; citySlug: string }> = [
+  { label: 'Liberty Village', citySlug: 'toronto' },
+  { label: 'Mile End', citySlug: 'montreal' },
+  { label: 'Kitsilano', citySlug: 'vancouver' },
+  { label: 'Plateau', citySlug: 'montreal' },
+]
+
+/**
+ * Map a guest's search query to the best public destination.
+ * Matches flagship cities by slug/displayName/dbName; otherwise falls back
+ * to Toronto so the click never dead-ends in a 404 or login wall.
+ */
+function resolveSearchDestination(query: string): string {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return '/c/toronto'
+  const hit = FLAGSHIP_CITIES.find(
+    (c) =>
+      c.slug === normalized ||
+      c.displayName.toLowerCase() === normalized ||
+      c.dbName.toLowerCase() === normalized,
+  )
+  return hit ? `/c/${hit.slug}` : '/c/toronto'
+}
 
 export function HeroSection() {
+  const router = useRouter()
   const [query, setQuery] = useState('')
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    router.push(resolveSearchDestination(query))
+  }
 
   return (
     <section className="relative pt-4 lg:pt-12 pb-20 lg:pb-28 overflow-hidden">
@@ -83,7 +113,7 @@ export function HeroSection() {
           </p>
 
           <form
-            action="/search"
+            onSubmit={handleSearch}
             className="mt-9 max-w-xl bg-surface-container-lowest rounded-2xl shadow-[0_20px_40px_-12px_rgba(0,32,69,0.18)] p-2 flex items-center gap-2 ring-1 ring-outline-variant/40"
           >
             <label className="flex-1 flex items-center gap-3 px-4 py-2.5 min-w-0">
@@ -100,11 +130,11 @@ export function HeroSection() {
             </label>
             <div className="hidden sm:block w-px h-8 bg-outline-variant/50" />
             <Link
-              href="/search"
+              href="/c/toronto"
               className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold text-on-surface-variant hover:text-primary"
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" />
-              Filters
+              Browse
             </Link>
             <button
               type="submit"
@@ -119,11 +149,11 @@ export function HeroSection() {
             <span className="text-on-surface-variant">Popular:</span>
             {POPULAR.map((p) => (
               <Link
-                key={p}
-                href={`/search?q=${encodeURIComponent(p)}`}
+                key={p.label}
+                href={`/c/${p.citySlug}`}
                 className="px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition-colors"
               >
-                {p}
+                {p.label}
               </Link>
             ))}
           </div>
