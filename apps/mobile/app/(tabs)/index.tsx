@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -14,9 +14,13 @@ import { useAuth } from '@/providers/auth-provider'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { Plus, Search as SearchIcon, Heart } from 'lucide-react-native'
-import { Screen, Card, Badge, Avatar, Chip, SectionHeader } from '@/components/ui'
-import { colors, radii, shadows, typography } from '@/theme/tokens'
+import { Plus, Heart } from 'lucide-react-native'
+import { Screen, Card, Badge, Avatar, SectionHeader } from '@/components/ui'
+import { colors, radii, shadows, spacing, typography } from '@/theme/tokens'
+import { Hero } from '@/components/home/Hero'
+import { CityChipRow } from '@/components/home/CityChipRow'
+import { useHomeSignals } from '@/lib/home/use-home-signals'
+import { FLAGSHIP_CITIES, getFlagshipBySlug } from '@/lib/cities'
 
 type RoommateCard = {
   user_id: string
@@ -35,20 +39,26 @@ type ListingCard = {
   photos: string[] | null
 }
 
-const CATEGORIES = ['All', 'Roommates', 'Listings', 'Co-living'] as const
-
 export default function HomeScreen() {
   const { user } = useAuth()
   const router = useRouter()
-  const firstName = (user?.user_metadata?.name as string | undefined)?.split(' ')[0] ?? 'there'
+
+  // City selection: defaults to Toronto for now. Reading the user's profile
+  // city would need to flow through useHomeSignals — flagged as follow-up
+  // alongside cross-session persistence.
+  const [citySlug, setCitySlug] = useState<string>('toronto')
+  const city = getFlagshipBySlug(citySlug) ?? FLAGSHIP_CITIES[0]
+
+  const { content: heroContent } = useHomeSignals(citySlug)
 
   const { data: roommates, isLoading: roommatesLoading } = useQuery({
-    queryKey: ['home-roommates', user?.id],
+    queryKey: ['home-roommates', user?.id, city.dbName],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, name, age, occupation, city, profile_photo')
         .neq('user_id', user!.id)
+        .ilike('city', city.dbName)
         .order('created_at', { ascending: false })
         .limit(10)
       if (error) throw error
@@ -58,12 +68,13 @@ export default function HomeScreen() {
   })
 
   const { data: listings, isLoading: listingsLoading } = useQuery({
-    queryKey: ['home-listings', user?.id],
+    queryKey: ['home-listings', user?.id, city.dbName],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('listings')
         .select('id, title, price, city, photos')
         .eq('is_active', true)
+        .ilike('city', city.dbName)
         .order('created_at', { ascending: false })
         .limit(8)
       if (error) throw error
@@ -101,57 +112,23 @@ export default function HomeScreen() {
     </Pressable>
   )
 
+  const browseCity = (slug: string) => {
+    const target = getFlagshipBySlug(slug)
+    if (!target) return
+    router.push({ pathname: '/(tabs)/search', params: { q: target.displayName } })
+  }
+
   return (
     <Screen testID="screen-home" edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
-        <Text style={styles.title}>Find your nest</Text>
-        <Text style={styles.subtitle}>
-          Roommates and listings curated for you{firstName !== 'there' ? `, ${firstName}` : ''}
-        </Text>
+        {heroContent ? (
+          <Hero content={heroContent} onBrowseCity={browseCity} />
+        ) : null}
 
-        <Pressable style={styles.searchPill} onPress={() => router.push('/(tabs)/search')}>
-          <SearchIcon size={16} color={colors.outline} />
-          <Text style={styles.searchText}>Where are you looking?</Text>
-        </Pressable>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
-        >
-          {CATEGORIES.map((c, i) => (
-            <Chip key={c} active={i === 0} onPress={() => router.push('/(tabs)/search')}>
-              {c}
-            </Chip>
-          ))}
-        </ScrollView>
+        <CityChipRow selectedSlug={citySlug} onSelect={setCitySlug} />
 
         <SectionHeader
-          title="Roommates near you"
-          actionLabel="SEE ALL"
-          onActionPress={() => router.push('/(tabs)/search')}
-        />
-        {roommatesLoading ? (
-          <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
-        ) : (
-          <FlatList
-            horizontal
-            data={roommates ?? []}
-            keyExtractor={(i) => i.user_id}
-            renderItem={renderRoommate}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.hList}
-            ListEmptyComponent={
-              <Card style={styles.empty}>
-                <Text style={styles.emptyTitle}>No roommates yet</Text>
-                <Text style={styles.emptyBody}>Be among the first — complete your profile.</Text>
-              </Card>
-            }
-          />
-        )}
-
-        <SectionHeader
-          title="Listings near you"
+          title={`Fresh listings in ${city.displayName}`}
           actionLabel="SEE ALL"
           onActionPress={() => router.push('/(tabs)/search')}
         />
@@ -187,6 +164,30 @@ export default function HomeScreen() {
             </Pressable>
           ))
         )}
+
+        <SectionHeader
+          title="Roommates you'll click with"
+          actionLabel="SEE ALL"
+          onActionPress={() => router.push('/(tabs)/search')}
+        />
+        {roommatesLoading ? (
+          <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        ) : (
+          <FlatList
+            horizontal
+            data={roommates ?? []}
+            keyExtractor={(i) => i.user_id}
+            renderItem={renderRoommate}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.hList}
+            ListEmptyComponent={
+              <Card style={styles.empty}>
+                <Text style={styles.emptyTitle}>No roommates yet</Text>
+                <Text style={styles.emptyBody}>Be among the first — complete your profile.</Text>
+              </Card>
+            }
+          />
+        )}
       </ScrollView>
 
       <TouchableOpacity
@@ -201,49 +202,18 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: 20, paddingBottom: 100 },
-  title: {
-    fontFamily: typography.fontFamily.display,
-    fontSize: 28,
-    color: colors.primary,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    color: colors.onSurfaceVariant,
-    marginTop: 4,
-    marginBottom: 16,
-  },
-  searchPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.surfaceContainerLowest,
-    borderWidth: 1,
-    borderColor: colors.outlineVariant,
-    borderRadius: radii.full,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    marginBottom: 14,
-  },
-  searchText: {
-    fontFamily: typography.fontFamily.body,
-    fontSize: 14,
-    color: colors.onSurfaceVariant,
-  },
-  chipsRow: { gap: 8, paddingRight: 16 },
-  hList: { gap: 10, paddingRight: 16 },
+  scroll: { padding: spacing[5], paddingBottom: 100 },
+  hList: { gap: spacing[2], paddingRight: spacing[4] },
   roommateCard: {
     width: 150,
     backgroundColor: colors.surfaceContainerLowest,
     borderWidth: 1,
     borderColor: colors.outlineVariant,
     borderRadius: radii.lg,
-    padding: 12,
+    padding: spacing[3],
     ...shadows.sm,
   },
-  roommateAvatar: { alignSelf: 'center', marginBottom: 8 },
+  roommateAvatar: { alignSelf: 'center', marginBottom: spacing[2] },
   roommateName: {
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: 13,
@@ -256,7 +226,7 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     textAlign: 'center',
     marginTop: 2,
-    marginBottom: 8,
+    marginBottom: spacing[2],
   },
   roommateMatch: { alignSelf: 'center' },
   listing: {
@@ -265,7 +235,7 @@ const styles = StyleSheet.create({
     borderColor: colors.outlineVariant,
     borderRadius: radii.lg,
     overflow: 'hidden',
-    marginBottom: 10,
+    marginBottom: spacing[2],
     ...shadows.sm,
   },
   listingImg: {
@@ -273,10 +243,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceContainer,
     position: 'relative',
   },
-  listingPhoto: {
-    width: '100%',
-    height: '100%',
-  },
+  listingPhoto: { width: '100%', height: '100%' },
   heart: {
     position: 'absolute',
     top: 10,
@@ -288,7 +255,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  listingInfo: { padding: 12 },
+  listingInfo: { padding: spacing[3] },
   listingTitle: {
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: 14,
@@ -311,7 +278,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.onSurfaceVariant,
   },
-  empty: { width: 240, padding: 16 },
+  empty: { width: 240, padding: spacing[4] },
   emptyTitle: {
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: 14,
@@ -326,7 +293,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     bottom: 24,
-    right: 20,
+    right: spacing[5],
     width: 56,
     height: 56,
     borderRadius: 28,
