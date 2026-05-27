@@ -29,3 +29,9 @@ tags:
 - assertVisible:
     id: "screen-home"
     timeout: 5000
+
+# Verify the redesigned home hero rendered something — any of the three
+# variant headlines starts with a fixed lead string.
+- assertVisible:
+    text: ".*(Pick up|One step from your|New in).*"
+    timeout: 5000
