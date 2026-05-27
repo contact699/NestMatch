@@ -75,11 +75,22 @@ export function useHomeSignals(citySlug: string): {
         enabled: !!userId,
         staleTime: STALE_MS,
         queryFn: async () => {
-          // RLS scopes messages to conversations the user participates in,
-          // so this counts unread across all their threads (1:1 + group).
+          // Group-chat read tracking lives on co_renter_members.last_read_at
+          // (migration 027), not messages.read_at — so messages.read_at IS NULL
+          // matches every group message forever. Scope to 1:1 (group_id IS NULL)
+          // conversations only. Group unread is a follow-up; see /api/groups/unread
+          // on the web side for the canonical pattern.
+          const { data: convs } = await supabase
+            .from('conversations')
+            .select('id')
+            .is('group_id', null)
+            .contains('participant_ids', [userId!])
+          if (!convs || convs.length === 0) return 0
+          const ids = convs.map((c: { id: string }) => c.id)
           const { count } = await supabase
             .from('messages')
             .select('id', { count: 'exact', head: true })
+            .in('conversation_id', ids)
             .neq('sender_id', userId!)
             .is('read_at', null)
           return count ?? 0

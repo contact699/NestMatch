@@ -35,10 +35,9 @@ export function HighlightedText({
   return (
     <View style={[styles.wrap, containerStyle]}>
       <View
-        pointerEvents="none"
         style={[
           styles.band,
-          { backgroundColor: color, height: bandHeight },
+          { backgroundColor: color, height: bandHeight, pointerEvents: 'none' },
         ]}
       />
       <Text style={textStyle}>{children}</Text>

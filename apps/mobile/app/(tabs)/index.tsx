@@ -20,11 +20,7 @@ import { colors, radii, shadows, spacing, typography } from '@/theme/tokens'
 import { Hero } from '@/components/home/Hero'
 import { CityChipRow } from '@/components/home/CityChipRow'
 import { useHomeSignals } from '@/lib/home/use-home-signals'
-import {
-  FLAGSHIP_CITIES,
-  flagshipSlugForProfileCity,
-  getFlagshipBySlug,
-} from '@/lib/cities'
+import { FLAGSHIP_CITIES, getFlagshipBySlug } from '@/lib/cities'
 
 type RoommateCard = {
   user_id: string
@@ -47,11 +43,10 @@ export default function HomeScreen() {
   const { user } = useAuth()
   const router = useRouter()
 
-  // City selection: try the user's profile city if it's a flagship, else
-  // default to Toronto. Per-session only — persistence is a follow-up.
-  const profileCityFromMetadata = (user?.user_metadata?.city as string | undefined) ?? null
-  const initialSlug = flagshipSlugForProfileCity(profileCityFromMetadata) ?? 'toronto'
-  const [citySlug, setCitySlug] = useState<string>(initialSlug)
+  // City selection: defaults to Toronto for now. Reading the user's profile
+  // city would need to flow through useHomeSignals — flagged as follow-up
+  // alongside cross-session persistence.
+  const [citySlug, setCitySlug] = useState<string>('toronto')
   const city = getFlagshipBySlug(citySlug) ?? FLAGSHIP_CITIES[0]
 
   const { content: heroContent } = useHomeSignals(citySlug)

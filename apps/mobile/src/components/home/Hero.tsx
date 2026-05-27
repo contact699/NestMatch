@@ -25,7 +25,7 @@ export function Hero({ content, onBrowseCity }: HeroProps) {
   const isLoading = content.variant === 'loading'
 
   return (
-    <AmbientBackground style={styles.wrap}>
+    <AmbientBackground style={styles.wrap} testID="home-hero">
       <Text style={[styles.eyebrow, isLoading && styles.skeletonText]}>
         {content.eyebrow}
       </Text>

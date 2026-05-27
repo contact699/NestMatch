@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient'
 interface AmbientBackgroundProps {
   children: React.ReactNode
   style?: ViewStyle
+  testID?: string
 }
 
 /**
@@ -14,9 +15,9 @@ interface AmbientBackgroundProps {
  * built-in gradients are linear-only, but the perceived effect is similar
  * enough at hero size on a phone screen.
  */
-export function AmbientBackground({ children, style }: AmbientBackgroundProps) {
+export function AmbientBackground({ children, style, testID }: AmbientBackgroundProps) {
   return (
-    <View style={[styles.wrap, style]}>
+    <View style={[styles.wrap, style]} testID={testID}>
       <LinearGradient
         // Top-left bloom: navy 8% → transparent, anchored top-left
         colors={['rgba(0,32,69,0.10)', 'rgba(0,32,69,0)']}
