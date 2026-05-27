@@ -9,7 +9,6 @@ const zero: HomeSignals = {
   newMatches: 0,
   pendingInvites: 0,
   unreadMessages: 0,
-  updatedSavedListings: 0,
   cityNewListings: 0,
 }
 
@@ -25,7 +24,6 @@ const CASES: Case[] = [
   { name: 'new matches → signals', signals: { ...zero, newMatches: 1 }, profileCompletion: 100, expected: 'signals' },
   { name: 'pending invites → signals', signals: { ...zero, pendingInvites: 2 }, profileCompletion: 50, expected: 'signals' },
   { name: 'unread → signals (even when onboarding incomplete)', signals: { ...zero, unreadMessages: 1 }, profileCompletion: 30, expected: 'signals' },
-  { name: 'updated saved → signals', signals: { ...zero, updatedSavedListings: 1 }, profileCompletion: 100, expected: 'signals' },
 
   // onboarding variant
   { name: 'no signals + incomplete profile → onboarding', signals: zero, profileCompletion: 60, expected: 'onboarding' },

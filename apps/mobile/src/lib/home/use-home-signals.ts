@@ -5,7 +5,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { useAuth } from '@/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
-import { getFlagshipBySlug } from '@/lib/cities'
+import { cityFilterOr, getFlagshipBySlug } from '@/lib/cities'
 import {
   COMPLETION_FIELDS,
   ZERO_SIGNALS,
@@ -32,7 +32,6 @@ export function useHomeSignals(citySlug: string): {
   const { user } = useAuth()
   const userId = user?.id
   const city = getFlagshipBySlug(citySlug)
-  const cityDbName = city?.dbName ?? null
 
   const queries = useQueries({
     queries: [
@@ -97,36 +96,8 @@ export function useHomeSignals(citySlug: string): {
         },
       },
       {
-        queryKey: ['home-signal', 'updated-saved', userId],
-        enabled: !!userId,
-        staleTime: STALE_MS,
-        queryFn: async () => {
-          // Two queries instead of a join: the typed Supabase client requires
-          // Relationships:[] entries on every table or joins resolve to `never`.
-          // Two simple queries are safer and the dataset is tiny.
-          const { data: saved } = await supabase
-            .from('saved_listings')
-            .select('listing_id, created_at')
-            .eq('user_id', userId!)
-          if (!saved || saved.length === 0) return 0
-          const ids = saved.map((s: { listing_id: string; created_at: string }) => s.listing_id)
-          const { data: listings } = await supabase
-            .from('listings')
-            .select('id, updated_at')
-            .in('id', ids)
-          if (!listings) return 0
-          const updatedById = new Map(
-            listings.map((l: { id: string; updated_at: string }) => [l.id, new Date(l.updated_at).getTime()]),
-          )
-          return saved.filter((s: { listing_id: string; created_at: string }) => {
-            const updatedAt = updatedById.get(s.listing_id) ?? 0
-            return updatedAt > new Date(s.created_at).getTime()
-          }).length
-        },
-      },
-      {
-        queryKey: ['home-signal', 'city-new', cityDbName],
-        enabled: !!cityDbName,
+        queryKey: ['home-signal', 'city-new', city?.slug],
+        enabled: !!city,
         staleTime: STALE_MS,
         queryFn: async () => {
           const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -134,7 +105,7 @@ export function useHomeSignals(citySlug: string): {
             .from('listings')
             .select('id', { count: 'exact', head: true })
             .eq('is_active', true)
-            .ilike('city', cityDbName!)
+            .or(cityFilterOr(city!))
             .gt('created_at', since)
           return count ?? 0
         },
@@ -162,11 +133,10 @@ export function useHomeSignals(citySlug: string): {
     newMatches: (queries[0].data as number | undefined) ?? 0,
     pendingInvites: (queries[1].data as number | undefined) ?? 0,
     unreadMessages: (queries[2].data as number | undefined) ?? 0,
-    updatedSavedListings: (queries[3].data as number | undefined) ?? 0,
-    cityNewListings: (queries[4].data as number | undefined) ?? 0,
+    cityNewListings: (queries[3].data as number | undefined) ?? 0,
   }
 
-  const profileRaw = (queries[5].data as Record<string, unknown> | undefined) ?? {}
+  const profileRaw = (queries[4].data as Record<string, unknown> | undefined) ?? {}
   let completionCount = 0
   let nextMissing: ProfileSnapshot['nextMissingField'] = null
   for (const field of COMPLETION_FIELDS) {

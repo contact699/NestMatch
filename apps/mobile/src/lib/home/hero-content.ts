@@ -9,7 +9,6 @@ export const ZERO_SIGNALS: HomeSignals = {
   newMatches: 0,
   pendingInvites: 0,
   unreadMessages: 0,
-  updatedSavedListings: 0,
   cityNewListings: 0,
 }
 
@@ -26,8 +25,7 @@ export function selectVariant(signals: HomeSignals, profileCompletion: number): 
   const attentionSignals =
     signals.newMatches +
     signals.pendingInvites +
-    signals.unreadMessages +
-    signals.updatedSavedListings
+    signals.unreadMessages
   if (attentionSignals > 0) return 'signals'
   if (profileCompletion < 100) return 'onboarding'
   return 'discovery'
@@ -86,22 +84,22 @@ export function composeHeroContent(
     if (signals.newMatches > 0) parts.push(`${signals.newMatches} new match${signals.newMatches === 1 ? '' : 'es'}`)
     if (signals.pendingInvites > 0) parts.push(`${signals.pendingInvites} group invite${signals.pendingInvites === 1 ? '' : 's'}`)
     if (signals.unreadMessages > 0) parts.push(`${signals.unreadMessages} unread message${signals.unreadMessages === 1 ? '' : 's'}`)
-    if (signals.updatedSavedListings > 0) parts.push(`${signals.updatedSavedListings} saved listing${signals.updatedSavedListings === 1 ? '' : 's'} updated`)
 
-    let eyebrow = ''
-    let primary: HeroContent['primaryCta'] = { label: 'See updates', target: { kind: 'route', pathname: '/(tabs)/messages' } }
+    // Variant was selected because at least one signal is > 0; that signal
+    // drives the eyebrow + primary CTA.
+    let eyebrow: string
+    let primary: HeroContent['primaryCta']
     if (signals.newMatches > 0) {
       eyebrow = `● ${signals.newMatches} NEW MATCH${signals.newMatches === 1 ? '' : 'ES'} TONIGHT`
       primary = { label: 'View matches →', target: { kind: 'route', pathname: '/(tabs)/search' } }
     } else if (signals.pendingInvites > 0) {
       eyebrow = `● ${signals.pendingInvites} GROUP INVITE${signals.pendingInvites === 1 ? '' : 'S'} WAITING`
       primary = { label: 'See invites →', target: { kind: 'route', pathname: '/(tabs)/messages' } }
-    } else if (signals.unreadMessages > 0) {
+    } else {
+      // unreadMessages > 0 — selectVariant guarantees this is the only
+      // remaining attention signal that could be > 0.
       eyebrow = `● ${signals.unreadMessages} UNREAD MESSAGE${signals.unreadMessages === 1 ? '' : 'S'}`
       primary = { label: 'Open messages →', target: { kind: 'route', pathname: '/(tabs)/messages' } }
-    } else {
-      eyebrow = `● ${signals.updatedSavedListings} SAVED LISTING${signals.updatedSavedListings === 1 ? '' : 'S'} UPDATED`
-      primary = { label: 'View saved →', target: { kind: 'route', pathname: '/(tabs)/search' } }
     }
 
     return {

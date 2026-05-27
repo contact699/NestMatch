@@ -7,10 +7,8 @@ export interface HomeSignals {
   newMatches: number
   /** co_renter_invitations where invitee_id = me AND status = 'pending' */
   pendingInvites: number
-  /** messages where sender_id != me AND read_at IS NULL (RLS scopes to my conversations) */
+  /** messages where sender_id != me AND read_at IS NULL (RLS scopes to my 1:1 conversations) */
   unreadMessages: number
-  /** saved_listings where listings.updated_at > saved_listings.created_at */
-  updatedSavedListings: number
   /** listings created in the last 7 days in the selected city */
   cityNewListings: number
 }

@@ -20,7 +20,7 @@ import { colors, radii, shadows, spacing, typography } from '@/theme/tokens'
 import { Hero } from '@/components/home/Hero'
 import { CityChipRow } from '@/components/home/CityChipRow'
 import { useHomeSignals } from '@/lib/home/use-home-signals'
-import { FLAGSHIP_CITIES, getFlagshipBySlug } from '@/lib/cities'
+import { FLAGSHIP_CITIES, cityFilterOr, getFlagshipBySlug } from '@/lib/cities'
 
 type RoommateCard = {
   user_id: string
@@ -52,13 +52,13 @@ export default function HomeScreen() {
   const { content: heroContent } = useHomeSignals(citySlug)
 
   const { data: roommates, isLoading: roommatesLoading } = useQuery({
-    queryKey: ['home-roommates', user?.id, city.dbName],
+    queryKey: ['home-roommates', user?.id, city.slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
         .select('user_id, name, age, occupation, city, profile_photo')
         .neq('user_id', user!.id)
-        .ilike('city', city.dbName)
+        .or(cityFilterOr(city))
         .order('created_at', { ascending: false })
         .limit(10)
       if (error) throw error
@@ -68,13 +68,13 @@ export default function HomeScreen() {
   })
 
   const { data: listings, isLoading: listingsLoading } = useQuery({
-    queryKey: ['home-listings', user?.id, city.dbName],
+    queryKey: ['home-listings', user?.id, city.slug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('listings')
         .select('id, title, price, city, photos')
         .eq('is_active', true)
-        .ilike('city', city.dbName)
+        .or(cityFilterOr(city))
         .order('created_at', { ascending: false })
         .limit(8)
       if (error) throw error
