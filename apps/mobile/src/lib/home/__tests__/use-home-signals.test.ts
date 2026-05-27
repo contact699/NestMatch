@@ -2,7 +2,7 @@
 // Mirrors the pattern from apps/web/scripts/test-mojibake-patterns.ts.
 
 import { strict as assert } from 'node:assert'
-import { selectVariant } from '../use-home-signals'
+import { selectVariant } from '../hero-content'
 import type { HomeSignals, HeroVariant } from '../types'
 
 const zero: HomeSignals = {
