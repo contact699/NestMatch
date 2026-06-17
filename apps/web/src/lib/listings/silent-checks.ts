@@ -38,7 +38,6 @@ interface ListingForChecks {
 export async function runSilentChecks(
   supabase: Client,
   listing: ListingForChecks,
-  nowIso: string,
 ): Promise<SilentCheckResult> {
   const result: SilentCheckResult = { photoHashes: [], flags: {} }
   try {

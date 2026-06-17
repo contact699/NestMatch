@@ -150,18 +150,29 @@ export const GET = withPublicHandler(
 
     // Soft-gate: hide auto-flagged listings from the public (owner still sees own),
     // rank verified listings higher, and never expose internal photo_hashes.
+    type RankedListing = Record<string, unknown> & {
+      user_id: string
+      created_at: string
+      listing_verification_level: string
+      verification_flags: { photo_reuse?: unknown; duplicate_of?: unknown } | null
+    }
     const RANK: Record<string, number> = { trusted: 2, verified: 1, unverified: 0 }
-    const visible = (listings || []).filter((l: any) => {
+    const rows = (listings || []) as unknown as RankedListing[]
+    const visible = rows.filter((l) => {
       if (userId && l.user_id === userId) return true
       const flags = l.verification_flags || {}
       return !flags.photo_reuse && !flags.duplicate_of
     })
-    visible.sort((a: any, b: any) => {
+    visible.sort((a, b) => {
       const r = (RANK[b.listing_verification_level] ?? 0) - (RANK[a.listing_verification_level] ?? 0)
       if (r !== 0) return r
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-    const sanitized = visible.map(({ photo_hashes: _omit, ...rest }: any) => rest)
+    const sanitized = visible.map((l) => {
+      const rest: Record<string, unknown> = { ...l }
+      delete rest.photo_hashes
+      return rest
+    })
 
     return apiResponse({ listings: sanitized }, 200, requestId)
   },
@@ -261,18 +272,14 @@ export const POST = withApiHandler(
       .eq('user_id', userId!)
       .single()
     await syncListingIdOwner(writeClient, listing.id, ownerProfile?.verification_level ?? null, nowIso)
-    await runSilentChecks(
-      writeClient,
-      {
-        id: listing.id,
-        user_id: userId!,
-        photos: listingData.photos,
-        address: listingData.address ?? null,
-        city: listingData.city,
-        postal_code: listingData.postal_code ?? null,
-      },
-      nowIso,
-    )
+    await runSilentChecks(writeClient, {
+      id: listing.id,
+      user_id: userId!,
+      photos: listingData.photos,
+      address: listingData.address ?? null,
+      city: listingData.city,
+      postal_code: listingData.postal_code ?? null,
+    })
     // Re-read so the response reflects the derived level + flags.
     const { data: finalListing } = await writeClient
       .from('listings')

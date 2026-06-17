@@ -146,18 +146,14 @@ export const PUT = withApiHandler(
             .update({ expires_at: nowIso })
             .eq('listing_id', id)
             .eq('type', 'live_photo')
-          await runSilentChecks(
-            verifyClient,
-            {
-              id,
-              user_id: userId!,
-              photos: listing.photos ?? [],
-              address: listing.address ?? null,
-              city: listing.city ?? null,
-              postal_code: listing.postal_code ?? null,
-            },
-            nowIso,
-          )
+          await runSilentChecks(verifyClient, {
+            id,
+            user_id: userId!,
+            photos: listing.photos ?? [],
+            address: listing.address ?? null,
+            city: listing.city ?? null,
+            postal_code: listing.postal_code ?? null,
+          })
         }
         if (addressChanged) {
           await verifyClient
