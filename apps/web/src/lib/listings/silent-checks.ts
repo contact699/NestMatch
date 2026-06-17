@@ -47,13 +47,26 @@ export async function runSilentChecks(
     )
     result.photoHashes = hashes
 
-    // 2. Pull other active listings (different owner) for comparison.
+    // 2. Pull other active listings (different owner) + their photo hashes
+    //    (hashes live in the service-role-only listing_moderation table).
     const { data: others } = await supabase
       .from('listings')
-      .select('id, user_id, photo_hashes, address, city, postal_code')
+      .select('id, user_id, address, city, postal_code')
       .neq('id', listing.id)
       .neq('user_id', listing.user_id)
       .eq('is_active', true)
+
+    const otherIds = (others ?? []).map((o) => o.id)
+    const hashesByListing = new Map<string, string[]>()
+    if (otherIds.length) {
+      const { data: mods } = await supabase
+        .from('listing_moderation')
+        .select('listing_id, photo_hashes')
+        .in('listing_id', otherIds)
+      for (const m of mods ?? []) {
+        hashesByListing.set(m.listing_id, (m.photo_hashes ?? []) as string[])
+      }
+    }
 
     const reuse: Array<{ matched_listing_id: string; distance: number }> = []
     let duplicateOf: string | undefined
@@ -63,7 +76,7 @@ export async function runSilentChecks(
       // Photo reuse: any near-duplicate hash pair.
       let matched = false
       for (const mine of hashes) {
-        for (const theirs of (o.photo_hashes ?? []) as string[]) {
+        for (const theirs of hashesByListing.get(o.id) ?? []) {
           if (isNearDuplicate(mine, theirs)) {
             matched = true
             break
@@ -82,15 +95,21 @@ export async function runSilentChecks(
     if (reuse.length) result.flags.photo_reuse = reuse
     if (duplicateOf) result.flags.duplicate_of = duplicateOf
 
-    // 3. Persist hashes + flags.
-    await supabase
-      .from('listings')
-      .update({ photo_hashes: hashes, verification_flags: result.flags as unknown as Json })
-      .eq('id', listing.id)
+    // 3. Persist hashes + flags to the service-role-only moderation table.
+    const isFlagged = !!(result.flags.photo_reuse || result.flags.duplicate_of)
+    await supabase.from('listing_moderation').upsert(
+      {
+        listing_id: listing.id,
+        is_flagged: isFlagged,
+        flags: result.flags as unknown as Json,
+        photo_hashes: hashes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'listing_id' },
+    )
 
     // 4. Auto-file a system report if anything was flagged.
-    const flagged = !!(result.flags.photo_reuse || result.flags.duplicate_of)
-    if (flagged && SYSTEM_REPORTER_ID) {
+    if (isFlagged && SYSTEM_REPORTER_ID) {
       await supabase.from('reports').insert({
         reporter_id: SYSTEM_REPORTER_ID,
         reported_listing_id: listing.id,
@@ -98,7 +117,7 @@ export async function runSilentChecks(
         description: `[auto] ${buildSummary(result.flags)}`,
         status: 'pending',
       })
-    } else if (flagged) {
+    } else if (isFlagged) {
       logger.warn('listing auto-flagged but SYSTEM_REPORTER_ID unset; report skipped', {
         listingId: listing.id,
         flags: result.flags,

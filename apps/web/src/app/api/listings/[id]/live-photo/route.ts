@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recomputeListingLevel } from '@/lib/listings/sync-verification'
+import { isAllowedImageUrl } from '@/lib/listings/image-hash'
 
 const bodySchema = z.object({
   photoUrl: z.string().url(),
@@ -14,13 +15,23 @@ const bodySchema = z.object({
 /**
  * Record a Live Photo capture for a listing: marks the live_photo signal
  * completed (with capture metadata) and recomputes the aggregate level.
- * The image itself is uploaded via the normal photo path; this only records
- * the verification signal.
+ *
+ * NOTE: this is WEAK self-attestation. We verify the caller owns the listing and
+ * that the photo lives in this listing's own Storage folder, but a determined
+ * caller can still POST a non-camera image. The friction + provenance is the
+ * signal, not a cryptographic guarantee. Strengthening (server-issued capture
+ * nonce/session) is a future improvement.
  */
 export const POST = withApiHandler(
   async (req, { userId, params, requestId }) => {
     const { id: listingId } = params
     const body = await parseBody(req, bodySchema)
+
+    // The photo must be in our Storage bucket, under THIS listing's folder.
+    if (!isAllowedImageUrl(body.photoUrl) || !body.photoUrl.includes(`/listing-photos/${listingId}/`)) {
+      return apiResponse({ error: 'Invalid photo URL' }, 400, requestId)
+    }
+
     const supabase = createServiceClient()
 
     const { data: listing } = await supabase

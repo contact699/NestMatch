@@ -215,8 +215,6 @@ export interface Database {
           parking_included: boolean
           is_active: boolean
           listing_verification_level: 'unverified' | 'verified' | 'trusted'
-          verification_flags: Json
-          photo_hashes: string[]
           views_count: number
           created_at: string
           updated_at: string
@@ -255,8 +253,6 @@ export interface Database {
           parking_included?: boolean
           is_active?: boolean
           listing_verification_level?: 'unverified' | 'verified' | 'trusted'
-          verification_flags?: Json
-          photo_hashes?: string[]
           views_count?: number
           created_at?: string
           updated_at?: string
@@ -295,8 +291,6 @@ export interface Database {
           parking_included?: boolean
           is_active?: boolean
           listing_verification_level?: 'unverified' | 'verified' | 'trusted'
-          verification_flags?: Json
-          photo_hashes?: string[]
           views_count?: number
           created_at?: string
           updated_at?: string
@@ -334,6 +328,41 @@ export interface Database {
           expires_at?: string | null
           created_at?: string
         }
+        Relationships: []
+      }
+      listing_moderation: {
+        Row: {
+          listing_id: string
+          is_flagged: boolean
+          flags: Json
+          photo_hashes: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          listing_id: string
+          is_flagged?: boolean
+          flags?: Json
+          photo_hashes?: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          listing_id?: string
+          is_flagged?: boolean
+          flags?: Json
+          photo_hashes?: string[]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      listing_badges: {
+        Row: {
+          listing_id: string | null
+          type: 'id_owner' | 'live_photo' | 'mail' | 'email' | 'phone' | null
+          status: 'pending' | 'completed' | 'failed' | null
+          completed_at: string | null
+        }
+        Insert: { listing_id?: string | null }
+        Update: { listing_id?: string | null }
         Relationships: []
       }
       seeking_profiles: {

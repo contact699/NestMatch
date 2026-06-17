@@ -87,13 +87,18 @@ export const GET = withPublicHandler(
           verification_level
         )
       `)
+      // Rank verified listings higher (enums sort by declaration order:
+      // unverified < verified < trusted, so descending = trusted first), newest
+      // first within a tier. Ordering happens in SQL, before pagination.
+      .order('listing_verification_level', { ascending: false })
       .order('created_at', { ascending: false })
 
-    // If fetching user's own listings, show all (active + inactive)
+    // `userId` is an unauthenticated query param, so it can only ever be a public
+    // filter — never an ownership grant. Always constrain to active listings; RLS
+    // additionally hides auto-flagged rows from non-owners.
+    query = query.eq('is_active', true)
     if (userId) {
       query = query.eq('user_id', userId)
-    } else {
-      query = query.eq('is_active', true)
     }
 
     if (city) {
@@ -148,33 +153,10 @@ export const GET = withPublicHandler(
 
     if (error) throw error
 
-    // Soft-gate: hide auto-flagged listings from the public (owner still sees own),
-    // rank verified listings higher, and never expose internal photo_hashes.
-    type RankedListing = Record<string, unknown> & {
-      user_id: string
-      created_at: string
-      listing_verification_level: string
-      verification_flags: { photo_reuse?: unknown; duplicate_of?: unknown } | null
-    }
-    const RANK: Record<string, number> = { trusted: 2, verified: 1, unverified: 0 }
-    const rows = (listings || []) as unknown as RankedListing[]
-    const visible = rows.filter((l) => {
-      if (userId && l.user_id === userId) return true
-      const flags = l.verification_flags || {}
-      return !flags.photo_reuse && !flags.duplicate_of
-    })
-    visible.sort((a, b) => {
-      const r = (RANK[b.listing_verification_level] ?? 0) - (RANK[a.listing_verification_level] ?? 0)
-      if (r !== 0) return r
-      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    })
-    const sanitized = visible.map((l) => {
-      const rest: Record<string, unknown> = { ...l }
-      delete rest.photo_hashes
-      return rest
-    })
-
-    return apiResponse({ listings: sanitized }, 200, requestId)
+    // Visibility (flagged-row hiding) + ranking are enforced in the DB (RLS +
+    // ORDER BY), and fraud fields no longer live on `listings`, so the rows are
+    // safe to return as-is.
+    return apiResponse({ listings: listings || [] }, 200, requestId)
   },
   { rateLimit: 'search' }
 )

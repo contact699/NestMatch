@@ -145,9 +145,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .single() as { data: any }
 
 
-  // Fetch this listing's verification signals (badges)
+  // Fetch this listing's badges from the public-safe view (projects only
+  // badge columns; the underlying listing_verifications table is not publicly
+  // readable because its `result` holds capture evidence).
   const { data: listingVerifications } = (await supabase
-    .from('listing_verifications')
+    .from('listing_badges')
     .select('type, status')
     .eq('listing_id', id)) as { data: Array<{ type: string; status: string }> | null }
 

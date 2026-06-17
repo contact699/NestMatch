@@ -25,26 +25,18 @@ export const GET = withPublicHandler(
         available_date,
         created_at,
         user_id,
-        listing_verification_level,
-        verification_flags
+        listing_verification_level
       `)
       .eq('is_active', true)
+      // Trusted/verified first (enum declaration order), newest within a tier.
+      // RLS hides auto-flagged listings; fraud fields are not on this table.
+      .order('listing_verification_level', { ascending: false })
       .order('created_at', { ascending: false })
-      .limit(24)
+      .limit(8)
 
     if (error) throw error
 
-    // Soft-gate: drop auto-flagged listings, then cap at 8 featured.
-    type PublicRow = Record<string, unknown> & {
-      user_id: string
-      verification_flags: { photo_reuse?: unknown; duplicate_of?: unknown } | null
-    }
-    const clean = ((listings || []) as unknown as PublicRow[])
-      .filter((l) => {
-        const f = l.verification_flags || {}
-        return !f.photo_reuse && !f.duplicate_of
-      })
-      .slice(0, 8)
+    const clean = (listings || []) as Array<{ user_id: string } & Record<string, unknown>>
 
     // Attach host profile — done as a second query because PostgREST can't
     // auto-resolve listings→profiles (listings.user_id FKs auth.users, not profiles).
@@ -72,14 +64,10 @@ export const GET = withPublicHandler(
       }
     }
 
-    const enriched = clean.map((l) => {
-      const rest: Record<string, unknown> = { ...l }
-      delete rest.verification_flags
-      return {
-        ...rest,
-        profiles: profilesById[l.user_id] ?? null,
-      }
-    })
+    const enriched = clean.map((l) => ({
+      ...l,
+      profiles: profilesById[l.user_id] ?? null,
+    }))
 
     return apiResponse({ listings: enriched }, 200, requestId)
   },

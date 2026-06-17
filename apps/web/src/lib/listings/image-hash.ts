@@ -40,13 +40,51 @@ export function isNearDuplicate(a: string, b: string, threshold = NEAR_DUPLICATE
   return hammingDistance(a, b) <= threshold
 }
 
-/** Fetch an image URL and return its dHash, or null on failure (never throws). */
-export async function hashImageUrl(url: string): Promise<string | null> {
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024 // 10 MB cap before decoding
+const FETCH_TIMEOUT_MS = 5000
+
+/**
+ * Only listing photos served from our own Supabase Storage bucket are hashable.
+ * This prevents the server from being used to fetch arbitrary URLs (SSRF) — the
+ * `url` originates from user-controlled listing data.
+ */
+export function isAllowedImageUrl(url: string): boolean {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!base) return false
+  let parsed: URL
+  let allowedHost: string
   try {
-    const sharp = (await import('sharp')).default
-    const res = await fetch(url)
+    parsed = new URL(url)
+    allowedHost = new URL(base).host
+  } catch {
+    return false
+  }
+  return (
+    parsed.protocol === 'https:' &&
+    parsed.host === allowedHost &&
+    parsed.pathname.includes('/storage/v1/object/public/listing-photos/')
+  )
+}
+
+/**
+ * Fetch an allow-listed Storage image and return its dHash, or null on failure
+ * (never throws). Hardened against SSRF/DoS: origin allowlist, request timeout,
+ * image content-type check, and a byte cap before handing bytes to sharp.
+ */
+export async function hashImageUrl(url: string): Promise<string | null> {
+  if (!isAllowedImageUrl(url)) return null
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+  try {
+    const res = await fetch(url, { signal: controller.signal })
     if (!res.ok) return null
+    const contentType = res.headers.get('content-type') ?? ''
+    if (!contentType.startsWith('image/')) return null
+    const declaredLength = Number(res.headers.get('content-length') ?? '0')
+    if (declaredLength > MAX_IMAGE_BYTES) return null
     const buf = Buffer.from(await res.arrayBuffer())
+    if (buf.byteLength > MAX_IMAGE_BYTES) return null
+    const sharp = (await import('sharp')).default
     const w = DHASH_SIZE + 1
     const h = DHASH_SIZE
     const gray = await sharp(buf)
@@ -57,5 +95,7 @@ export async function hashImageUrl(url: string): Promise<string | null> {
     return dHashFromGray(Array.from(gray), w, h)
   } catch {
     return null
+  } finally {
+    clearTimeout(timer)
   }
 }
