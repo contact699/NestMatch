@@ -49,11 +49,18 @@ ALTER TABLE listings DROP COLUMN IF EXISTS is_verified;
 
 CREATE INDEX idx_listings_verification_level ON listings(listing_verification_level);
 
+-- Keep policy helper functions out of the exposed `public` schema. Supabase
+-- PostgREST exposes public RPC functions, so this function belongs in a private
+-- schema that app roles can execute for RLS evaluation but cannot call via RPC.
+CREATE SCHEMA IF NOT EXISTS private;
+REVOKE ALL ON SCHEMA private FROM PUBLIC;
+GRANT USAGE ON SCHEMA private TO anon, authenticated;
+
 -- SECURITY DEFINER helper: true when a listing has an active moderation flag.
 -- Definer rights let the listings SELECT policy consult listing_moderation even
 -- though anon/authenticated cannot read that table directly. Mirrors the
--- is_group_member() pattern from migration 025.
-CREATE OR REPLACE FUNCTION public.is_listing_flagged(p_listing_id UUID)
+-- is_group_member() pattern from migration 025, but without exposing a public RPC.
+CREATE OR REPLACE FUNCTION private.is_listing_flagged(p_listing_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
 SECURITY DEFINER
@@ -66,14 +73,15 @@ AS $$
        AND m.is_flagged
   );
 $$;
-GRANT EXECUTE ON FUNCTION public.is_listing_flagged(UUID) TO anon, authenticated;
+REVOKE ALL ON FUNCTION private.is_listing_flagged(UUID) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION private.is_listing_flagged(UUID) TO anon, authenticated;
 
 -- Rewrite the public listings SELECT policy to hide auto-flagged rows from
 -- everyone except the owner. (Original from migration 010b.)
 DROP POLICY IF EXISTS "Active listings are viewable by everyone" ON listings;
 CREATE POLICY "Active listings are viewable by everyone" ON listings
     FOR SELECT USING (
-        (is_active = true AND deleted_at IS NULL AND NOT public.is_listing_flagged(id))
+        (is_active = true AND deleted_at IS NULL AND NOT private.is_listing_flagged(id))
         OR auth.uid() = user_id
     );
 
@@ -95,12 +103,18 @@ CREATE POLICY listing_moderation_select_owner ON listing_moderation
         EXISTS (SELECT 1 FROM listings l WHERE l.id = listing_id AND l.user_id = auth.uid())
     );
 
--- Public badge projection: only badge-safe columns, only completed signals.
--- A view is SECURITY DEFINER by default, so it can read listing_verifications
--- past its RLS while exposing nothing beyond these four columns.
+-- Public badge projection: only badge-safe columns, only completed signals, and
+-- only for listings visible to the caller. A view is SECURITY DEFINER by default,
+-- so it can read listing_verifications past its RLS while exposing nothing
+-- beyond these four columns.
 CREATE VIEW listing_badges AS
     SELECT lv.listing_id, lv.type, lv.status, lv.completed_at
       FROM listing_verifications lv
+      JOIN listings l ON l.id = lv.listing_id
      WHERE lv.status = 'completed'
-       AND (lv.expires_at IS NULL OR lv.expires_at > NOW());
+       AND (lv.expires_at IS NULL OR lv.expires_at > NOW())
+       AND (
+           (l.is_active = true AND l.deleted_at IS NULL AND NOT private.is_listing_flagged(l.id))
+           OR auth.uid() = l.user_id
+       );
 GRANT SELECT ON listing_badges TO anon, authenticated;

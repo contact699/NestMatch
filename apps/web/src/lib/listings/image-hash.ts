@@ -82,8 +82,9 @@ export async function hashImageUrl(url: string): Promise<string | null> {
     if (!contentType.startsWith('image/')) return null
     const declaredLength = Number(res.headers.get('content-length') ?? '0')
     if (declaredLength > MAX_IMAGE_BYTES) return null
-    const buf = Buffer.from(await res.arrayBuffer())
-    if (buf.byteLength > MAX_IMAGE_BYTES) return null
+    const bytes = await readResponseBytes(res, MAX_IMAGE_BYTES)
+    if (!bytes) return null
+    const buf = Buffer.from(bytes)
     const sharp = (await import('sharp')).default
     const w = DHASH_SIZE + 1
     const h = DHASH_SIZE
@@ -98,4 +99,37 @@ export async function hashImageUrl(url: string): Promise<string | null> {
   } finally {
     clearTimeout(timer)
   }
+}
+
+async function readResponseBytes(res: Response, maxBytes: number): Promise<Uint8Array | null> {
+  const reader = res.body?.getReader()
+  if (!reader) return null
+
+  const chunks: Uint8Array[] = []
+  let total = 0
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel()
+        return null
+      }
+      chunks.push(value)
+    }
+  } finally {
+    reader.releaseLock()
+  }
+
+  const out = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    out.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return out
 }
