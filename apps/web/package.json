@@ -22,6 +22,7 @@
     "@nestmatch/shared": "*",
     "@react-google-maps/api": "^2.20.8",
     "@react-pdf/renderer": "^4.3.2",
+    "@sentry/nextjs": "^10.58.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "clsx": "^2.1.1",
