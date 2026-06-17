@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { formatPrice, formatDate, getRelativeTime, BATHROOM_TYPES } from '@/lib/utils'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
+import { ListingVerificationBadges } from '@/components/listing-verification-badges'
 import { CompatibilityBadge } from '@/components/ui/compatibility-badge'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -142,6 +143,9 @@ export function ListingCard({
         </div>
 
         <div className="flex flex-wrap gap-2 mb-3">
+          {listing.listing_verification_level !== 'unverified' && (
+            <ListingVerificationBadges level={listing.listing_verification_level} variant="compact" />
+          )}
           <span className="inline-flex items-center gap-1 text-xs bg-surface-container-low text-on-surface-variant px-2 py-1 rounded-full">
             <Home className="h-3 w-3" />
             {typeLabels[listing.type]}
