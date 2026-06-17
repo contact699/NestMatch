@@ -39,3 +39,23 @@ export function hammingDistance(a: string, b: string): number {
 export function isNearDuplicate(a: string, b: string, threshold = NEAR_DUPLICATE_THRESHOLD): boolean {
   return hammingDistance(a, b) <= threshold
 }
+
+/** Fetch an image URL and return its dHash, or null on failure (never throws). */
+export async function hashImageUrl(url: string): Promise<string | null> {
+  try {
+    const sharp = (await import('sharp')).default
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    const w = DHASH_SIZE + 1
+    const h = DHASH_SIZE
+    const gray = await sharp(buf)
+      .resize(w, h, { fit: 'fill' })
+      .grayscale()
+      .raw()
+      .toBuffer()
+    return dHashFromGray(Array.from(gray), w, h)
+  } catch {
+    return null
+  }
+}
