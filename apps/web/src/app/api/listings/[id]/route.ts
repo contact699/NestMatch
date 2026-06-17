@@ -3,6 +3,10 @@ import { createClient as createDirectClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import { withApiHandler, withPublicHandler, apiResponse, parseBody, NotFoundError, AuthorizationError } from '@/lib/api/with-handler'
 import { ValidationError } from '@/lib/error-reporter'
+import { createServiceClient } from '@/lib/supabase/service'
+import { runSilentChecks } from '@/lib/listings/silent-checks'
+import { recomputeListingLevel } from '@/lib/listings/sync-verification'
+import { logger } from '@/lib/logger'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -90,7 +94,7 @@ export const PUT = withApiHandler(
     // Check if user owns this listing
     const { data: existingListing, error: fetchError } = await supabase
       .from('listings')
-      .select('user_id')
+      .select('user_id, photos, address, postal_code')
       .eq('id', id)
       .single()
 
@@ -100,6 +104,13 @@ export const PUT = withApiHandler(
 
     if (existingListing.user_id !== userId) {
       throw new AuthorizationError('Forbidden')
+    }
+
+    const prev = existingListing as {
+      user_id: string
+      photos: string[]
+      address: string | null
+      postal_code: string | null
     }
 
     // Validate input
@@ -119,6 +130,49 @@ export const PUT = withApiHandler(
       .single()
 
     if (error) throw error
+
+    // Re-verify on material edits (best-effort; service role for verification writes).
+    const photosChanged = JSON.stringify(prev.photos ?? []) !== JSON.stringify(listing.photos ?? [])
+    const addressChanged =
+      prev.address !== listing.address || prev.postal_code !== listing.postal_code
+    if (photosChanged || addressChanged) {
+      try {
+        const verifyClient = createServiceClient()
+        const nowIso = new Date().toISOString()
+        if (photosChanged) {
+          // Live photo must be re-captured; expire it, then re-run silent checks.
+          await verifyClient
+            .from('listing_verifications')
+            .update({ expires_at: nowIso })
+            .eq('listing_id', id)
+            .eq('type', 'live_photo')
+          await runSilentChecks(
+            verifyClient,
+            {
+              id,
+              user_id: userId!,
+              photos: listing.photos ?? [],
+              address: listing.address ?? null,
+              city: listing.city ?? null,
+              postal_code: listing.postal_code ?? null,
+            },
+            nowIso,
+          )
+        }
+        if (addressChanged) {
+          await verifyClient
+            .from('listing_verifications')
+            .update({ expires_at: nowIso })
+            .eq('listing_id', id)
+            .eq('type', 'mail')
+        }
+        await recomputeListingLevel(verifyClient, id, nowIso)
+      } catch (e) {
+        logger.error('listing edit re-verification failed', e instanceof Error ? e : undefined, {
+          listingId: id,
+        })
+      }
+    }
 
     return apiResponse({ listing }, 200, requestId)
   },
