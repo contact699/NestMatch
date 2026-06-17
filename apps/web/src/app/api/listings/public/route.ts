@@ -24,17 +24,28 @@ export const GET = withPublicHandler(
         utilities_included,
         available_date,
         created_at,
-        user_id
+        user_id,
+        listing_verification_level,
+        verification_flags
       `)
       .eq('is_active', true)
       .order('created_at', { ascending: false })
-      .limit(8)
+      .limit(24)
 
     if (error) throw error
 
+    // Soft-gate: drop auto-flagged listings, then cap at 8 featured.
+    const clean = (listings || [])
+      .filter((l: any) => {
+        const f = l.verification_flags || {}
+        return !f.photo_reuse && !f.duplicate_of
+      })
+      .slice(0, 8)
+      .map(({ verification_flags: _omit, ...rest }: any) => rest)
+
     // Attach host profile — done as a second query because PostgREST can't
     // auto-resolve listings→profiles (listings.user_id FKs auth.users, not profiles).
-    const userIds = Array.from(new Set((listings || []).map((l) => l.user_id)))
+    const userIds = Array.from(new Set(clean.map((l) => l.user_id)))
     const profilesById: Record<string, {
       name: string | null
       profile_photo: string | null
@@ -58,7 +69,7 @@ export const GET = withPublicHandler(
       }
     }
 
-    const enriched = (listings || []).map((l) => ({
+    const enriched = clean.map((l) => ({
       ...l,
       profiles: profilesById[l.user_id] ?? null,
     }))

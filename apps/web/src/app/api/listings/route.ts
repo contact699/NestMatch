@@ -5,6 +5,8 @@ import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib
 import { ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
 import { geocodeListingAddress } from '@/lib/geocode'
+import { syncListingIdOwner } from '@/lib/listings/sync-verification'
+import { runSilentChecks } from '@/lib/listings/silent-checks'
 
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -146,7 +148,22 @@ export const GET = withPublicHandler(
 
     if (error) throw error
 
-    return apiResponse({ listings: listings || [] }, 200, requestId)
+    // Soft-gate: hide auto-flagged listings from the public (owner still sees own),
+    // rank verified listings higher, and never expose internal photo_hashes.
+    const RANK: Record<string, number> = { trusted: 2, verified: 1, unverified: 0 }
+    const visible = (listings || []).filter((l: any) => {
+      if (userId && l.user_id === userId) return true
+      const flags = l.verification_flags || {}
+      return !flags.photo_reuse && !flags.duplicate_of
+    })
+    visible.sort((a: any, b: any) => {
+      const r = (RANK[b.listing_verification_level] ?? 0) - (RANK[a.listing_verification_level] ?? 0)
+      if (r !== 0) return r
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    })
+    const sanitized = visible.map(({ photo_hashes: _omit, ...rest }: any) => rest)
+
+    return apiResponse({ listings: sanitized }, 200, requestId)
   },
   { rateLimit: 'search' }
 )
@@ -236,7 +253,33 @@ export const POST = withApiHandler(
       )
     }
 
-    return apiResponse({ listing }, 201, requestId)
+    // Listing verification (best-effort; never blocks listing creation).
+    const nowIso = new Date().toISOString()
+    const { data: ownerProfile } = await writeClient
+      .from('profiles')
+      .select('verification_level')
+      .eq('user_id', userId!)
+      .single()
+    await syncListingIdOwner(writeClient, listing.id, ownerProfile?.verification_level ?? null, nowIso)
+    await runSilentChecks(
+      writeClient,
+      {
+        id: listing.id,
+        user_id: userId!,
+        photos: listingData.photos,
+        address: listingData.address ?? null,
+        city: listingData.city,
+        postal_code: listingData.postal_code ?? null,
+      },
+      nowIso,
+    )
+    // Re-read so the response reflects the derived level + flags.
+    const { data: finalListing } = await writeClient
+      .from('listings')
+      .select('*')
+      .eq('id', listing.id)
+      .single()
+    return apiResponse({ listing: finalListing ?? listing }, 201, requestId)
   },
   {
     rateLimit: 'listingCreate',
