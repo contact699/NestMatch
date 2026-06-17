@@ -65,3 +65,8 @@ apps/web/test-results/
 playwright-report/
 test-results/
 .env*.local
+
+# stray root expo config + dev-server logs
+web-dev-3000.*.log
+/app.json
+/eslint.config.js
