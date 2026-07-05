@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test:variant": "tsx src/lib/home/__tests__/use-home-signals.test.ts",
     "maestro:login": "maestro test .maestro/flows/auth/login-email.yaml",
     "maestro:tabs": "maestro test .maestro/flows/navigation/tabs.yaml",
     "maestro:all": "maestro test .maestro/flows",
@@ -26,6 +27,7 @@
     "expo-constants": "~18.0.13",
     "expo-crypto": "~15.0.9",
     "expo-image-picker": "~17.0.11",
+    "expo-linear-gradient": "~15.0.8",
     "expo-linking": "~8.0.12",
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
@@ -44,6 +46,7 @@
   "devDependencies": {
     "@types/react": "~19.1.10",
     "eslint-config-expo": "~10.0.0",
+    "tsx": "^4.22.3",
     "typescript": "~5.9.2"
   },
   "private": true
