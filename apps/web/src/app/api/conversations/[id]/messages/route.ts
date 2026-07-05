@@ -100,7 +100,7 @@ export const POST = withApiHandler(
     // Verify user is participant
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .select('participant_ids')
+      .select('participant_ids, group_id')
       .eq('id', conversationId)
       .single()
 
@@ -263,6 +263,18 @@ export const POST = withApiHandler(
       void notifyMessageRecipients(writeClient, recipientIds, userId!, requestId)
     }
 
+    // Create in-app new_message notifications (fire and forget). For group
+    // conversations participant_ids may only hold the creator, so recipients
+    // are resolved from active co-renter members instead.
+    void notifyNewMessageInApp(
+      writeClient,
+      conversationId,
+      conversation.group_id ?? null,
+      conversation.participant_ids || [],
+      userId!,
+      requestId
+    )
+
     return apiResponse({ message }, 201, requestId)
   },
   {
@@ -343,5 +355,93 @@ async function notifyMessageRecipients(
       error instanceof Error ? error : new Error(String(error)),
       { requestId, senderId }
     )
+  }
+}
+
+/**
+ * Create in-app "new message" notifications for the recipients of a message.
+ *
+ * Recipients:
+ * - 1:1 conversation: the other participant_ids (excluding the sender).
+ * - group conversation (group_id set): active co-renter members, excluding
+ *   the sender (participant_ids may only contain the creator).
+ *
+ * Dedupe: skip any recipient who already has an UNREAD new_message notification
+ * for this conversation, so a burst of messages produces one badge, not many.
+ *
+ * Notification failures must never break message sending — everything is
+ * wrapped in a try/catch that only warns.
+ */
+async function notifyNewMessageInApp(
+  client: ReturnType<typeof createServiceClient>,
+  conversationId: string,
+  groupId: string | null,
+  participantIds: string[],
+  senderId: string,
+  requestId: string
+): Promise<void> {
+  try {
+    let recipientIds: string[]
+    if (groupId) {
+      const { data: members } = await client
+        .from('co_renter_members')
+        .select('user_id')
+        .eq('group_id', groupId)
+        .eq('status', 'active')
+        .neq('user_id', senderId)
+      recipientIds = (members ?? []).map((m) => m.user_id)
+    } else {
+      recipientIds = participantIds.filter((pid) => pid !== senderId)
+    }
+
+    if (recipientIds.length === 0) return
+
+    const { data: senderProfile } = await client
+      .from('profiles')
+      .select('name')
+      .eq('user_id', senderId)
+      .single()
+    const senderName = senderProfile?.name || 'Someone'
+
+    // One query for everyone who already has an unread badge for this
+    // conversation, then one bulk insert for the rest.
+    const { data: alreadyNotified } = await client
+      .from('notifications')
+      .select('user_id')
+      .in('user_id', recipientIds)
+      .eq('type', 'new_message')
+      .is('read_at', null)
+      .filter('metadata->>conversation_id', 'eq', conversationId)
+    const alreadyNotifiedIds = new Set((alreadyNotified ?? []).map((n) => n.user_id))
+
+    const toNotify = recipientIds.filter((id) => !alreadyNotifiedIds.has(id))
+    if (toNotify.length === 0) return
+
+    // Group chats live on the group page, not the 1:1 messages screen.
+    const link = groupId ? `/groups/${groupId}` : `/messages/${conversationId}`
+
+    const { error: insertError } = await client.from('notifications').insert(
+      toNotify.map((recipientId) => ({
+        user_id: recipientId,
+        type: 'new_message',
+        title: `New message from ${senderName}`,
+        body: 'You have a new message',
+        link,
+        metadata: { conversation_id: conversationId, sender_id: senderId },
+      }))
+    )
+    if (insertError) {
+      logger.warn('Failed to insert new_message notifications', {
+        requestId,
+        conversationId,
+        error: insertError.message,
+      })
+    }
+  } catch (error) {
+    logger.warn('Failed to create new_message notifications', {
+      requestId,
+      conversationId,
+      error: error instanceof Error ? error.message : String(error),
+    })
   }
 }

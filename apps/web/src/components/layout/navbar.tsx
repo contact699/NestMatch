@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { LogoMark } from '@/components/ui/logo-mark'
+import { NotificationBell } from '@/components/layout/notification-bell'
 import { clientLogger } from '@/lib/client-logger'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -223,6 +224,9 @@ export function Navbar({ user }: NavbarProps) {
           <div className="flex items-center gap-2">
             {user ? (
               <>
+                {/* In-app notifications */}
+                <NotificationBell userId={user.id} />
+
                 {/* Profile / Avatar */}
                 <div className="relative">
                   <button

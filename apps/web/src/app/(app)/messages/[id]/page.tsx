@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
 import Link from 'next/link'
@@ -108,6 +108,13 @@ export default function ChatPage() {
   const [isLoadingGifs, setIsLoadingGifs] = useState(false)
   const [otherUserOnline, setOtherUserOnline] = useState(false)
 
+  // Typing indicator: broadcast our own typing over a Realtime channel and show
+  // the other participant's typing state (auto-clears 3s after the last event).
+  const [otherUserTyping, setOtherUserTyping] = useState(false)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const typingChannelRef = useRef<ReturnType<ReturnType<typeof createClient>['channel']> | null>(null)
+
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -130,6 +137,47 @@ export default function ChatPage() {
   useEffect(() => {
     scrollToBottom()
   }, [messages])
+
+  // Broadcast a "typing" event, debounced so we send at most once every 2s.
+  const sendTypingEvent = useCallback(() => {
+    if (!typingChannelRef.current) return
+    if (typingDebounceRef.current) return
+
+    typingChannelRef.current.send({
+      type: 'broadcast',
+      event: 'typing',
+      payload: { userId: currentUserId },
+    })
+
+    typingDebounceRef.current = setTimeout(() => {
+      typingDebounceRef.current = undefined
+    }, 2000)
+  }, [currentUserId])
+
+  // Subscribe to the shared typing channel for this conversation. Incoming
+  // typing events (from the other user) show the indicator for 3s.
+  useEffect(() => {
+    if (!conversationId || !currentUserId) return
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`typing:${conversationId}`)
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        if (payload.userId !== currentUserId) {
+          setOtherUserTyping(true)
+          clearTimeout(typingTimeoutRef.current)
+          typingTimeoutRef.current = setTimeout(() => setOtherUserTyping(false), 3000)
+        }
+      })
+      .subscribe()
+
+    typingChannelRef.current = channel
+
+    return () => {
+      typingChannelRef.current = null
+      supabase.removeChannel(channel)
+      clearTimeout(typingTimeoutRef.current)
+    }
+  }, [conversationId, currentUserId])
 
   useEffect(() => {
     let channel: ReturnType<ReturnType<typeof createClient>['channel']> | null = null
@@ -895,6 +943,20 @@ export default function ChatPage() {
         </div>
       )}
 
+      {/* Typing indicator */}
+      {otherUserTyping && (
+        <div className="flex-shrink-0 bg-surface-container-lowest px-4 py-1.5" style={{ boxShadow: '0 -1px 0 rgba(0,0,0,0.04)' }}>
+          <div className="max-w-3xl mx-auto flex items-center gap-2 text-sm text-on-surface-variant">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <span className="w-1.5 h-1.5 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <span className="w-1.5 h-1.5 bg-on-surface-variant/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+            <span>typing...</span>
+          </div>
+        </div>
+      )}
+
       {/* Input */}
       <div className="flex-shrink-0 bg-surface-container-lowest shadow-[0_-2px_8px_rgba(0,0,0,0.04)] px-4 pt-3 pb-4" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 16px), 16px)' }}>
         <div className="max-w-3xl mx-auto flex items-end gap-2 sm:gap-3">
@@ -936,6 +998,7 @@ export default function ChatPage() {
               const target = e.target as HTMLTextAreaElement
               target.style.height = 'auto'
               target.style.height = Math.min(target.scrollHeight, 128) + 'px'
+              sendTypingEvent()
             }}
             onFocus={() => {
               // Scroll to bottom when keyboard opens on mobile

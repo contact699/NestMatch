@@ -1959,6 +1959,75 @@ export interface Database {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          id: string
+          user_id: string
+          type: string
+          title: string
+          body: string
+          link: string
+          metadata: Json
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          type: string
+          title: string
+          body: string
+          link: string
+          metadata?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          type?: string
+          title?: string
+          body?: string
+          link?: string
+          metadata?: Json
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      co_renter_join_requests: {
+        Row: {
+          id: string
+          group_id: string
+          user_id: string
+          message: string | null
+          status: 'pending' | 'accepted' | 'declined'
+          reviewed_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          group_id: string
+          user_id: string
+          message?: string | null
+          status?: 'pending' | 'accepted' | 'declined'
+          reviewed_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          group_id?: string
+          user_id?: string
+          message?: string | null
+          status?: 'pending' | 'accepted' | 'declined'
+          reviewed_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suggestion_interactions: {
         Row: {
           id: string
