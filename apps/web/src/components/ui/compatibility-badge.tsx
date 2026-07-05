@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react'
 import { Heart } from 'lucide-react'
 import { clientLogger } from '@/lib/client-logger'
 
+/** Tooltip copy explaining what the compatibility score represents. */
+export const COMPATIBILITY_TOOLTIP =
+  'Compatibility score based on lifestyle answers (sleep, cleanliness, noise, pets) and practical factors like budget and location.'
+
 interface CompatibilityBadgeProps {
   userId: string
   currentUserId?: string | null
@@ -66,6 +70,7 @@ export function CompatibilityBadge({
 
   return (
     <div
+      title={COMPATIBILITY_TOOLTIP}
       className={`
         inline-flex items-center gap-1 rounded-full font-medium
         ${getColor(score)}
@@ -84,10 +89,12 @@ export function CompatibilityBadgeStatic({
   score,
   showLabel = true,
   size = 'md',
+  title = COMPATIBILITY_TOOLTIP,
 }: {
   score: number
   showLabel?: boolean
   size?: 'sm' | 'md' | 'lg'
+  title?: string
 }) {
   if (score === 0) return null
 
@@ -106,6 +113,7 @@ export function CompatibilityBadgeStatic({
 
   return (
     <div
+      title={title}
       className={`
         inline-flex items-center gap-1 rounded-full font-medium
         ${getColor(score)}

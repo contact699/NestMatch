@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { VerificationBadge } from '@/components/ui/badge'
 import { CompatibilityBadgeStatic } from '@/components/ui/compatibility-badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
 import { SuggestedGroupCard } from '@/components/discover/SuggestedGroupCard'
 import { DiscoverTabs, type TabId } from '@/components/discover/DiscoverTabs'
 import {
@@ -26,8 +28,21 @@ import {
   Calendar,
   X,
   Info,
+  ShieldCheck,
+  ClipboardCheck,
+  type LucideIcon,
 } from 'lucide-react'
 import { CANADIAN_PROVINCES, CITIES_BY_PROVINCE } from '@/lib/utils'
+
+// "Why this match" reason chips, derived only from data already fetched.
+type ReasonKey = 'budget' | 'quiz' | 'verified' | 'city'
+
+const REASON_META: Record<ReasonKey, { label: string; Icon: LucideIcon }> = {
+  budget: { label: 'Budget overlap', Icon: DollarSign },
+  quiz: { label: 'Took lifestyle quiz', Icon: ClipboardCheck },
+  verified: { label: 'Verified', Icon: ShieldCheck },
+  city: { label: 'Same city', Icon: MapPin },
+}
 
 interface MemberProfile {
   userId: string
@@ -69,6 +84,7 @@ interface Profile {
 
 interface ProfileWithScore extends Profile {
   compatibilityScore: number
+  reasons?: ReasonKey[]
   lifestyle?: {
     sleep_schedule: string | null
     noise_tolerance: string | null
@@ -106,12 +122,15 @@ export default function DiscoverPage() {
   // Suggestions state
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [nextRefreshAt, setNextRefreshAt] = useState<string | null>(null)
+  const [suggestionsError, setSuggestionsError] = useState<string | null>(null)
 
   // People state
   const [profiles, setProfiles] = useState<ProfileWithScore[]>([])
+  const [peopleError, setPeopleError] = useState<string | null>(null)
 
   // Groups state
   const [publicGroups, setPublicGroups] = useState<PublicGroup[]>([])
+  const [groupsError, setGroupsError] = useState<string | null>(null)
 
   // People filters
   const [peopleFilters, setPeopleFilters] = useState({
@@ -140,136 +159,203 @@ export default function DiscoverPage() {
   })
 
   const fetchSuggestions = useCallback(async () => {
+    setSuggestionsError(null)
     try {
       const response = await fetch('/api/suggestions')
       if (response.ok) {
         const data = await response.json()
         setSuggestions(data.suggestions || [])
         setCounts(prev => ({ ...prev, suggestions: data.suggestions?.length || 0 }))
+      } else {
+        setSuggestionsError('We couldn’t load suggestions right now. Please try again.')
       }
     } catch (error) {
       clientLogger.error('Error fetching suggestions', error)
+      setSuggestionsError('We couldn’t load suggestions right now. Please try again.')
     }
   }, [])
 
   const fetchProfiles = useCallback(async (userId: string) => {
     const supabase = createClient()
+    setPeopleError(null)
 
-    // Fetch more profiles initially since we'll filter out incomplete ones
-    const { data: allProfilesData } = await supabase
-      .from('profiles')
-      .select('*')
-      .neq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(100)
-
-    if (!allProfilesData) return
-
-    // Check which users have completed the lifestyle quiz
-    const { data: quizUsers } = await supabase
-      .from('lifestyle_responses')
-      .select('user_id')
-      .in('user_id', allProfilesData.map((p: Profile) => p.user_id))
-
-    const quizTakenUserIds = new Set((quizUsers || []).map((q: { user_id: string }) => q.user_id))
-
-    // Filter to only quality profiles:
-    // Path A: decent profile (has name + has photo + has taken quiz)
-    // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
-    const profilesData = allProfilesData.filter((p: any) => {
-      const hasName = !!p.name
-      const hasQuiz = quizTakenUserIds.has(p.user_id)
-      const isDecentProfile = hasName && hasQuiz
-
-      const isVerified = p.email_verified || p.phone_verified ||
-        p.verification_level === 'verified' || p.verification_level === 'trusted'
-
-      return isDecentProfile || isVerified
-    }).slice(0, 30)
-
-    // Fetch budget ranges from seeking profiles for filtering
-    const { data: seekingProfilesData } = await supabase
-      .from('seeking_profiles')
-      .select('user_id, budget_min, budget_max')
-      .in('user_id', profilesData.map((p: Profile) => p.user_id))
-
-    const budgetsByUserId = new Map<string, { budget_min: number | null; budget_max: number | null }>(
-      (seekingProfilesData || []).map((s: any) => [
-        s.user_id,
-        { budget_min: s.budget_min ?? null, budget_max: s.budget_max ?? null },
+    try {
+      // Stage 1 (parallel): candidate profiles + my own city + my seeking budget.
+      // Overfetch 60 candidates for headroom since the quality filter drops
+      // profiles that are neither verified nor have a name + completed quiz.
+      const [
+        { data: allProfilesData, error: profilesError },
+        { data: mySeeking },
+        { data: myProfile },
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*')
+          .neq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(60),
+        supabase
+          .from('seeking_profiles')
+          .select('budget_min, budget_max')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        supabase
+          .from('profiles')
+          .select('city')
+          .eq('user_id', userId)
+          .maybeSingle(),
       ])
-    )
 
-    // Fetch lifestyle responses for filtering
-    const { data: lifestyleData } = await supabase
-      .from('lifestyle_responses')
-      .select('user_id, sleep_schedule, noise_tolerance, cleanliness_level, smoking, pets_preference, temperature_preference')
-      .in('user_id', profilesData.map((p: Profile) => p.user_id))
-
-    const lifestyleByUserId = new Map(
-      (lifestyleData || []).map((l: any) => [l.user_id, l])
-    )
-
-    // Get compatibility scores
-    const userIds = profilesData.map((p: Profile) => p.user_id)
-    const response = await fetch('/api/compatibility', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userIds }),
-    })
-
-    let scores: Record<string, number> = {}
-    if (response.ok) {
-      const data = await response.json()
-      scores = data.scores || {}
-    }
-
-    const profilesWithScores: ProfileWithScore[] = profilesData.map((p: Profile) => {
-      const ls = lifestyleByUserId.get(p.user_id)
-      return {
-        ...p,
-        budget_min: budgetsByUserId.get(p.user_id)?.budget_min ?? null,
-        budget_max: budgetsByUserId.get(p.user_id)?.budget_max ?? null,
-        compatibilityScore: scores[p.user_id] || 0,
-        lifestyle: ls ? {
-          sleep_schedule: ls.sleep_schedule,
-          noise_tolerance: ls.noise_tolerance,
-          cleanliness_level: ls.cleanliness_level,
-          smoking: ls.smoking,
-          pets_preference: ls.pets_preference,
-          temperature_preference: ls.temperature_preference,
-        } : undefined,
+      if (profilesError) throw profilesError
+      if (!allProfilesData) {
+        setProfiles([])
+        setCounts(prev => ({ ...prev, people: 0 }))
+        return
       }
-    })
 
-    profilesWithScores.sort((a, b) => b.compatibilityScore - a.compatibilityScore)
-    setProfiles(profilesWithScores)
-    setCounts(prev => ({ ...prev, people: profilesWithScores.length }))
+      const myCity = myProfile?.city ?? null
+      const myBudgetMin = mySeeking?.budget_min ?? null
+      const myBudgetMax = mySeeking?.budget_max ?? null
+
+      // Stage 2: fetch full lifestyle responses for all candidates ONCE.
+      // This single result serves both the "completed quiz" existence check
+      // (presence of a row) and the lifestyle data used for filtering/chips.
+      const { data: lifestyleData, error: lifestyleError } = await supabase
+        .from('lifestyle_responses')
+        .select('user_id, sleep_schedule, noise_tolerance, cleanliness_level, smoking, pets_preference, temperature_preference')
+        .in('user_id', allProfilesData.map((p: Profile) => p.user_id))
+
+      if (lifestyleError) throw lifestyleError
+
+      const lifestyleByUserId = new Map((lifestyleData || []).map((l: any) => [l.user_id, l]))
+      const quizTakenUserIds = new Set((lifestyleData || []).map((l: { user_id: string }) => l.user_id))
+
+      // Filter to only quality profiles (semantics unchanged):
+      // Path A: decent profile (has name + has taken quiz)
+      // Path B: verified identity (email verified OR phone verified OR verification_level above basic)
+      const profilesData = allProfilesData.filter((p: any) => {
+        const hasName = !!p.name
+        const hasQuiz = quizTakenUserIds.has(p.user_id)
+        const isDecentProfile = hasName && hasQuiz
+
+        const isVerified = p.email_verified || p.phone_verified ||
+          p.verification_level === 'verified' || p.verification_level === 'trusted'
+
+        return isDecentProfile || isVerified
+      }).slice(0, 30)
+
+      const userIds = profilesData.map((p: Profile) => p.user_id)
+
+      // Stage 3 (parallel): seeking budgets for the shortlist + compatibility scores.
+      // These are independent, so run them together.
+      const [seekingResult, scores] = await Promise.all([
+        supabase
+          .from('seeking_profiles')
+          .select('user_id, budget_min, budget_max')
+          .in('user_id', userIds),
+        (async (): Promise<Record<string, number>> => {
+          const response = await fetch('/api/compatibility', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userIds }),
+          })
+          if (response.ok) {
+            const data = await response.json()
+            return (data.scores || {}) as Record<string, number>
+          }
+          return {}
+        })(),
+      ])
+
+      const budgetsByUserId = new Map<string, { budget_min: number | null; budget_max: number | null }>(
+        (seekingResult.data || []).map((s: any) => [
+          s.user_id,
+          { budget_min: s.budget_min ?? null, budget_max: s.budget_max ?? null },
+        ])
+      )
+
+      const profilesWithScores: ProfileWithScore[] = profilesData.map((p: Profile) => {
+        const ls = lifestyleByUserId.get(p.user_id)
+        const budget = budgetsByUserId.get(p.user_id)
+        const budgetMin = budget?.budget_min ?? null
+        const budgetMax = budget?.budget_max ?? null
+
+        // "Why this match" reasons — only claims derivable from data at hand.
+        const reasons: ReasonKey[] = []
+        if (
+          myBudgetMin !== null && myBudgetMax !== null &&
+          budgetMin !== null && budgetMax !== null &&
+          budgetMax >= myBudgetMin && budgetMin <= myBudgetMax
+        ) {
+          reasons.push('budget')
+        }
+        if (ls) reasons.push('quiz')
+        if (p.verification_level === 'verified' || p.verification_level === 'trusted') {
+          reasons.push('verified')
+        }
+        if (myCity && p.city && p.city === myCity) reasons.push('city')
+
+        return {
+          ...p,
+          budget_min: budgetMin,
+          budget_max: budgetMax,
+          compatibilityScore: scores[p.user_id] || 0,
+          reasons: reasons.slice(0, 3),
+          lifestyle: ls ? {
+            sleep_schedule: ls.sleep_schedule,
+            noise_tolerance: ls.noise_tolerance,
+            cleanliness_level: ls.cleanliness_level,
+            smoking: ls.smoking,
+            pets_preference: ls.pets_preference,
+            temperature_preference: ls.temperature_preference,
+          } : undefined,
+        }
+      })
+
+      profilesWithScores.sort((a, b) => b.compatibilityScore - a.compatibilityScore)
+      setProfiles(profilesWithScores)
+      setCounts(prev => ({ ...prev, people: profilesWithScores.length }))
+    } catch (err) {
+      clientLogger.error('Error fetching profiles', err)
+      setPeopleError('We couldn’t load compatible people right now. Please try again.')
+    }
   }, [])
+
+  const retryProfiles = useCallback(() => {
+    if (currentUserId) fetchProfiles(currentUserId)
+  }, [currentUserId, fetchProfiles])
 
   const fetchPublicGroups = useCallback(async () => {
     const supabase = createClient()
+    setGroupsError(null)
 
-    const { data: groups } = await supabase
-      .from('co_renter_groups')
-      .select(`
-        *,
-        members:co_renter_members(
-          user:profiles(name, profile_photo, verification_level)
-        )
-      `)
-      .eq('is_public', true)
-      .eq('status', 'forming')
-      .order('created_at', { ascending: false })
-      .limit(20)
+    try {
+      const { data: groups, error } = await supabase
+        .from('co_renter_groups')
+        .select(`
+          *,
+          members:co_renter_members(
+            user:profiles(name, profile_photo, verification_level)
+          )
+        `)
+        .eq('is_public', true)
+        .eq('status', 'forming')
+        .order('created_at', { ascending: false })
+        .limit(20)
 
-    if (groups) {
-      const enriched = groups.map((g: any) => ({
-        ...g,
-        member_count: g.members?.length || 0,
-      }))
-      setPublicGroups(enriched)
-      setCounts(prev => ({ ...prev, groups: enriched.length }))
+      if (error) throw error
+
+      if (groups) {
+        const enriched = groups.map((g: any) => ({
+          ...g,
+          member_count: g.members?.length || 0,
+        }))
+        setPublicGroups(enriched)
+        setCounts(prev => ({ ...prev, groups: enriched.length }))
+      }
+    } catch (error) {
+      clientLogger.error('Error fetching public groups', error)
+      setGroupsError('We couldn’t load public groups right now. Please try again.')
     }
   }, [])
 
@@ -513,22 +599,26 @@ export default function DiscoverPage() {
                   </div>
                 )}
 
-                {suggestions.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Sparkles className="h-12 w-12 text-outline mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-on-surface mb-2">
-                      No suggestions yet
-                    </h3>
-                    <p className="text-on-surface-variant mb-4 max-w-md mx-auto">
-                      To get AI-generated group suggestions, complete your{' '}
-                      <Link href="/profile/edit" className="text-primary hover:underline">profile</Link>,{' '}
-                      <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link>, and{' '}
-                      <Link href="/seeking" className="text-primary hover:underline">seeking preferences</Link>, then click below.
-                    </p>
-                    <Button variant="glow" onClick={handleRefreshSuggestions}>
-                      Generate Suggestions
-                    </Button>
-                  </div>
+                {suggestionsError ? (
+                  <ErrorState message={suggestionsError} onRetry={fetchSuggestions} />
+                ) : suggestions.length === 0 ? (
+                  <EmptyState
+                    icon={Sparkles}
+                    title="No suggestions yet"
+                    description={
+                      <>
+                        To get AI-generated group suggestions, complete your{' '}
+                        <Link href="/profile/edit" className="text-primary hover:underline">profile</Link>,{' '}
+                        <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link>, and{' '}
+                        <Link href="/seeking" className="text-primary hover:underline">seeking preferences</Link>, then click below.
+                      </>
+                    }
+                    action={
+                      <Button variant="glow" onClick={handleRefreshSuggestions}>
+                        Generate Suggestions
+                      </Button>
+                    }
+                  />
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {suggestions.map(suggestion => (
@@ -773,23 +863,23 @@ export default function DiscoverPage() {
                   )}
                 </div>
 
-                {filteredProfiles.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-outline mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-on-surface mb-2">
-                      No profiles found
-                    </h3>
-                    <p className="text-on-surface-variant max-w-md mx-auto">
-                      {Object.values(peopleFilters).some(v => v !== '')
+                {peopleError ? (
+                  <ErrorState message={peopleError} onRetry={retryProfiles} />
+                ) : filteredProfiles.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No profiles found"
+                    description={
+                      Object.values(peopleFilters).some(v => v !== '')
                         ? 'Try adjusting your filters to see more results.'
                         : (
                           <>
                             Complete your <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link> to see
                             compatibility scores and get ranked matches.
                           </>
-                        )}
-                    </p>
-                  </div>
+                        )
+                    }
+                  />
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredProfiles.map(profile => (
@@ -827,12 +917,29 @@ export default function DiscoverPage() {
                           </div>
 
                           {profile.compatibilityScore > 0 && (
-                            <div className="mb-4">
+                            <div className="mb-3">
                               <CompatibilityBadgeStatic
                                 score={profile.compatibilityScore}
                                 size="md"
                                 showLabel
                               />
+                            </div>
+                          )}
+
+                          {profile.reasons && profile.reasons.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mb-4">
+                              {profile.reasons.map((key) => {
+                                const { label, Icon } = REASON_META[key]
+                                return (
+                                  <span
+                                    key={key}
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-surface-container text-on-surface-variant"
+                                  >
+                                    <Icon className="h-3 w-3" />
+                                    {label}
+                                  </span>
+                                )
+                              })}
                             </div>
                           )}
 
@@ -870,19 +977,19 @@ export default function DiscoverPage() {
                   {publicGroups.length} public groups looking for members
                 </p>
 
-                {publicGroups.length === 0 ? (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-outline mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-on-surface mb-2">
-                      No public groups yet
-                    </h3>
-                    <p className="text-on-surface-variant mb-4 max-w-md mx-auto">
-                      No public groups are forming right now. Create a group and set it to public so others can find and join you.
-                    </p>
-                    <Link href="/groups">
-                      <Button variant="glow">Create a Group</Button>
-                    </Link>
-                  </div>
+                {groupsError ? (
+                  <ErrorState message={groupsError} onRetry={fetchPublicGroups} />
+                ) : publicGroups.length === 0 ? (
+                  <EmptyState
+                    icon={Users}
+                    title="No public groups yet"
+                    description="No public groups are forming right now. Create a group and set it to public so others can find and join you."
+                    action={
+                      <Link href="/groups">
+                        <Button variant="glow">Create a Group</Button>
+                      </Link>
+                    }
+                  />
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {publicGroups.map(group => (

@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { PostHogPageview } from "@/components/posthog-provider";
 import { CookieConsent } from "@/components/cookie-consent";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const inter = Inter({
@@ -93,6 +94,7 @@ export default function RootLayout({
         {children}
         <Toaster position="bottom-right" richColors closeButton />
         <CookieConsent />
+        <SpeedInsights />
       </body>
     </html>
   );

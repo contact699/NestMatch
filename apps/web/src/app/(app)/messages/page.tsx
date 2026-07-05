@@ -1,19 +1,21 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { clientLogger } from '@/lib/client-logger'
 import { formatDate, getRelativeTime } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
+import { EmptyState } from '@/components/ui/empty-state'
+import { ErrorState } from '@/components/ui/error-state'
 import {
   MessageCircle,
   Search,
   Users,
   Home,
   Loader2,
-  AlertCircle,
   Filter,
   PenLine,
 } from 'lucide-react'
@@ -115,6 +117,37 @@ export default function MessagesPage() {
     startConversation()
   }, [searchParams, router])
 
+  // Tracks whether we have a successfully-loaded list; the realtime
+  // subscription refetches on every new message, and a transient failure
+  // there must not replace an already-rendered list with a full error state.
+  const hasLoadedRef = useRef(false)
+
+  const fetchConversations = useCallback(async () => {
+    try {
+      const response = await fetch('/api/conversations')
+      const data = await response.json()
+
+      if (response.ok) {
+        setConversations(data.conversations)
+        hasLoadedRef.current = true
+        setError(null)
+      } else if (!hasLoadedRef.current) {
+        setError(data.error || 'Failed to load conversations')
+      }
+    } catch (err) {
+      clientLogger.error('Error loading conversations', err)
+      if (!hasLoadedRef.current) {
+        setError('We couldn’t load your conversations right now. Please try again.')
+      }
+    }
+  }, [])
+
+  const handleRetry = useCallback(async () => {
+    setIsLoading(true)
+    await fetchConversations()
+    setIsLoading(false)
+  }, [fetchConversations])
+
   useEffect(() => {
     const supabase = createClient()
     let channel: ReturnType<typeof supabase.channel> | null = null
@@ -131,14 +164,7 @@ export default function MessagesPage() {
 
       setCurrentUserId(user.id)
 
-      const response = await fetch('/api/conversations')
-      const data = await response.json()
-
-      if (response.ok) {
-        setConversations(data.conversations)
-      } else {
-        setError(data.error || 'Failed to load conversations')
-      }
+      await fetchConversations()
 
       setIsLoading(false)
 
@@ -152,13 +178,9 @@ export default function MessagesPage() {
             schema: 'public',
             table: 'messages',
           },
-          async () => {
+          () => {
             // Refresh conversations on new message
-            const refreshResponse = await fetch('/api/conversations')
-            const refreshData = await refreshResponse.json()
-            if (refreshResponse.ok) {
-              setConversations(refreshData.conversations)
-            }
+            fetchConversations()
           }
         )
         .subscribe()
@@ -171,7 +193,7 @@ export default function MessagesPage() {
         supabase.removeChannel(channel)
       }
     }
-  }, [router])
+  }, [router, fetchConversations])
 
   const filteredConversations = conversations.filter((conv) => {
     if (!searchQuery) return true
@@ -239,36 +261,26 @@ export default function MessagesPage() {
         )}
       </div>
 
-      {/* Error state */}
-      {error && (
-        <Card variant="bordered" data-animate className="delay-200 mb-4">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3 text-error">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-              <p className="text-sm">{error}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Conversations list */}
-      {conversations.length === 0 && !error ? (
+      {error ? (
         <Card variant="bordered" data-animate className="delay-200">
-          <CardContent className="py-12 text-center">
-            <MessageCircle className="h-12 w-12 text-on-surface-variant/30 mx-auto mb-4" />
-            <h3 className="text-lg font-display font-semibold text-on-surface mb-2">
-              No messages yet
-            </h3>
-            <p className="text-on-surface-variant mb-4">
-              Start a conversation by contacting someone from a listing.
-            </p>
-            <Link
-              href="/search"
-              className="text-secondary hover:underline font-medium"
-            >
-              Browse listings
-            </Link>
-          </CardContent>
+          <ErrorState message={error} onRetry={handleRetry} />
+        </Card>
+      ) : conversations.length === 0 ? (
+        <Card variant="bordered" data-animate className="delay-200">
+          <EmptyState
+            icon={MessageCircle}
+            title="No messages yet"
+            description="Start a conversation by contacting someone from a listing."
+            action={
+              <Link
+                href="/search"
+                className="text-secondary hover:underline font-medium"
+              >
+                Browse listings
+              </Link>
+            }
+          />
         </Card>
       ) : filteredConversations.length === 0 ? (
         <Card variant="bordered" data-animate className="delay-200">

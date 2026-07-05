@@ -1,11 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { pdf } from '@react-pdf/renderer'
 import { clientLogger } from '@/lib/client-logger'
 import { Download, FileText, Loader2, Check, Share2, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AgreementPDF } from '@/components/resources/agreement/agreement-pdf'
 
 interface StepDownloadProps {
   data: {
@@ -33,6 +31,13 @@ export function StepDownload({ data, onBack }: StepDownloadProps) {
     setIsGenerating(true)
     setDownloadError(null)
     try {
+      // Load @react-pdf/renderer (and the PDF document component, which depends on
+      // it) on demand so the heavy renderer stays out of the shared client bundle.
+      const [{ pdf }, { AgreementPDF }] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('@/components/resources/agreement/agreement-pdf'),
+      ])
+
       const doc = (
         <AgreementPDF
           title={data.title}
