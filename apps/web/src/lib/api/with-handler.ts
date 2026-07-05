@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { checkRateLimit, RateLimitEndpoint, rateLimitResponse, detectAbuse } from '@/lib/rate-limit'
 import { auditLog, AuditAction } from '@/lib/audit'
-import { registerWebhookEvent, completeWebhookEvent, failWebhookEvent, WebhookProvider } from '@/lib/webhook'
+import { registerWebhookEvent, completeWebhookEvent, failWebhookEvent, verifyWebhookSignature, WebhookProvider } from '@/lib/webhook'
 import { logger, logApiRequest, logApiResponse } from '@/lib/logger'
 import { generateRequestId } from '@/lib/request-context'
 import { captureException, createErrorResponse, AppError } from '@/lib/error-reporter'
@@ -48,6 +48,15 @@ export interface WebhookConfig {
   provider: WebhookProvider
   getEventId: (body: any) => string
   getEventType: (body: any) => string
+  /**
+   * Header carrying the HMAC signature (e.g. 'x-signature'). When set together
+   * with `secretEnv` AND that env var is present, the raw body is verified and
+   * an invalid/missing signature is rejected with 401. If the secret env var is
+   * absent, verification is skipped (so enabling it is opt-in via config).
+   */
+  signatureHeader?: string
+  /** Name of the env var holding the signing secret. */
+  secretEnv?: string
 }
 
 export interface ApiHandlerConfig {
@@ -187,6 +196,27 @@ export function withApiHandler(
         const rateLimitResult = await checkRateLimit(config.rateLimit, userId)
 
         if (!rateLimitResult.allowed) {
+          // Fail-closed: the limiter itself errored on a sensitive endpoint.
+          // The client did nothing wrong, so surface 503 (with Retry-After)
+          // rather than 429, and skip abuse recording.
+          if (rateLimitResult.failClosed) {
+            const retryAfter = Math.max(
+              1,
+              Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000)
+            )
+            logApiResponse({ requestId, method, path, userId }, 503, Date.now() - startTime)
+            return NextResponse.json(
+              { error: 'Service temporarily unavailable', requestId },
+              {
+                status: 503,
+                headers: {
+                  'X-Request-ID': requestId,
+                  'Retry-After': retryAfter.toString(),
+                },
+              }
+            )
+          }
+
           // Record abuse
           await detectAbuse(config.rateLimit, userId)
 
@@ -198,6 +228,28 @@ export function withApiHandler(
       // 4. Webhook idempotency check
       if (config.webhook) {
         const bodyText = await req.text()
+
+        // Optional HMAC signature verification (opt-in: only enforced when the
+        // configured secret env var is present, so it never breaks an unconfigured
+        // provider). Computed over the raw body before JSON parsing.
+        const { signatureHeader, secretEnv, provider } = config.webhook
+        if (signatureHeader && secretEnv) {
+          const secret = process.env[secretEnv]
+          if (secret) {
+            const signature = req.headers.get(signatureHeader) ?? ''
+            const valid =
+              signature.length > 0 &&
+              (await verifyWebhookSignature(provider, bodyText, signature, secret))
+            if (!valid) {
+              logger.warn('Webhook signature verification failed', {
+                requestId,
+                provider,
+              })
+              return errorResponse('Invalid webhook signature', 401, requestId)
+            }
+          }
+        }
+
         let body: any
 
         try {

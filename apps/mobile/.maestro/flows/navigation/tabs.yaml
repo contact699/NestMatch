@@ -29,3 +29,9 @@ tags:
 - assertVisible:
     id: "screen-home"
     timeout: 5000
+
+
+# Verify the redesigned home hero rendered.
+- assertVisible:
+    id: "home-hero"
+    timeout: 5000

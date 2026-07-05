@@ -1,21 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { constructWebhookEvent } from '@/lib/services/stripe'
-import { withWebhookHandler, apiResponse, getWebhookBody } from '@/lib/api/with-handler'
 import { logger } from '@/lib/logger'
-import { initiateVerification, type CertnVerificationType } from '@/lib/services/certn'
+import { initiateVerification } from '@/lib/services/certn'
 import { createServiceClient } from '@/lib/supabase/service'
+import { processWebhookIdempotent } from '@/lib/webhook'
+import type { Database } from '@/types/database'
+import {
+  buildExpenseShareUpdate,
+  getShareId,
+  mapConnectAccountStatus,
+  parseChecksNeeded,
+  requiresProcessingGuard,
+  PAYMENT_DEMOTABLE_STATUSES,
+  type ShareNextStatus,
+} from '@/lib/stripe-webhook-helpers'
 import type Stripe from 'stripe'
 
 // Lazy initialization of Supabase admin client
-let _supabase: ReturnType<typeof createClient> | null = null
+let _supabase: SupabaseClient<Database> | null = null
 
-function getSupabaseAdmin() {
+function getSupabaseAdmin(): SupabaseClient<Database> {
   if (!_supabase) {
     if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Supabase environment variables not set')
     }
-    _supabase = createClient(
+    _supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     )
@@ -58,42 +68,68 @@ export async function POST(request: NextRequest) {
       resourceId: event.id,
     })
 
-    // Handle the event
-    switch (event.type) {
-      case 'payment_intent.succeeded':
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, requestId)
-        break
+    // Route ALL processing through the idempotency wrapper (webhook_events dedup
+    // table). Signature verification above already ran on the raw body; here we
+    // guarantee each event.id is processed at most once even if Stripe retries
+    // or delivers duplicates. Out-of-order distinct events are handled by the
+    // per-transition status guards inside the individual handlers.
+    const { skipped, error: handlerError } = await processWebhookIdempotent(
+      'stripe',
+      event.id,
+      event.type,
+      event as unknown as Record<string, unknown>,
+      async () => {
+        switch (event.type) {
+          case 'payment_intent.succeeded':
+            await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent, requestId)
+            break
 
-      case 'payment_intent.payment_failed':
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent, requestId)
-        break
+          case 'payment_intent.payment_failed':
+            await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent, requestId)
+            break
 
-      case 'payment_intent.canceled':
-        await handlePaymentIntentCanceled(event.data.object as Stripe.PaymentIntent, requestId)
-        break
+          case 'payment_intent.canceled':
+            await handlePaymentIntentCanceled(event.data.object as Stripe.PaymentIntent, requestId)
+            break
 
-      case 'charge.refunded':
-        await handleChargeRefunded(event.data.object as Stripe.Charge, requestId)
-        break
+          case 'charge.refunded':
+            await handleChargeRefunded(event.data.object as Stripe.Charge, requestId)
+            break
 
-      case 'account.updated':
-        await handleAccountUpdated(event.data.object as Stripe.Account, requestId)
-        break
+          case 'account.updated':
+            await handleAccountUpdated(event.data.object as Stripe.Account, requestId)
+            break
 
-      case 'transfer.created':
-        await handleTransferCreated(event.data.object as Stripe.Transfer, requestId)
-        break
+          case 'transfer.created':
+            await handleTransferCreated(event.data.object as Stripe.Transfer, requestId)
+            break
 
-      case 'checkout.session.completed':
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, requestId)
-        break
+          case 'checkout.session.completed':
+            await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session, requestId)
+            break
 
-      default:
-        logger.info(`Unhandled Stripe event type: ${event.type}`, { requestId })
+          default:
+            logger.info(`Unhandled Stripe event type: ${event.type}`, { requestId })
+        }
+      }
+    )
+
+    // Handler threw — surface a 500 so Stripe retries (preserves prior behavior
+    // where an unhandled handler error bubbled to the outer catch → 500).
+    if (handlerError) {
+      logger.error(
+        'Error processing Stripe webhook',
+        new Error(handlerError),
+        { requestId, resourceId: event.id }
+      )
+      return NextResponse.json(
+        { error: 'Webhook processing failed', requestId },
+        { status: 500, headers: { 'X-Request-ID': requestId } }
+      )
     }
 
     return NextResponse.json(
-      { received: true, requestId },
+      { received: true, requestId, deduplicated: skipped },
       { status: 200, headers: { 'X-Request-ID': requestId } }
     )
   } catch (error) {
@@ -119,24 +155,27 @@ export async function POST(request: NextRequest) {
  */
 async function syncExpenseShareStatusFromPaymentIntent(
   paymentIntent: Stripe.PaymentIntent,
-  nextStatus: 'paid' | 'pending',
+  nextStatus: ShareNextStatus,
   requestId: string
 ): Promise<void> {
-  const shareId = paymentIntent.metadata?.share_id
+  const shareId = getShareId(paymentIntent)
   if (!shareId) return // Not a bill-split payment (e.g. verification checkout) — nothing to sync
 
-  const updates: Record<string, unknown> = {
-    status: nextStatus,
-    updated_at: new Date().toISOString(),
-  }
-  if (nextStatus === 'paid') {
-    updates.paid_at = new Date().toISOString()
-  }
+  const updates = buildExpenseShareUpdate(nextStatus)
 
-  const { error } = await (getSupabaseAdmin() as any)
+  let query = getSupabaseAdmin()
     .from('expense_shares')
     .update(updates)
     .eq('id', shareId)
+
+  // Transition guard: demotions to 'pending' must only apply when the share is
+  // currently 'processing'. Without this, a late/replayed failed/canceled event
+  // could regress an already-PAID share back to pending and re-prompt payment.
+  if (requiresProcessingGuard(nextStatus)) {
+    query = query.eq('status', 'processing')
+  }
+
+  const { error } = await query
 
   if (error) {
     logger.error('Error syncing expense_share status', error, {
@@ -149,7 +188,7 @@ async function syncExpenseShareStatusFromPaymentIntent(
 async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent, requestId: string) {
   logger.info('Payment succeeded', { requestId, resourceId: paymentIntent.id })
 
-  const { error } = await (getSupabaseAdmin() as any)
+  const { error } = await getSupabaseAdmin()
     .from('payments')
     .update({
       status: 'completed',
@@ -169,7 +208,9 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent,
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, requestId: string) {
   logger.info('Payment failed', { requestId, resourceId: paymentIntent.id })
 
-  const { error } = await (getSupabaseAdmin() as any)
+  // Guard: only demote a payment that is still pending/processing. A replayed or
+  // out-of-order failed event must never overwrite a completed/refunded payment.
+  const { error } = await getSupabaseAdmin()
     .from('payments')
     .update({
       status: 'failed',
@@ -180,6 +221,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, re
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_payment_intent_id', paymentIntent.id)
+    .in('status', PAYMENT_DEMOTABLE_STATUSES as unknown as string[])
 
   if (error) {
     logger.error('Error updating failed payment', error, { requestId, resourceId: paymentIntent.id })
@@ -192,13 +234,15 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent, re
 async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent, requestId: string) {
   logger.info('Payment canceled', { requestId, resourceId: paymentIntent.id })
 
-  const { error } = await (getSupabaseAdmin() as any)
+  // Guard: only demote a payment that is still pending/processing (see above).
+  const { error } = await getSupabaseAdmin()
     .from('payments')
     .update({
       status: 'cancelled',
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_payment_intent_id', paymentIntent.id)
+    .in('status', PAYMENT_DEMOTABLE_STATUSES as unknown as string[])
 
   if (error) {
     logger.error('Error updating canceled payment', error, { requestId, resourceId: paymentIntent.id })
@@ -211,7 +255,10 @@ async function handlePaymentIntentCanceled(paymentIntent: Stripe.PaymentIntent, 
 async function handleChargeRefunded(charge: Stripe.Charge, requestId: string) {
   logger.info('Charge refunded', { requestId, resourceId: charge.id })
 
-  const { error } = await (getSupabaseAdmin() as any)
+  // Guard: a refund only applies to a currently-completed payment. This keeps
+  // the update idempotent and prevents a stray charge.refunded from overwriting
+  // a failed/cancelled row.
+  const { error } = await getSupabaseAdmin()
     .from('payments')
     .update({
       status: charge.refunded ? 'refunded' : 'completed',
@@ -219,6 +266,7 @@ async function handleChargeRefunded(charge: Stripe.Charge, requestId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq('stripe_charge_id', charge.id)
+    .eq('status', 'completed')
 
   if (error) {
     logger.error('Error updating refunded payment', error, { requestId, resourceId: charge.id })
@@ -228,10 +276,9 @@ async function handleChargeRefunded(charge: Stripe.Charge, requestId: string) {
 async function handleAccountUpdated(account: Stripe.Account, requestId: string) {
   logger.info('Connect account updated', { requestId, resourceId: account.id })
 
-  const status = account.charges_enabled ? 'active' :
-                 account.details_submitted ? 'restricted' : 'pending'
+  const status = mapConnectAccountStatus(account)
 
-  const { error } = await (getSupabaseAdmin() as any)
+  const { error } = await getSupabaseAdmin()
     .from('payout_accounts')
     .update({
       status,
@@ -251,7 +298,7 @@ async function handleTransferCreated(transfer: Stripe.Transfer, requestId: strin
   logger.info('Transfer created', { requestId, resourceId: transfer.id })
 
   if (transfer.metadata?.payment_id) {
-    const { error } = await (getSupabaseAdmin() as any)
+    const { error } = await getSupabaseAdmin()
       .from('payments')
       .update({
         stripe_transfer_id: transfer.id,
@@ -286,10 +333,8 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     paid_by,
   })
 
-  let checkTypes: string[]
-  try {
-    checkTypes = JSON.parse(checks_needed || '[]')
-  } catch {
+  const parsedChecks = parseChecksNeeded(checks_needed)
+  if (!parsedChecks.ok) {
     logger.error('Failed to parse checks_needed metadata', new Error(`Invalid JSON: ${checks_needed}`), {
       requestId,
       resourceId: session.id,
@@ -297,6 +342,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     return
   }
 
+  const checkTypes = parsedChecks.checks
   if (checkTypes.length === 0) {
     logger.info('No checks_needed in metadata, skipping', { requestId, resourceId: session.id })
     return
@@ -326,7 +372,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
       .from('verifications')
       .select('id')
       .eq('stripe_payment_id', session.id)
-      .eq('type', checkType as any)
+      .eq('type', checkType)
       .single()
 
     if (existing) {
@@ -339,7 +385,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     }
 
     // Initiate the check with Certn
-    const result = await initiateVerification(checkType as CertnVerificationType, profile.email)
+    const result = await initiateVerification(checkType, profile.email)
 
     if (!result.success) {
       logger.error(`Failed to initiate ${checkType} verification via webhook`, new Error(result.error || 'Unknown error'), {
@@ -355,7 +401,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
       .from('verifications')
       .insert({
         user_id: subject_user_id!,
-        type: checkType as any,
+        type: checkType,
         provider: 'certn',
         external_id: result.caseId || null,
         status: 'pending',

@@ -13,20 +13,33 @@ export interface RateLimitResult {
   remaining: number
   resetAt: Date
   blocked?: boolean
+  /**
+   * True when the request is being DENIED because the rate-limit check itself
+   * errored on a fail-closed (security-sensitive) endpoint. Callers should
+   * surface a 503 (service unavailable) rather than a 429, since the client did
+   * nothing wrong — the limiter is unavailable.
+   */
+  failClosed?: boolean
 }
 
-// Default rate limit configurations by endpoint type
+// Default rate limit configurations by endpoint type.
+//
+// `failClosed: true` marks security-sensitive endpoints (auth, verification,
+// payments). If the rate-limit RPC errors for one of these, the request is
+// DENIED (fail closed) rather than allowed through — an attacker must not be
+// able to bypass throttling by knocking the limiter offline. Read-heavy /
+// low-risk endpoints omit the flag and continue to fail OPEN for availability.
 export const RATE_LIMITS = {
   // Authentication
-  login: { maxRequests: 5, windowSeconds: 300 },           // 5 per 5 min
-  signup: { maxRequests: 3, windowSeconds: 3600 },         // 3 per hour
-  passwordReset: { maxRequests: 3, windowSeconds: 3600 },  // 3 per hour
+  login: { maxRequests: 5, windowSeconds: 300, failClosed: true },           // 5 per 5 min
+  signup: { maxRequests: 3, windowSeconds: 3600, failClosed: true },         // 3 per hour
+  passwordReset: { maxRequests: 3, windowSeconds: 3600, failClosed: true },  // 3 per hour
 
   // Verification
-  phoneVerify: { maxRequests: 3, windowSeconds: 3600 },    // 3 per hour
-  idVerify: { maxRequests: 2, windowSeconds: 86400 },      // 2 per day
-  criminalCheck: { maxRequests: 2, windowSeconds: 86400 }, // 2 per day
-  creditCheck: { maxRequests: 2, windowSeconds: 86400 },   // 2 per day
+  phoneVerify: { maxRequests: 3, windowSeconds: 3600, failClosed: true },    // 3 per hour
+  idVerify: { maxRequests: 2, windowSeconds: 86400, failClosed: true },      // 2 per day
+  criminalCheck: { maxRequests: 2, windowSeconds: 86400, failClosed: true }, // 2 per day
+  creditCheck: { maxRequests: 2, windowSeconds: 86400, failClosed: true },   // 2 per day
 
   // Messaging
   messageSend: { maxRequests: 60, windowSeconds: 60 },     // 60 per minute
@@ -57,7 +70,7 @@ export const RATE_LIMITS = {
   reviewCreate: { maxRequests: 10, windowSeconds: 3600 },  // 10 per hour
 
   // Payments
-  paymentCreate: { maxRequests: 10, windowSeconds: 3600 }, // 10 per hour
+  paymentCreate: { maxRequests: 10, windowSeconds: 3600, failClosed: true }, // 10 per hour
 
   // General API
   api: { maxRequests: 100, windowSeconds: 60 },            // 100 per minute
@@ -65,6 +78,17 @@ export const RATE_LIMITS = {
 } as const
 
 export type RateLimitEndpoint = keyof typeof RATE_LIMITS
+
+/**
+ * Whether an endpoint is configured to fail CLOSED (deny on limiter error).
+ * Unknown/unlisted endpoints fail open by default.
+ */
+export function shouldFailClosed(endpoint: RateLimitEndpoint | string): boolean {
+  const config = RATE_LIMITS[endpoint as RateLimitEndpoint] as
+    | { failClosed?: boolean }
+    | undefined
+  return config?.failClosed === true
+}
 
 /**
  * Get client identifier from request (user ID or IP)
@@ -107,6 +131,17 @@ export async function checkRateLimit(
 
     if (error) {
       logger.error('Rate limit check error', error instanceof Error ? error : new Error(String(error)))
+      if (shouldFailClosed(endpoint)) {
+        // Fail closed - deny sensitive endpoints when the limiter is unavailable.
+        logger.warn('Rate limit failing closed (RPC error) — denying request', { endpoint })
+        return {
+          allowed: false,
+          remaining: 0,
+          resetAt: new Date(Date.now() + windowSeconds * 1000),
+          blocked: true,
+          failClosed: true,
+        }
+      }
       // Fail open - allow request if rate limit check fails
       return { allowed: true, remaining: maxRequests, resetAt: new Date() }
     }
@@ -120,6 +155,18 @@ export async function checkRateLimit(
     }
   } catch (error) {
     logger.error('Rate limit error', error instanceof Error ? error : new Error(String(error)))
+    if (shouldFailClosed(endpoint)) {
+      // Fail closed - deny sensitive endpoints when the limiter throws.
+      logger.warn('Rate limit failing closed (exception) — denying request', { endpoint })
+      const cfg = RATE_LIMITS[endpoint as RateLimitEndpoint] || RATE_LIMITS.api
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAt: new Date(Date.now() + cfg.windowSeconds * 1000),
+        blocked: true,
+        failClosed: true,
+      }
+    }
     // Fail open
     return { allowed: true, remaining: 100, resetAt: new Date() }
   }

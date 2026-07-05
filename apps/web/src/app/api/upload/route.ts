@@ -8,6 +8,10 @@ import { captureException } from '@/lib/error-reporter'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+// Only these Storage buckets may be targeted. `bucket` is caller-controlled
+// (query/form), so it must be validated against this allowlist — never trusted.
+const ALLOWED_BUCKETS = ['listing-photos', 'profile-photos', 'chat-attachments', 'avatars'] as const
+
 export async function POST(request: NextRequest) {
   const requestId = generateRequestId()
   const startTime = Date.now()
@@ -41,6 +45,13 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file') as File
     // Allow bucket via query param or form field, default to listing-photos
     const bucket = searchParams.get('bucket') || formData.get('bucket') as string || 'listing-photos'
+
+    if (!ALLOWED_BUCKETS.includes(bucket as (typeof ALLOWED_BUCKETS)[number])) {
+      return NextResponse.json(
+        { error: 'Invalid bucket', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
+      )
+    }
 
     if (!file) {
       return NextResponse.json(
@@ -157,6 +168,13 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const path = searchParams.get('path')
     const bucket = searchParams.get('bucket') || 'listing-photos'
+
+    if (!ALLOWED_BUCKETS.includes(bucket as (typeof ALLOWED_BUCKETS)[number])) {
+      return NextResponse.json(
+        { error: 'Invalid bucket', requestId },
+        { status: 400, headers: { 'X-Request-ID': requestId } }
+      )
+    }
 
     if (!path) {
       return NextResponse.json(

@@ -66,13 +66,23 @@ export const POST = withApiHandler(
     })
 
     if (error) {
-      // Fallback to individual calculations if batch fails
-      for (const otherUserId of otherUserIds) {
-        const { data: score } = await supabase.rpc('calculate_compatibility', {
-          user_id_1: userId!,
-          user_id_2: otherUserId,
-        })
-        scores[otherUserId] = score || 0
+      // Fallback to individual calculations if batch fails.
+      // Run in chunks of 10 concurrent RPCs instead of a fully sequential loop.
+      const CHUNK_SIZE = 10
+      for (let i = 0; i < otherUserIds.length; i += CHUNK_SIZE) {
+        const chunk = otherUserIds.slice(i, i + CHUNK_SIZE)
+        const results = await Promise.all(
+          chunk.map(async (otherUserId) => {
+            const { data: score } = await supabase.rpc('calculate_compatibility', {
+              user_id_1: userId!,
+              user_id_2: otherUserId,
+            })
+            return [otherUserId, score || 0] as const
+          })
+        )
+        for (const [id, score] of results) {
+          scores[id] = score
+        }
       }
     } else if (data) {
       // Map batch results to scores object

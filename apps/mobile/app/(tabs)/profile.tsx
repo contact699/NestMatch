@@ -11,7 +11,7 @@ import { useAuth } from '@/providers/auth-provider'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { useRouter } from 'expo-router'
-import { Settings, ShieldCheck, ChevronRight, Bookmark, Home as HomeIcon } from 'lucide-react-native'
+import { Settings, ShieldCheck, ChevronRight, Bookmark, Home as HomeIcon, Receipt } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { Screen, Avatar, Badge, Button, Card } from '@/components/ui'
 import { colors, radii, shadows, typography } from '@/theme/tokens'
@@ -132,9 +132,11 @@ export default function ProfileScreen() {
         </Card>
 
         <Card style={styles.navCard}>
-          <NavRow icon={<HomeIcon size={18} color={colors.primary} />} label="My Listings" sub="Manage your listings" onPress={() => router.push('/(tabs)/search')} />
+          <NavRow icon={<HomeIcon size={18} color={colors.primary} />} label="My listings" sub="Manage your listings" onPress={() => router.push('/my-listings')} />
           <Sep />
-          <NavRow icon={<Bookmark size={18} color={colors.primary} />} label="Saved" sub="Listings you bookmarked" onPress={() => router.push('/(tabs)/search')} />
+          <NavRow icon={<Bookmark size={18} color={colors.primary} />} label="Saved" sub="Listings you bookmarked" onPress={() => router.push('/saved')} />
+          <Sep />
+          <NavRow icon={<Receipt size={18} color={colors.primary} />} label="Expenses" sub="Shared bills and your shares" onPress={() => router.push('/expenses')} />
           <Sep />
           <NavRow icon={<ShieldCheck size={18} color={colors.secondary} />} label="Trust Center" sub={`${verifyLabel} — view verifications`} onPress={() => router.push('/verify')} />
           <Sep />

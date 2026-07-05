@@ -48,6 +48,26 @@ export default function RootLayout() {
                 name="verify"
                 options={{ animation: 'slide_from_right' }}
               />
+              <Stack.Screen
+                name="group/[id]"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="expenses"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="notifications"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="my-listings"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="saved"
+                options={{ animation: 'slide_from_right' }}
+              />
             </Stack>
           </AuthProvider>
         </QueryClientProvider>

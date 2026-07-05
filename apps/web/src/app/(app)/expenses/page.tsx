@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { FetchError } from '@/components/ui/fetch-error'
+import { ErrorState } from '@/components/ui/error-state'
+import { EmptyState } from '@/components/ui/empty-state'
 import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter } from '@/components/ui/modal'
 import { useFetch } from '@/lib/hooks/use-fetch'
 import { formatPrice, formatDate } from '@/lib/utils'
@@ -356,24 +357,26 @@ export default function ExpensesPage() {
           </div>
 
           {error ? (
-            <FetchError message={error} onRetry={refetch} />
+            <Card variant="bordered">
+              <ErrorState message={error} onRetry={refetch} />
+            </Card>
           ) : isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-secondary" />
             </div>
           ) : expenses.length === 0 ? (
-            <Card variant="bordered" className="p-12 text-center">
-              <Receipt className="h-12 w-12 text-outline-variant mx-auto mb-4" />
-              <h3 className="font-display text-lg font-bold text-on-surface mb-2">
-                No expenses yet
-              </h3>
-              <p className="text-on-surface-variant mb-6">
-                Create your first shared expense to start splitting bills with roommates.
-              </p>
-              <Button onClick={() => setShowCreateModal(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Expense
-              </Button>
+            <Card variant="bordered">
+              <EmptyState
+                icon={Receipt}
+                title="No expenses yet"
+                description="Create your first shared expense to start splitting bills with roommates."
+                action={
+                  <Button onClick={() => setShowCreateModal(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create First Expense
+                  </Button>
+                }
+              />
             </Card>
           ) : (
             <div className="space-y-4">

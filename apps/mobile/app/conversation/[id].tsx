@@ -16,6 +16,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../src/lib/supabase'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ArrowLeft, Send } from 'lucide-react-native'
+import { Avatar } from '@/components/ui'
 import { colors, radii, typography } from '@/theme/tokens'
 import { useState } from 'react'
 
@@ -43,13 +44,13 @@ export default function ConversationScreen() {
   const flatListRef = useRef<FlatList>(null)
   const [inputText, setInputText] = useState('')
 
-  // Fetch conversation details to get participant IDs
+  // Fetch conversation details to get participant IDs and group linkage
   const { data: conversation } = useQuery({
     queryKey: ['conversation', id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('conversations')
-        .select('id, participant_ids')
+        .select('id, participant_ids, group_id')
         .eq('id', id!)
         .single()
 
@@ -59,12 +60,30 @@ export default function ConversationScreen() {
     enabled: !!id && !!user,
   })
 
-  // Determine the other participant's user ID
-  const otherUserId = conversation?.participant_ids?.find(
-    (pid: string) => pid !== user?.id
-  )
+  const groupId = conversation?.group_id ?? null
+  const isGroup = !!groupId
 
-  // Fetch the other user's profile
+  // Group name for the header (group conversations only)
+  const { data: group } = useQuery({
+    queryKey: ['group-name', groupId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('co_renter_groups')
+        .select('id, name')
+        .eq('id', groupId!)
+        .single()
+      if (error) throw error
+      return data as { id: string; name: string }
+    },
+    enabled: isGroup,
+  })
+
+  // Determine the other participant's user ID (1:1 only)
+  const otherUserId = isGroup
+    ? undefined
+    : conversation?.participant_ids?.find((pid: string) => pid !== user?.id)
+
+  // Fetch the other user's profile (1:1 only)
   const { data: otherProfile } = useQuery({
     queryKey: ['profile', otherUserId],
     queryFn: async () => {
@@ -100,9 +119,45 @@ export default function ConversationScreen() {
     enabled: !!id && !!user,
   })
 
-  // Mark unread messages as read
+  // Batch-fetch sender profiles for group conversations so each message can
+  // show the sender's name + avatar. Keyed on the set of sender ids present.
+  const senderIds = isGroup
+    ? [...new Set((messages ?? []).map((m) => m.sender_id).filter((sid) => sid !== user?.id))]
+    : []
+  const { data: senderProfiles } = useQuery({
+    queryKey: ['group-senders', id, senderIds.slice().sort().join(',')],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('user_id, name, profile_photo')
+        .in('user_id', senderIds)
+      if (error) throw error
+      const map = new Map<string, Profile>()
+      for (const p of (data ?? []) as Profile[]) map.set(p.user_id, p)
+      return map
+    },
+    enabled: isGroup && senderIds.length > 0,
+  })
+
+  // Mark unread messages as read. Group read state is per-member
+  // (co_renter_members.last_read_at, from migration 027) — messages.read_at is
+  // a single shared column, so writing it in a group chat would mark messages
+  // read for every other member too.
   useEffect(() => {
     if (!messages || !user) return
+
+    if (isGroup) {
+      if (!groupId) return
+      supabase
+        .from('co_renter_members')
+        .update({ last_read_at: new Date().toISOString() })
+        .eq('group_id', groupId)
+        .eq('user_id', user.id)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['conversations'] })
+        })
+      return
+    }
 
     const unreadIds = messages
       .filter((m) => m.sender_id !== user.id && !m.read_at)
@@ -118,7 +173,7 @@ export default function ConversationScreen() {
           queryClient.invalidateQueries({ queryKey: ['conversations'] })
         })
     }
-  }, [messages, user, queryClient])
+  }, [messages, user, queryClient, isGroup, groupId])
 
   // Real-time subscription for new messages
   useEffect(() => {
@@ -142,14 +197,27 @@ export default function ConversationScreen() {
               if (old.some((m) => m.id === payload.new.id)) return old
               return [...old, payload.new as Message]
             })
-            // Mark as read immediately since user is viewing the conversation
-            supabase
-              .from('messages')
-              .update({ read_at: new Date().toISOString(), status: 'read' as const })
-              .eq('id', payload.new.id)
-              .then(() => {
-                queryClient.invalidateQueries({ queryKey: ['conversations'] })
-              })
+            // Mark as read immediately since user is viewing the conversation.
+            // Group chats track per-member read state on co_renter_members
+            // instead of the shared messages.read_at column.
+            if (groupId) {
+              supabase
+                .from('co_renter_members')
+                .update({ last_read_at: new Date().toISOString() })
+                .eq('group_id', groupId)
+                .eq('user_id', user.id)
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['conversations'] })
+                })
+            } else {
+              supabase
+                .from('messages')
+                .update({ read_at: new Date().toISOString(), status: 'read' as const })
+                .eq('id', payload.new.id)
+                .then(() => {
+                  queryClient.invalidateQueries({ queryKey: ['conversations'] })
+                })
+            }
           }
         }
       )
@@ -158,7 +226,7 @@ export default function ConversationScreen() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [id, user, queryClient])
+  }, [id, user, queryClient, groupId])
 
   // Send message mutation
   const sendMutation = useMutation({
@@ -240,6 +308,14 @@ export default function ConversationScreen() {
       getDateKey(item.created_at) !==
         getDateKey(messages![index - 1].created_at)
 
+    const senderProfile = isGroup ? senderProfiles?.get(item.sender_id) : otherProfile
+    // In a group, only label the sender when this is the first message in a run
+    // from that sender (keeps consecutive messages clean).
+    const showSenderName =
+      isGroup &&
+      !isCurrentUser &&
+      (index === 0 || messages![index - 1].sender_id !== item.sender_id)
+
     return (
       <View>
         {showDateSeparator && (
@@ -257,19 +333,32 @@ export default function ConversationScreen() {
             isCurrentUser ? styles.messageRowRight : styles.messageRowLeft,
           ]}
         >
-          {!isCurrentUser && (
-            <View style={styles.messageBubbleAvatar}>
-              <Text style={styles.messageBubbleAvatarText}>
-                {(otherProfile?.name ?? '?').charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
+          {!isCurrentUser &&
+            (senderProfile?.profile_photo ? (
+              <Avatar
+                src={senderProfile.profile_photo}
+                name={senderProfile.name}
+                size={28}
+                style={styles.messageBubbleAvatar}
+              />
+            ) : (
+              <View style={styles.messageBubbleAvatar}>
+                <Text style={styles.messageBubbleAvatarText}>
+                  {(senderProfile?.name ?? '?').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            ))}
           <View
             style={[
               styles.messageBubble,
               isCurrentUser ? styles.bubbleRight : styles.bubbleLeft,
             ]}
           >
+            {showSenderName ? (
+              <Text style={styles.senderName}>
+                {senderProfile?.name ?? 'Member'}
+              </Text>
+            ) : null}
             <Text
               style={[
                 styles.messageText,
@@ -294,7 +383,9 @@ export default function ConversationScreen() {
     )
   }
 
-  const headerTitle = otherProfile?.name ?? 'Conversation'
+  const headerTitle = isGroup
+    ? group?.name ?? 'Group chat'
+    : otherProfile?.name ?? 'Conversation'
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -445,6 +536,12 @@ const styles = StyleSheet.create({
   bubbleRight: {
     backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
+  },
+  senderName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.secondary,
+    marginBottom: 2,
   },
   messageText: {
     fontSize: 15,

@@ -3,6 +3,7 @@
 import { useState, useEffect, use, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
+import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,6 +31,8 @@ import {
   Circle,
   Pencil,
   MessageCircle,
+  Check,
+  MapPin,
 } from 'lucide-react'
 
 interface GroupMember {
@@ -74,6 +77,31 @@ interface Group {
   is_admin: boolean
 }
 
+interface JoinRequest {
+  id: string
+  user_id: string
+  message: string | null
+  status: string
+  created_at: string
+  requester: {
+    user_id: string
+    name: string | null
+    profile_photo: string | null
+  } | null
+}
+
+// Minimal public-group info shown to a non-member so they can request to join.
+interface PublicPreview {
+  id: string
+  name: string
+  description: string | null
+  combined_budget_min: number | null
+  combined_budget_max: number | null
+  target_move_date: string | null
+  preferred_cities: string[] | null
+  member_count: number
+}
+
 export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
@@ -81,6 +109,13 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+
+  // Join-request state (admin review + non-member request-to-join)
+  const [joinRequests, setJoinRequests] = useState<JoinRequest[]>([])
+  const [publicPreview, setPublicPreview] = useState<PublicPreview | null>(null)
+  const [joinStatus, setJoinStatus] = useState<'none' | 'pending' | 'accepted' | 'declined'>('none')
+  const [joinMessage, setJoinMessage] = useState('')
+  const [submittingJoin, setSubmittingJoin] = useState(false)
   const [confirmModal, setConfirmModal] = useState<{open: boolean; title: string; message: string; onConfirm: () => void}>({open: false, title: '', message: '', onConfirm: () => {}})
 
   // Expense summary state
@@ -104,6 +139,14 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     fetchExpenseSummary()
   }, [id])
 
+  // Admins see and act on pending join requests.
+  useEffect(() => {
+    if (group?.is_admin) {
+      fetchJoinRequests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [group?.is_admin])
+
   const fetchGroup = async () => {
     try {
       setLoading(true)
@@ -113,12 +156,116 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       if (res.ok) {
         setGroup(data.group)
       } else if (res.status === 404 || res.status === 403) {
-        router.push('/groups')
+        // Not a member — if this is a public group, show a request-to-join
+        // preview instead of bouncing the user back to the groups list.
+        await loadPublicPreview()
       }
     } catch (error) {
       clientLogger.error('Error fetching group', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Load a limited public preview for a non-member of a public group, plus any
+  // existing join-request status for the current user.
+  const loadPublicPreview = async () => {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { data: g } = await supabase
+        .from('co_renter_groups')
+        .select('id, name, description, combined_budget_min, combined_budget_max, target_move_date, preferred_cities, is_public, members:co_renter_members(id)')
+        .eq('id', id)
+        .eq('is_public', true)
+        .maybeSingle()
+
+      if (!g) {
+        router.push('/groups')
+        return
+      }
+
+      setPublicPreview({
+        id: g.id,
+        name: g.name,
+        description: g.description,
+        combined_budget_min: g.combined_budget_min,
+        combined_budget_max: g.combined_budget_max,
+        target_move_date: g.target_move_date,
+        preferred_cities: g.preferred_cities,
+        member_count: Array.isArray(g.members) ? g.members.length : 0,
+      })
+
+      if (user) {
+        const { data: existing } = await supabase
+          .from('co_renter_join_requests')
+          .select('status')
+          .eq('group_id', id)
+          .eq('user_id', user.id)
+          .maybeSingle()
+        if (existing?.status) {
+          setJoinStatus(existing.status as 'pending' | 'accepted' | 'declined')
+        }
+      }
+    } catch (error) {
+      clientLogger.error('Error loading public group preview', error)
+      router.push('/groups')
+    }
+  }
+
+  const fetchJoinRequests = async () => {
+    try {
+      const res = await fetch(`/api/groups/${id}/join-requests`)
+      if (res.ok) {
+        const data = await res.json()
+        setJoinRequests(data.join_requests ?? [])
+      }
+    } catch (error) {
+      clientLogger.error('Error fetching join requests', error)
+    }
+  }
+
+  const handleRequestToJoin = async () => {
+    setSubmittingJoin(true)
+    try {
+      const res = await fetch(`/api/groups/${id}/join-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: joinMessage.trim() || undefined }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setJoinStatus('pending')
+        toast.success('Request sent! The group admins will review it.')
+      } else {
+        toast.error(typeof data?.error === 'string' ? data.error : 'Failed to send request')
+      }
+    } catch (error) {
+      clientLogger.error('Error requesting to join group', error)
+      toast.error('Failed to send request')
+    } finally {
+      setSubmittingJoin(false)
+    }
+  }
+
+  const handleRespondJoinRequest = async (requestId: string, response: 'accepted' | 'declined') => {
+    try {
+      const res = await fetch(`/api/groups/${id}/join-requests`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ request_id: requestId, response }),
+      })
+      if (res.ok) {
+        toast.success(response === 'accepted' ? 'Member added to the group' : 'Request declined')
+        fetchJoinRequests()
+        if (response === 'accepted') fetchGroup()
+      } else {
+        toast.error('Failed to respond to request')
+      }
+    } catch (error) {
+      clientLogger.error('Error responding to join request', error)
+      toast.error('Failed to respond to request')
     }
   }
 
@@ -285,6 +432,112 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
       <div className="flex items-center justify-center py-24">
         <Loader2 className="h-8 w-8 animate-spin text-secondary" />
       </div>
+    )
+  }
+
+  // Non-member viewing a public group: show a request-to-join preview.
+  if (!group && publicPreview) {
+    const primaryCity = publicPreview.preferred_cities?.[0] || null
+    return (
+      <AnimatedPage>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <nav className="flex items-center gap-x-6 mb-8 text-sm font-medium">
+            <Link href="/groups" className="text-on-surface-variant hover:text-on-surface transition-colors">
+              My Groups
+            </Link>
+            <Link href="/discover" className="text-on-surface-variant hover:text-on-surface transition-colors">
+              Discover
+            </Link>
+          </nav>
+
+          <Card variant="bordered" className="p-6 sm:p-8">
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="h-5 w-5 text-primary" />
+              <span className="text-xs font-bold uppercase tracking-wider text-on-surface-variant">
+                Public Group
+              </span>
+            </div>
+            <h1 className="font-display text-3xl font-extrabold text-on-surface tracking-tight mb-3">
+              {publicPreview.name}
+            </h1>
+            {publicPreview.description && (
+              <p className="text-on-surface-variant mb-4 leading-relaxed">
+                {publicPreview.description}
+              </p>
+            )}
+
+            <div className="flex flex-wrap items-center gap-4 text-sm text-on-surface-variant mb-6">
+              <span className="flex items-center gap-1.5">
+                <Users className="h-4 w-4" />
+                {publicPreview.member_count} {publicPreview.member_count === 1 ? 'member' : 'members'}
+              </span>
+              {(publicPreview.combined_budget_min || publicPreview.combined_budget_max) && (
+                <span className="flex items-center gap-1.5">
+                  <DollarSign className="h-4 w-4" />
+                  {publicPreview.combined_budget_min && publicPreview.combined_budget_max
+                    ? `${formatPrice(publicPreview.combined_budget_min)} - ${formatPrice(publicPreview.combined_budget_max)}`
+                    : publicPreview.combined_budget_max
+                      ? `Up to ${formatPrice(publicPreview.combined_budget_max)}`
+                      : `From ${formatPrice(publicPreview.combined_budget_min!)}`}
+                </span>
+              )}
+              {publicPreview.target_move_date && (
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4" />
+                  Move: {formatDate(publicPreview.target_move_date)}
+                </span>
+              )}
+              {primaryCity && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4" />
+                  {publicPreview.preferred_cities!.slice(0, 2).join(', ')}
+                </span>
+              )}
+            </div>
+
+            {joinStatus === 'pending' ? (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-tertiary-fixed/30 text-on-surface">
+                <Clock className="h-5 w-5 text-on-surface-variant" />
+                <span className="text-sm font-medium">
+                  Your request is pending. The group admins will review it soon.
+                </span>
+              </div>
+            ) : joinStatus === 'declined' ? (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-error-container text-error">
+                <X className="h-5 w-5" />
+                <span className="text-sm font-medium">
+                  Your request to join this group was declined.
+                </span>
+              </div>
+            ) : joinStatus === 'accepted' ? (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-secondary-container text-secondary">
+                <CheckCircle className="h-5 w-5" />
+                <span className="text-sm font-medium">
+                  You&apos;ve been accepted! Refresh to open the group.
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-on-surface-variant">
+                  Add a message (optional)
+                </label>
+                <textarea
+                  value={joinMessage}
+                  onChange={(e) => setJoinMessage(e.target.value)}
+                  placeholder="Introduce yourself to the group admins..."
+                  rows={3}
+                  maxLength={500}
+                  className="w-full px-3 py-2 ghost-border rounded-lg text-sm text-on-surface bg-surface-container-lowest resize-none focus:outline-none focus:ring-2 focus:ring-secondary"
+                />
+                <Button onClick={handleRequestToJoin} isLoading={submittingJoin} className="w-full sm:w-auto">
+                  <UserPlus className="h-4 w-4 mr-1.5" />
+                  Request to Join
+                </Button>
+              </div>
+            )}
+          </Card>
+        </div>
+      </AnimatedPage>
     )
   }
 
@@ -588,6 +841,82 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           </CardContent>
         </Card>
       </div>
+
+      {/* Join Requests — admins review people who asked to join a public group */}
+      {group.is_admin && (
+        <Card variant="bordered" className="mb-10">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="font-display text-xl font-bold">Join Requests</CardTitle>
+            {joinRequests.length > 0 && (
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary-fixed text-primary">
+                {joinRequests.length} pending
+              </span>
+            )}
+          </CardHeader>
+          <CardContent>
+            {joinRequests.length === 0 ? (
+              <p className="text-sm text-on-surface-variant py-2">
+                No pending requests. When someone asks to join this public group, they&apos;ll appear here.
+              </p>
+            ) : (
+              <div className="space-y-4">
+                {joinRequests.map((request) => (
+                  <div
+                    key={request.id}
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 ghost-border rounded-lg"
+                  >
+                    <div className="flex items-start gap-3 min-w-0">
+                      {request.requester?.profile_photo ? (
+                        <img
+                          src={request.requester.profile_photo}
+                          alt={request.requester.name || 'User'}
+                          className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-primary-fixed rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-sm font-bold text-primary">
+                            {(request.requester?.name || 'U').charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-on-surface">
+                          {request.requester?.name || 'Someone'}
+                        </p>
+                        {request.message && (
+                          <p className="text-sm text-on-surface-variant mt-0.5 break-words">
+                            &ldquo;{request.message}&rdquo;
+                          </p>
+                        )}
+                        <p className="text-xs text-on-surface-variant/70 mt-1">
+                          Requested {formatDate(request.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRespondJoinRequest(request.id, 'declined')}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Decline
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => handleRespondJoinRequest(request.id, 'accepted')}
+                      >
+                        <Check className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Group chat — real-time messaging between active members */}
       <div id="group-chat" className="mb-10 scroll-mt-24">

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -9,10 +9,11 @@ import {
   View,
 } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Search as SearchIcon, Heart } from 'lucide-react-native'
 import { Screen, Input, Avatar, Badge } from '@/components/ui'
+import { useMatchScores } from '@/lib/use-match-scores'
 import { colors, radii, shadows, typography } from '@/theme/tokens'
 
 type Listing = {
@@ -36,8 +37,15 @@ type Segment = 'listings' | 'roommates'
 
 export default function SearchScreen() {
   const router = useRouter()
+  const { q: initialQuery } = useLocalSearchParams<{ q?: string }>()
   const [segment, setSegment] = useState<Segment>('listings')
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState<string>(initialQuery ?? '')
+
+  // If the user lands here from the hero with a new q param while the screen
+  // is already mounted, sync state. Cheap; no-op once initialQuery stabilizes.
+  useEffect(() => {
+    if (initialQuery !== undefined) setQuery(initialQuery)
+  }, [initialQuery])
 
   const listingsQuery = useQuery({
     queryKey: ['search-listings', query],
@@ -77,6 +85,11 @@ export default function SearchScreen() {
   })
 
   const active = segment === 'listings' ? listingsQuery : roommatesQuery
+
+  // Real compatibility scores for the roommate results (batch RPC). Badge falls
+  // back to "View" when a score is unavailable — never a fabricated number.
+  const roommateIds = (roommatesQuery.data ?? []).map((r) => r.user_id)
+  const { data: matchScores } = useMatchScores(roommateIds)
 
   return (
     <Screen testID="screen-search" edges={['bottom']}>
@@ -171,7 +184,11 @@ export default function SearchScreen() {
                   {[item.occupation, item.city].filter(Boolean).join(' · ') || 'NestMatch member'}
                 </Text>
               </View>
-              <Badge variant="success">View</Badge>
+              {typeof matchScores?.[item.user_id] === 'number' ? (
+                <Badge variant="success">{matchScores[item.user_id]}% match</Badge>
+              ) : (
+                <Badge variant="neutral">View</Badge>
+              )}
             </Pressable>
           )}
         />

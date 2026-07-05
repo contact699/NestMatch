@@ -163,6 +163,11 @@ export const POST = withApiHandler(
       provider: 'certn',
       getEventId: (body) => body.event_id,
       getEventType: (body) => body.event_type,
+      // CertnCentric signs the raw body with HMAC-SHA256 in the X-Signature
+      // header. Enforced once CERTN_WEBHOOK_SECRET is set (until then, skipped
+      // so existing delivery is not broken).
+      signatureHeader: 'x-signature',
+      secretEnv: 'CERTN_WEBHOOK_SECRET',
     },
   }
 )

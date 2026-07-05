@@ -5,6 +5,7 @@ import { withApiHandler, withPublicHandler, apiResponse, parseBody } from '@/lib
 import { ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
 import { geocodeListingAddress } from '@/lib/geocode'
+import { sanitizeSearchQuery } from '@/lib/search-sanitize'
 
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -134,10 +135,14 @@ export const GET = withPublicHandler(
       query = query.eq('parking_included', true)
     }
     if (q) {
-      // Search in title, description, city, and province
-      query = query.or(
-        `title.ilike.%${q}%,description.ilike.%${q}%,city.ilike.%${q}%,province.ilike.%${q}%`
-      )
+      // Sanitize before interpolation to prevent PostgREST filter injection.
+      const safeQ = sanitizeSearchQuery(q)
+      if (safeQ) {
+        // Search in title, description, city, and province
+        query = query.or(
+          `title.ilike.%${safeQ}%,description.ilike.%${safeQ}%,city.ilike.%${safeQ}%,province.ilike.%${safeQ}%`
+        )
+      }
     }
 
     query = query.range(offset, offset + limit - 1)
