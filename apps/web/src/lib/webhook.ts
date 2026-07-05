@@ -5,6 +5,10 @@ import { logger } from '@/lib/logger'
 export type WebhookProvider = 'stripe' | 'certn' | 'twilio' | 'other'
 export type WebhookStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
+// An event stuck in 'processing' longer than this is considered abandoned
+// (no serverless function runs anywhere near this long) and may be retried.
+const STALE_PROCESSING_MS = 5 * 60 * 1000
+
 export interface WebhookEvent {
   id: string
   provider: WebhookProvider
@@ -70,9 +74,18 @@ export async function registerWebhookEvent(
           }
         }
 
-        // Event exists but not completed - might be a retry or stuck processing
-        // Update attempt count and allow reprocessing if status is 'failed' or 'pending'
-        if (existing?.status === 'failed' || existing?.status === 'pending') {
+        // Event exists but not completed - might be a retry or stuck processing.
+        // Reprocess if status is 'failed' or 'pending', or if it has sat in
+        // 'processing' longer than any function is allowed to run — a serverless
+        // timeout/crash between register and complete/fail would otherwise wedge
+        // the event forever and every provider retry would bounce off it.
+        const staleProcessing =
+          existing?.status === 'processing' &&
+          Date.now() -
+            new Date(existing.last_attempt_at ?? existing.created_at).getTime() >
+            STALE_PROCESSING_MS
+
+        if (existing?.status === 'failed' || existing?.status === 'pending' || staleProcessing) {
           const { data: updated } = await supabase
             .from('webhook_events')
             .update({
@@ -91,7 +104,9 @@ export async function registerWebhookEvent(
           }
         }
 
-        // Still processing - don't allow concurrent processing
+        // Actively processing in a concurrent invocation - don't run twice.
+        // Callers surface a retryable error; by the provider's next retry the
+        // event is either completed (deduped) or stale (taken over above).
         return {
           success: false,
           alreadyProcessed: false,

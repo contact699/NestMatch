@@ -196,6 +196,27 @@ export function withApiHandler(
         const rateLimitResult = await checkRateLimit(config.rateLimit, userId)
 
         if (!rateLimitResult.allowed) {
+          // Fail-closed: the limiter itself errored on a sensitive endpoint.
+          // The client did nothing wrong, so surface 503 (with Retry-After)
+          // rather than 429, and skip abuse recording.
+          if (rateLimitResult.failClosed) {
+            const retryAfter = Math.max(
+              1,
+              Math.ceil((rateLimitResult.resetAt.getTime() - Date.now()) / 1000)
+            )
+            logApiResponse({ requestId, method, path, userId }, 503, Date.now() - startTime)
+            return NextResponse.json(
+              { error: 'Service temporarily unavailable', requestId },
+              {
+                status: 503,
+                headers: {
+                  'X-Request-ID': requestId,
+                  'Retry-After': retryAfter.toString(),
+                },
+              }
+            )
+          }
+
           // Record abuse
           await detectAbuse(config.rateLimit, userId)
 
