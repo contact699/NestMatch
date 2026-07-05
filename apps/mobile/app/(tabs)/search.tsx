@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Search as SearchIcon, Heart } from 'lucide-react-native'
 import { Screen, Input, Avatar, Badge } from '@/components/ui'
+import { useMatchScores } from '@/lib/use-match-scores'
 import { colors, radii, shadows, typography } from '@/theme/tokens'
 
 type Listing = {
@@ -84,6 +85,11 @@ export default function SearchScreen() {
   })
 
   const active = segment === 'listings' ? listingsQuery : roommatesQuery
+
+  // Real compatibility scores for the roommate results (batch RPC). Badge falls
+  // back to "View" when a score is unavailable — never a fabricated number.
+  const roommateIds = (roommatesQuery.data ?? []).map((r) => r.user_id)
+  const { data: matchScores } = useMatchScores(roommateIds)
 
   return (
     <Screen testID="screen-search" edges={['bottom']}>
@@ -178,7 +184,11 @@ export default function SearchScreen() {
                   {[item.occupation, item.city].filter(Boolean).join(' · ') || 'NestMatch member'}
                 </Text>
               </View>
-              <Badge variant="success">View</Badge>
+              {typeof matchScores?.[item.user_id] === 'number' ? (
+                <Badge variant="success">{matchScores[item.user_id]}% match</Badge>
+              ) : (
+                <Badge variant="neutral">View</Badge>
+              )}
             </Pressable>
           )}
         />

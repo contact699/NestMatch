@@ -14,13 +14,15 @@ import { useAuth } from '@/providers/auth-provider'
 import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
-import { Plus, Heart } from 'lucide-react-native'
+import { Plus, Heart, Bell } from 'lucide-react-native'
 import { Screen, Card, Badge, Avatar, SectionHeader } from '@/components/ui'
 import { colors, radii, shadows, spacing, typography } from '@/theme/tokens'
 import { Hero } from '@/components/home/Hero'
 import { CityChipRow } from '@/components/home/CityChipRow'
 import { useHomeSignals } from '@/lib/home/use-home-signals'
-import { FLAGSHIP_CITIES, cityFilterOr, getFlagshipBySlug } from '@/lib/cities'
+import { useMatchScores } from '@/lib/use-match-scores'
+import { useUnreadNotificationCount } from '@/lib/use-notifications'
+import { FLAGSHIP_CITIES, cityFilterOr, getFlagshipBySlug, flagshipSlugForProfileCity } from '@/lib/cities'
 
 type RoommateCard = {
   user_id: string
@@ -43,10 +45,23 @@ export default function HomeScreen() {
   const { user } = useAuth()
   const router = useRouter()
 
-  // City selection: defaults to Toronto for now. Reading the user's profile
-  // city would need to flow through useHomeSignals — flagged as follow-up
-  // alongside cross-session persistence.
-  const [citySlug, setCitySlug] = useState<string>('toronto')
+  // City selection: an explicit chip tap wins; otherwise default to the
+  // user's profile city when it maps to a flagship city, falling back to
+  // Toronto for cities we don't have flagship coverage for yet.
+  const [chosenCitySlug, setChosenCitySlug] = useState<string | null>(null)
+  const { data: profileCity } = useQuery({
+    queryKey: ['home-profile-city', user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('city')
+        .eq('user_id', user!.id)
+        .single()
+      return data?.city ?? null
+    },
+    enabled: !!user,
+  })
+  const citySlug = chosenCitySlug ?? flagshipSlugForProfileCity(profileCity) ?? 'toronto'
   const city = getFlagshipBySlug(citySlug) ?? FLAGSHIP_CITIES[0]
 
   const { content: heroContent } = useHomeSignals(citySlug)
@@ -83,34 +98,37 @@ export default function HomeScreen() {
     enabled: !!user,
   })
 
-  const matchOf = useMemo(() => {
-    const cache = new Map<string, number>()
-    return (id: string) => {
-      if (cache.has(id)) return cache.get(id)!
-      let h = 0
-      for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0
-      const pct = 85 + (h % 15)
-      cache.set(id, pct)
-      return pct
-    }
-  }, [])
-
-  const renderRoommate = ({ item }: { item: RoommateCard }) => (
-    <Pressable
-      style={styles.roommateCard}
-      onPress={() => router.push('/(tabs)/search')}
-    >
-      <Avatar src={item.profile_photo} name={item.name} size={56} style={styles.roommateAvatar} />
-      <Text style={styles.roommateName} numberOfLines={1}>
-        {item.name ?? 'Anonymous'}
-        {item.age ? `, ${item.age}` : ''}
-      </Text>
-      <Text style={styles.roommateMeta} numberOfLines={1}>
-        {[item.occupation, item.city].filter(Boolean).join(' · ') || 'NestMatch member'}
-      </Text>
-      <Badge variant="success" style={styles.roommateMatch}>{matchOf(item.user_id)}% match</Badge>
-    </Pressable>
+  // Real compatibility scores for the visible roommates (batch RPC). Never show
+  // a fabricated number — the badge is hidden when a score is missing.
+  const roommateIds = useMemo(
+    () => (roommates ?? []).map((r) => r.user_id),
+    [roommates]
   )
+  const { data: matchScores } = useMatchScores(roommateIds)
+
+  const unreadCount = useUnreadNotificationCount()
+
+  const renderRoommate = ({ item }: { item: RoommateCard }) => {
+    const score = matchScores?.[item.user_id]
+    return (
+      <Pressable
+        style={styles.roommateCard}
+        onPress={() => router.push('/(tabs)/search')}
+      >
+        <Avatar src={item.profile_photo} name={item.name} size={56} style={styles.roommateAvatar} />
+        <Text style={styles.roommateName} numberOfLines={1}>
+          {item.name ?? 'Anonymous'}
+          {item.age ? `, ${item.age}` : ''}
+        </Text>
+        <Text style={styles.roommateMeta} numberOfLines={1}>
+          {[item.occupation, item.city].filter(Boolean).join(' · ') || 'NestMatch member'}
+        </Text>
+        {typeof score === 'number' ? (
+          <Badge variant="success" style={styles.roommateMatch}>{score}% match</Badge>
+        ) : null}
+      </Pressable>
+    )
+  }
 
   const browseCity = (slug: string) => {
     const target = getFlagshipBySlug(slug)
@@ -121,11 +139,27 @@ export default function HomeScreen() {
   return (
     <Screen testID="screen-home" edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.topBar}>
+          <Pressable
+            style={styles.bellBtn}
+            onPress={() => router.push('/notifications')}
+            hitSlop={8}
+            accessibilityLabel="Notifications"
+          >
+            <Bell size={22} color={colors.primary} />
+            {unreadCount > 0 ? (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+        </View>
+
         {heroContent ? (
           <Hero content={heroContent} onBrowseCity={browseCity} />
         ) : null}
 
-        <CityChipRow selectedSlug={citySlug} onSelect={setCitySlug} />
+        <CityChipRow selectedSlug={citySlug} onSelect={setChosenCitySlug} />
 
         <SectionHeader
           title={`Fresh listings in ${city.displayName}`}
@@ -203,6 +237,39 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   scroll: { padding: spacing[5], paddingBottom: 100 },
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: spacing[2],
+  },
+  bellBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.error,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellBadgeText: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 9,
+    color: colors.onError,
+  },
   hList: { gap: spacing[2], paddingRight: spacing[4] },
   roommateCard: {
     width: 150,

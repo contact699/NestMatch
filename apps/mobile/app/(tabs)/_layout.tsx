@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { Home, Search, MessageCircle, User } from 'lucide-react-native'
+import { Home, Search, Users, MessageCircle, User } from 'lucide-react-native'
 import { StyleSheet } from 'react-native'
 import { colors, typography } from '@/theme/tokens'
 
@@ -38,6 +38,14 @@ export default function TabLayout() {
           title: 'Search',
           tabBarButtonTestID: 'tab-search',
           tabBarIcon: ({ color, size }) => <Search color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
+        name="groups"
+        options={{
+          title: 'Groups',
+          tabBarButtonTestID: 'tab-groups',
+          tabBarIcon: ({ color, size }) => <Users color={color} size={size} />,
         }}
       />
       <Tabs.Screen
