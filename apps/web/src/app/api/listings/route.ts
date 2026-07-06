@@ -27,7 +27,7 @@ const listingSchema = z.object({
   postal_code: z.string().optional(),
   lat: z.number().optional(),
   lng: z.number().optional(),
-  photos: z.array(z.string()),
+  photos: z.array(z.string()).max(20),
   amenities: z.array(z.string()),
   bathroom_type: z.enum(['ensuite', 'private', 'shared']),
   bathroom_size: z.preprocess(

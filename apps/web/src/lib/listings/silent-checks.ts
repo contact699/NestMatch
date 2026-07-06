@@ -11,6 +11,9 @@ type Client = SupabaseClient<Database>
 // (the flag is still recorded on the listing, and a warning is logged).
 const SYSTEM_REPORTER_ID = process.env.SYSTEM_REPORTER_ID || ''
 
+// Upper bound on photos hashed per run (fetch + sharp decode each).
+const MAX_HASHED_PHOTOS = 10
+
 export interface SilentCheckFlags {
   photo_reuse?: Array<{ matched_listing_id: string; distance: number }>
   duplicate_of?: string
@@ -41,8 +44,14 @@ export async function runSilentChecks(
 ): Promise<SilentCheckResult> {
   const result: SilentCheckResult = { photoHashes: [], flags: {} }
   try {
-    // 1. Hash this listing's photos.
-    const hashes = (await Promise.all((listing.photos ?? []).map((u) => hashImageUrl(u)))).filter(
+    // 1. Hash this listing's photos. Bounded: each hash fetches + sharp-decodes
+    // an image, so an attacker-controlled unbounded photos array would make
+    // this a compute/memory amplifier on owner-triggerable endpoints.
+    const hashes = (
+      await Promise.all(
+        (listing.photos ?? []).slice(0, MAX_HASHED_PHOTOS).map((u) => hashImageUrl(u)),
+      )
+    ).filter(
       (h): h is string => !!h,
     )
     result.photoHashes = hashes
@@ -96,6 +105,8 @@ export async function runSilentChecks(
     if (duplicateOf) result.flags.duplicate_of = duplicateOf
 
     // 3. Persist hashes + flags to the service-role-only moderation table.
+    //    Writes the AUTO flag only — manual_flag is an admin-owned column this
+    //    pipeline never touches (the upsert omits it, so it's preserved).
     const isFlagged = !!(result.flags.photo_reuse || result.flags.duplicate_of)
     await supabase.from('listing_moderation').upsert(
       {

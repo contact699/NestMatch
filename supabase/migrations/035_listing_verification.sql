@@ -35,14 +35,20 @@ CREATE TABLE IF NOT EXISTS listing_verifications (
 CREATE INDEX IF NOT EXISTS idx_listing_verifications_listing ON listing_verifications(listing_id);
 
 -- Service-role-only moderation/fraud signals. No anon/authenticated write path.
+-- `is_flagged` is AUTO-derived: runSilentChecks recomputes and overwrites it on
+-- every owner-triggered sync/edit. `manual_flag` is reserved for human/admin
+-- moderation decisions and is NEVER written by the automated pipeline — so an
+-- owner can't clear an admin hide by re-triggering verification.
 CREATE TABLE IF NOT EXISTS listing_moderation (
     listing_id   UUID PRIMARY KEY REFERENCES listings(id) ON DELETE CASCADE,
     is_flagged   BOOLEAN NOT NULL DEFAULT FALSE,
+    manual_flag  BOOLEAN NOT NULL DEFAULT FALSE,
     flags        JSONB NOT NULL DEFAULT '{}'::jsonb,
     photo_hashes TEXT[] NOT NULL DEFAULT '{}',
     updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_listing_moderation_flagged ON listing_moderation(listing_id) WHERE is_flagged;
+ALTER TABLE listing_moderation ADD COLUMN IF NOT EXISTS manual_flag BOOLEAN NOT NULL DEFAULT FALSE;
+CREATE INDEX IF NOT EXISTS idx_listing_moderation_flagged ON listing_moderation(listing_id) WHERE is_flagged OR manual_flag;
 
 -- listings gains only the public-safe aggregate level.
 ALTER TABLE listings
@@ -75,7 +81,7 @@ AS $$
   SELECT EXISTS (
     SELECT 1 FROM listing_moderation m
      WHERE m.listing_id = p_listing_id
-       AND m.is_flagged
+       AND (m.is_flagged OR m.manual_flag)
   );
 $$;
 REVOKE ALL ON FUNCTION private.is_listing_flagged(UUID) FROM PUBLIC;

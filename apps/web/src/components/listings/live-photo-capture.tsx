@@ -78,6 +78,10 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
   const streamRef = useRef<MediaStream | null>(null)
   const capturedBlobRef = useRef<Blob | null>(null)
   const previewUrlRef = useRef<string | null>(null)
+  // Incremented on every open/close: async callbacks (getUserMedia, toBlob)
+  // compare their captured value against this to detect that the session they
+  // belong to was closed while they were in flight.
+  const sessionRef = useRef(0)
 
   const stopStream = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop())
@@ -99,6 +103,8 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
   const startCamera = useCallback(async () => {
     setErrorMsg(null)
     clearPreview()
+    // Release any previous stream before requesting a new one (retake path).
+    stopStream()
 
     // Feature-detect: getUserMedia is unavailable on insecure origins and very
     // old browsers. Fail gracefully instead of throwing.
@@ -107,12 +113,19 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
       return
     }
 
+    const session = sessionRef.current
     setPhase('starting')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' },
         audio: false,
       })
+      if (session !== sessionRef.current) {
+        // Modal was closed while the permission prompt / camera warm-up was in
+        // flight — release the hardware immediately instead of leaking it.
+        stream.getTracks().forEach((track) => track.stop())
+        return
+      }
       streamRef.current = stream
       setPhase('streaming')
     } catch (err) {
@@ -131,7 +144,7 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
         setPhase('error')
       }
     }
-  }, [clearPreview])
+  }, [clearPreview, stopStream])
 
   // Attach the live stream once the <video> element is mounted for the
   // streaming phase (the element does not exist during 'starting').
@@ -156,6 +169,7 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
   }, [stopStream])
 
   const handleOpen = useCallback(() => {
+    sessionRef.current += 1
     setIsOpen(true)
     void startCamera()
   }, [startCamera])
@@ -163,6 +177,8 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
   const handleClose = useCallback(() => {
     // Don't interrupt an in-flight upload.
     if (phase === 'uploading') return
+    // Invalidate in-flight getUserMedia/toBlob callbacks for this session.
+    sessionRef.current += 1
     stopStream()
     clearPreview()
     setIsOpen(false)
@@ -190,8 +206,10 @@ export function LivePhotoCapture({ listingId, alreadyVerified = false }: LivePho
       return
     }
     ctx.drawImage(video, 0, 0, width, height)
+    const session = sessionRef.current
     canvas.toBlob(
       (blob) => {
+        if (session !== sessionRef.current) return // modal closed mid-capture
         if (!blob) {
           setErrorMsg('Could not capture the photo. Please try again.')
           setPhase('error')

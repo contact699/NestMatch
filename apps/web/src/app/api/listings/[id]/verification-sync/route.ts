@@ -12,8 +12,8 @@ import { runSilentChecks } from '@/lib/listings/silent-checks'
  * the verification steps in POST /api/listings.
  *
  * Owner-only (404 if the listing isn't visible to the caller under RLS, 403 if
- * it exists but belongs to someone else). Idempotent and cheap to call
- * repeatedly — it only derives + persists signals from existing data.
+ * it exists but belongs to someone else). Idempotent, but NOT cheap — it
+ * re-hashes the listing's photos (bounded) — hence the tight rate limit.
  */
 export const POST = withApiHandler(
   async (_req, { userId, supabase, requestId, params }) => {
@@ -72,5 +72,5 @@ export const POST = withApiHandler(
       requestId,
     )
   },
-  { rateLimit: 'default' },
+  { rateLimit: 'verificationSync' },
 )

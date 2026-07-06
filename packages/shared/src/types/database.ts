@@ -316,6 +316,7 @@ export interface Database {
         Row: {
           listing_id: string
           is_flagged: boolean
+          manual_flag: boolean
           flags: Json
           photo_hashes: string[]
           updated_at: string | null
@@ -323,6 +324,7 @@ export interface Database {
         Insert: {
           listing_id: string
           is_flagged?: boolean
+          manual_flag?: boolean
           flags?: Json
           photo_hashes?: string[]
           updated_at?: string | null
@@ -330,6 +332,7 @@ export interface Database {
         Update: {
           listing_id?: string
           is_flagged?: boolean
+          manual_flag?: boolean
           flags?: Json
           photo_hashes?: string[]
           updated_at?: string | null

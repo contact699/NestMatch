@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { withApiHandler, apiResponse, parseBody } from '@/lib/api/with-handler'
 import { createServiceClient } from '@/lib/supabase/service'
 import { recomputeListingLevel } from '@/lib/listings/sync-verification'
+import { runSilentChecks } from '@/lib/listings/silent-checks'
 import { isAllowedImageUrl } from '@/lib/listings/image-hash'
 
 const bodySchema = z.object({
@@ -36,7 +37,7 @@ export const POST = withApiHandler(
 
     const { data: listing } = await supabase
       .from('listings')
-      .select('id, user_id')
+      .select('id, user_id, photos, address, city, postal_code')
       .eq('id', listingId)
       .single()
     if (!listing || listing.user_id !== userId) {
@@ -63,7 +64,21 @@ export const POST = withApiHandler(
     )
     await recomputeListingLevel(supabase, listingId, nowIso)
 
+    // Re-run the silent fraud checks INCLUDING the just-submitted live photo:
+    // without this, a photo stolen from another listing earns a 'verified'
+    // badge on this path without ever being dHash-compared for reuse.
+    await runSilentChecks(supabase, {
+      id: listing.id,
+      user_id: listing.user_id,
+      // Live photo first: runSilentChecks caps how many photos it hashes, and
+      // the new capture must never fall outside that cap.
+      photos: [body.photoUrl, ...(listing.photos ?? [])],
+      address: listing.address ?? null,
+      city: listing.city ?? null,
+      postal_code: listing.postal_code ?? null,
+    })
+
     return apiResponse({ ok: true }, 200, requestId)
   },
-  { rateLimit: 'listingCreate' },
+  { rateLimit: 'livePhoto' },
 )

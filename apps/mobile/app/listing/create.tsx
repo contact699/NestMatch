@@ -308,7 +308,10 @@ export default function CreateListingScreen() {
         ? `Your listing has been created, but ${result.photosFailed} photo${result.photosFailed > 1 ? 's' : ''} failed to upload. You can add them later from the web app.`
         : 'Your listing has been created!'
 
-      // Offer the optional "get verified" live-photo step.
+      // Offer the optional "get verified" live-photo step. Not cancelable: an
+      // Android back-button dismissal would fire neither button, stranding the
+      // user on the filled-in form after the listing was already inserted (and
+      // a re-submit would create a duplicate).
       Alert.alert(
         'Success',
         `${base}\n\nAdd a live photo to get your listing verified?`,
@@ -316,6 +319,7 @@ export default function CreateListingScreen() {
           { text: 'Skip', style: 'cancel', onPress: () => router.replace('/(tabs)') },
           { text: 'Add live photo', onPress: () => addLivePhoto(result.listingId) },
         ],
+        { cancelable: false },
       )
     },
     onError: (err) => {

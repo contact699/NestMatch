@@ -52,6 +52,10 @@ export const RATE_LIMITS = {
   // Listings
   listingCreate: { maxRequests: 5, windowSeconds: 3600 },  // 5 per hour
   listingUpdate: { maxRequests: 30, windowSeconds: 3600 }, // 30 per hour
+  // Verification pipeline endpoints re-hash listing photos (sharp) — keep the
+  // ceiling low so they can't be used as compute amplifiers.
+  verificationSync: { maxRequests: 6, windowSeconds: 3600 }, // 6 per hour
+  livePhoto: { maxRequests: 10, windowSeconds: 3600 },       // 10 per hour
 
   // Search
   search: { maxRequests: 60, windowSeconds: 60 },          // 60 per minute
