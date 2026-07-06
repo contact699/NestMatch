@@ -1,5 +1,4 @@
-// Run with `npm run test:listing-verification` (uses tsx).
-import { strict as assert } from 'node:assert'
+import { describe, it, expect } from 'vitest'
 import { deriveListingLevel, type LVRow } from '../verification-level'
 
 const done = (type: LVRow['type']): LVRow => ({ type, status: 'completed', expires_at: null })
@@ -18,15 +17,10 @@ const CASES: Case[] = [
   { name: 'expired live_photo ignored', rows: [done('id_owner'), expired('live_photo')], expected: 'verified' },
 ]
 
-let passed = 0, failed = 0
-for (const c of CASES) {
-  try {
-    assert.equal(deriveListingLevel(c.rows, NOW), c.expected)
-    passed++
-  } catch (e) {
-    failed++
-    console.error(`FAIL: ${c.name} — ${(e as Error).message}`)
+describe('deriveListingLevel', () => {
+  for (const c of CASES) {
+    it(c.name, () => {
+      expect(deriveListingLevel(c.rows, NOW)).toBe(c.expected)
+    })
   }
-}
-console.log(`verification-level: ${passed} passed, ${failed} failed`)
-process.exit(failed ? 1 : 0)
+})

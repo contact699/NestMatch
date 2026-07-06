@@ -17,7 +17,7 @@
     "scan:mojibake": "npx tsx scripts/scan-mojibake.ts",
     "check:mojibake": "npx tsx scripts/scan-mojibake.ts",
     "test:mojibake-patterns": "npx tsx scripts/test-mojibake-patterns.ts",
-    "test:listing-verification": "tsx src/lib/listings/__tests__/verification-level.test.ts && tsx src/lib/listings/__tests__/image-hash.test.ts && tsx src/lib/listings/__tests__/normalize-address.test.ts"
+    "test:listing-verification": "vitest run src/lib/listings"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
