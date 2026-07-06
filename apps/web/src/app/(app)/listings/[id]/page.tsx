@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
 import { ListingVerificationBadges } from '@/components/listing-verification-badges'
+import { LivePhotoCapture } from '@/components/listings/live-photo-capture'
 import { AnimatedPage } from '@/components/ui/animated-page'
 import {
   ArrowLeft,
@@ -155,6 +156,11 @@ export default async function ListingPage({ params }: ListingPageProps) {
 
   // Check if this is the owner's listing
   const isOwner = user?.id === listing.user_id
+
+  // Has the owner already earned the Live Photo signal for this listing?
+  const livePhotoVerified = (listingVerifications ?? []).some(
+    (v) => v.type === 'live_photo' && v.status === 'completed'
+  )
 
   // Check if listing is saved by current user
   let isSaved = false
@@ -637,6 +643,9 @@ export default async function ListingPage({ params }: ListingPageProps) {
                         Edit Listing
                       </Button>
                     </Link>
+                    {!livePhotoVerified && (
+                      <LivePhotoCapture listingId={id} alreadyVerified={livePhotoVerified} />
+                    )}
                   </div>
                 </CardContent>
               </Card>
