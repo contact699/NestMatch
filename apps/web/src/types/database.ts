@@ -214,7 +214,7 @@ export interface Database {
           smoking_allowed: boolean
           parking_included: boolean
           is_active: boolean
-          is_verified: boolean
+          listing_verification_level: 'unverified' | 'verified' | 'trusted'
           views_count: number
           created_at: string
           updated_at: string
@@ -252,7 +252,7 @@ export interface Database {
           smoking_allowed?: boolean
           parking_included?: boolean
           is_active?: boolean
-          is_verified?: boolean
+          listing_verification_level?: 'unverified' | 'verified' | 'trusted'
           views_count?: number
           created_at?: string
           updated_at?: string
@@ -290,11 +290,82 @@ export interface Database {
           smoking_allowed?: boolean
           parking_included?: boolean
           is_active?: boolean
-          is_verified?: boolean
+          listing_verification_level?: 'unverified' | 'verified' | 'trusted'
           views_count?: number
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
+      }
+      listing_verifications: {
+        Row: {
+          id: string
+          listing_id: string
+          type: 'id_owner' | 'live_photo' | 'mail' | 'email' | 'phone'
+          status: 'pending' | 'completed' | 'failed'
+          result: Json | null
+          completed_at: string | null
+          expires_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          type: 'id_owner' | 'live_photo' | 'mail' | 'email' | 'phone'
+          status?: 'pending' | 'completed' | 'failed'
+          result?: Json | null
+          completed_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          type?: 'id_owner' | 'live_photo' | 'mail' | 'email' | 'phone'
+          status?: 'pending' | 'completed' | 'failed'
+          result?: Json | null
+          completed_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      listing_moderation: {
+        Row: {
+          listing_id: string
+          is_flagged: boolean
+          manual_flag: boolean
+          flags: Json
+          photo_hashes: string[]
+          updated_at: string | null
+        }
+        Insert: {
+          listing_id: string
+          is_flagged?: boolean
+          manual_flag?: boolean
+          flags?: Json
+          photo_hashes?: string[]
+          updated_at?: string | null
+        }
+        Update: {
+          listing_id?: string
+          is_flagged?: boolean
+          manual_flag?: boolean
+          flags?: Json
+          photo_hashes?: string[]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      listing_badges: {
+        Row: {
+          listing_id: string | null
+          type: 'id_owner' | 'live_photo' | 'mail' | 'email' | 'phone' | null
+          status: 'pending' | 'completed' | 'failed' | null
+          completed_at: string | null
+        }
+        Insert: { listing_id?: string | null }
+        Update: { listing_id?: string | null }
         Relationships: []
       }
       seeking_profiles: {

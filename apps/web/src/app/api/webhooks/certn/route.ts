@@ -5,6 +5,7 @@ import { getCaseStatus, mapCertnStatus } from '@/lib/services/certn'
 import { sendEmail } from '@/lib/email'
 import { verificationCompleteEmail } from '@/lib/email-templates'
 import { logger } from '@/lib/logger'
+import { syncListingIdOwner } from '@/lib/listings/sync-verification'
 
 /** Map internal verification type codes to human-readable labels */
 const VERIFICATION_TYPE_LABELS: Record<string, string> = {
@@ -296,6 +297,16 @@ async function updateVerificationLevel(
     verificationLevel,
     completedTypes: Array.from(completedTypes),
   })
+
+  // Backfill the id_owner badge on this user's listings now that they're verified.
+  const nowIso = new Date().toISOString()
+  const { data: userListings } = await serviceClient
+    .from('listings')
+    .select('id')
+    .eq('user_id', userId)
+  for (const l of userListings ?? []) {
+    await syncListingIdOwner(serviceClient, l.id, verificationLevel, nowIso)
+  }
 }
 
 /**

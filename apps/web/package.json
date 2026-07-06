@@ -16,7 +16,8 @@
     "check:sitemap": "npx tsx scripts/verify-sitemap.ts",
     "scan:mojibake": "npx tsx scripts/scan-mojibake.ts",
     "check:mojibake": "npx tsx scripts/scan-mojibake.ts",
-    "test:mojibake-patterns": "npx tsx scripts/test-mojibake-patterns.ts"
+    "test:mojibake-patterns": "npx tsx scripts/test-mojibake-patterns.ts",
+    "test:listing-verification": "vitest run src/lib/listings"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
@@ -36,6 +37,7 @@
     "react-dom": "19.1.0",
     "react-hook-form": "^7.71.1",
     "resend": "^6.9.1",
+    "sharp": "^0.34.5",
     "sonner": "^2.0.7",
     "stripe": "^20.2.0",
     "tailwind-merge": "^3.4.0",

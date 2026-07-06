@@ -33,6 +33,7 @@ import {
   HandHelping,
 } from 'lucide-react-native'
 import { colors, radii, typography } from '@/theme/tokens'
+import { Badge } from '../../src/components/ui'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const PHOTO_HEIGHT = 280
@@ -273,6 +274,16 @@ export default function ListingDetailScreen() {
                   {TYPE_LABELS[listing.type] ?? listing.type}
                 </Text>
               </View>
+              {listing.listing_verification_level === 'trusted' && (
+                <Badge variant="success" style={styles.verificationBadge}>
+                  Trusted
+                </Badge>
+              )}
+              {listing.listing_verification_level === 'verified' && (
+                <Badge variant="info" style={styles.verificationBadge}>
+                  Verified
+                </Badge>
+              )}
             </View>
 
             <Text style={styles.title}>{listing.title}</Text>
@@ -589,7 +600,12 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
     marginBottom: 8,
+  },
+  verificationBadge: {
+    alignSelf: 'center',
   },
   typeBadge: {
     backgroundColor: colors.primaryFixed,

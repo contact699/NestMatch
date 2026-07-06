@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createBearerClient } from '@/lib/supabase/server'
 import { checkRateLimit, RateLimitEndpoint, rateLimitResponse, detectAbuse } from '@/lib/rate-limit'
 import { auditLog, AuditAction } from '@/lib/audit'
 import { registerWebhookEvent, completeWebhookEvent, failWebhookEvent, verifyWebhookSignature, WebhookProvider } from '@/lib/webhook'
@@ -183,12 +183,35 @@ export function withApiHandler(
       if (!config.public && !config.webhook) {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-        if (authError || !user) {
+        if (user && !authError) {
+          // Cookie-authenticated request (web). `supabase` stays the cookie client.
+          userId = user.id
+        } else {
+          // Fall back to Bearer-token auth for clients that can't send cookies
+          // (the native app sends `Authorization: Bearer <access_token>`). The
+          // token-bound client is RLS-scoped to the token's user — it uses the
+          // anon key with the JWT forwarded on every request, never service role.
+          const authHeader = req.headers.get('authorization')
+          const token = authHeader?.startsWith('Bearer ')
+            ? authHeader.slice('Bearer '.length).trim()
+            : undefined
+
+          if (token) {
+            const bearerClient = createBearerClient(token)
+            const { data: { user: bearerUser }, error: bearerError } =
+              await bearerClient.auth.getUser(token)
+            if (bearerUser && !bearerError) {
+              userId = bearerUser.id
+              // Handler + downstream RLS run as this user.
+              supabase = bearerClient
+            }
+          }
+        }
+
+        if (!userId) {
           logApiResponse({ requestId, method, path }, 401, Date.now() - startTime)
           return errorResponse('Unauthorized', 401, requestId)
         }
-
-        userId = user.id
       }
 
       // 3. Rate limiting

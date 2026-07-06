@@ -20,6 +20,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { ChevronLeft, Camera } from 'lucide-react-native'
 import { colors, radii, typography } from '@/theme/tokens'
 import * as ImagePicker from 'expo-image-picker'
+import { callWebApi } from '../../src/lib/api'
+import { captureLivePhoto } from '../../src/lib/listings/live-photo'
 
 type ListingType = 'room' | 'shared_room' | 'entire_place'
 
@@ -138,6 +140,67 @@ export default function CreateListingScreen() {
     return { urls, failed }
   }
 
+  // Upload a single image (e.g. a live-photo capture) into the listing's folder
+  // in the same bucket create listings use, and return its public URL.
+  const uploadSinglePhoto = async (listingId: string, uri: string): Promise<string | null> => {
+    const ext = uri.split('.').pop() || 'jpg'
+    const fileName = `${listingId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+    const response = await fetch(uri)
+    const blob = await response.blob()
+    const arrayBuffer = await new Response(blob).arrayBuffer()
+    const { error } = await supabase.storage
+      .from('listing-photos')
+      .upload(fileName, arrayBuffer, { contentType: `image/${ext}` })
+    if (error) return null
+    const { data: urlData } = supabase.storage.from('listing-photos').getPublicUrl(fileName)
+    return urlData.publicUrl
+  }
+
+  // Fire-and-forget: ask the web API to run the server-side verification pipeline
+  // for this listing (id_owner sync + silent checks). Never blocks the user.
+  const triggerVerificationSync = (listingId: string) => {
+    callWebApi(`/listings/${listingId}/verification-sync`, { method: 'POST' }).catch((err) => {
+      console.warn('verification-sync failed', err)
+    })
+  }
+
+  // Optional "get verified" step: capture a live photo (camera only), upload it,
+  // and record the live_photo signal via the web API. Always navigates away when
+  // done, whether the user completes, skips, or it fails.
+  const addLivePhoto = async (listingId: string) => {
+    try {
+      const capture = await captureLivePhoto(new Date().toISOString())
+      if (!capture) {
+        // Permission denied or cancelled — nothing to do.
+        router.replace('/(tabs)')
+        return
+      }
+      const photoUrl = await uploadSinglePhoto(listingId, capture.uri)
+      if (!photoUrl) {
+        Alert.alert('Upload failed', 'We could not upload your live photo. You can add it later.', [
+          { text: 'OK', onPress: () => router.replace('/(tabs)') },
+        ])
+        return
+      }
+      await callWebApi(`/listings/${listingId}/live-photo`, {
+        method: 'POST',
+        body: {
+          photoUrl,
+          capturedAt: capture.capturedAt,
+          source: 'camera',
+        },
+      })
+      Alert.alert('Verified!', 'Your live photo was added — your listing is now verified.', [
+        { text: 'Done', onPress: () => router.replace('/(tabs)') },
+      ])
+    } catch (err) {
+      console.warn('live-photo verification failed', err)
+      Alert.alert('Could not verify', 'Something went wrong. You can add a live photo later.', [
+        { text: 'OK', onPress: () => router.replace('/(tabs)') },
+      ])
+    }
+  }
+
   const toggleAmenity = (amenity: string) => {
     setForm((prev) => ({
       ...prev,
@@ -216,30 +279,48 @@ export default function CreateListingScreen() {
 
       if (error) throw error
 
+      const listingId = (data as Record<string, unknown>).id as string
+
       // Upload photos if any
       let photosFailed = 0
       if (photos.length > 0) {
-        const { urls: photoUrls, failed } = await uploadPhotos((data as Record<string, unknown>).id as string)
+        const { urls: photoUrls, failed } = await uploadPhotos(listingId)
         photosFailed = failed
         if (photoUrls.length > 0) {
           await supabase
             .from('listings')
             .update({ photos: photoUrls } as Record<string, unknown>)
-            .eq('id', (data as Record<string, unknown>).id as string)
+            .eq('id', listingId)
         }
       }
 
-      return { photosFailed }
+      return { listingId, photosFailed }
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['listings'] })
       queryClient.invalidateQueries({ queryKey: ['listings-count'] })
-      const message = result.photosFailed > 0
+
+      // Kick off server-side verification (id_owner + silent checks) now that the
+      // listing and its photos exist. Fire-and-forget — never blocks the user.
+      triggerVerificationSync(result.listingId)
+
+      const base = result.photosFailed > 0
         ? `Your listing has been created, but ${result.photosFailed} photo${result.photosFailed > 1 ? 's' : ''} failed to upload. You can add them later from the web app.`
         : 'Your listing has been created!'
-      Alert.alert('Success', message, [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') },
-      ])
+
+      // Offer the optional "get verified" live-photo step. Not cancelable: an
+      // Android back-button dismissal would fire neither button, stranding the
+      // user on the filled-in form after the listing was already inserted (and
+      // a re-submit would create a duplicate).
+      Alert.alert(
+        'Success',
+        `${base}\n\nAdd a live photo to get your listing verified?`,
+        [
+          { text: 'Skip', style: 'cancel', onPress: () => router.replace('/(tabs)') },
+          { text: 'Add live photo', onPress: () => addLivePhoto(result.listingId) },
+        ],
+        { cancelable: false },
+      )
     },
     onError: (err) => {
       Alert.alert('Error', 'Failed to create listing. Please try again.')
