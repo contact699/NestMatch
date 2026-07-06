@@ -12,11 +12,16 @@
 --     table is NOT publicly readable; public badges come from the `listing_badges` view
 --     which projects only badge-safe columns.
 
-CREATE TYPE listing_verification_type AS ENUM ('id_owner', 'live_photo', 'mail', 'email', 'phone');
-CREATE TYPE listing_verification_level AS ENUM ('unverified', 'verified', 'trusted');
+-- Idempotent: safe to re-run after a partial failure.
+DO $$ BEGIN
+  CREATE TYPE listing_verification_type AS ENUM ('id_owner', 'live_photo', 'mail', 'email', 'phone');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN
+  CREATE TYPE listing_verification_level AS ENUM ('unverified', 'verified', 'trusted');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- Per-signal verification rows (may contain private evidence in `result`).
-CREATE TABLE listing_verifications (
+CREATE TABLE IF NOT EXISTS listing_verifications (
     id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     listing_id   UUID NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
     type         listing_verification_type NOT NULL,
@@ -27,27 +32,27 @@ CREATE TABLE listing_verifications (
     created_at   TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE (listing_id, type)
 );
-CREATE INDEX idx_listing_verifications_listing ON listing_verifications(listing_id);
+CREATE INDEX IF NOT EXISTS idx_listing_verifications_listing ON listing_verifications(listing_id);
 
 -- Service-role-only moderation/fraud signals. No anon/authenticated write path.
-CREATE TABLE listing_moderation (
+CREATE TABLE IF NOT EXISTS listing_moderation (
     listing_id   UUID PRIMARY KEY REFERENCES listings(id) ON DELETE CASCADE,
     is_flagged   BOOLEAN NOT NULL DEFAULT FALSE,
     flags        JSONB NOT NULL DEFAULT '{}'::jsonb,
     photo_hashes TEXT[] NOT NULL DEFAULT '{}',
     updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
-CREATE INDEX idx_listing_moderation_flagged ON listing_moderation(listing_id) WHERE is_flagged;
+CREATE INDEX IF NOT EXISTS idx_listing_moderation_flagged ON listing_moderation(listing_id) WHERE is_flagged;
 
 -- listings gains only the public-safe aggregate level.
 ALTER TABLE listings
-    ADD COLUMN listing_verification_level listing_verification_level NOT NULL DEFAULT 'unverified';
+    ADD COLUMN IF NOT EXISTS listing_verification_level listing_verification_level NOT NULL DEFAULT 'unverified';
 
 -- is_verified on listings was an unused placeholder; the level enum replaces it.
 -- (The separate `services` table keeps its own is_verified column.)
 ALTER TABLE listings DROP COLUMN IF EXISTS is_verified;
 
-CREATE INDEX idx_listings_verification_level ON listings(listing_verification_level);
+CREATE INDEX IF NOT EXISTS idx_listings_verification_level ON listings(listing_verification_level);
 
 -- Keep policy helper functions out of the exposed `public` schema. Supabase
 -- PostgREST exposes public RPC functions, so this function belongs in a private
@@ -107,7 +112,7 @@ CREATE POLICY listing_moderation_select_owner ON listing_moderation
 -- only for listings visible to the caller. A view is SECURITY DEFINER by default,
 -- so it can read listing_verifications past its RLS while exposing nothing
 -- beyond these four columns.
-CREATE VIEW listing_badges AS
+CREATE OR REPLACE VIEW listing_badges AS
     SELECT lv.listing_id, lv.type, lv.status, lv.completed_at
       FROM listing_verifications lv
       JOIN listings l ON l.id = lv.listing_id
