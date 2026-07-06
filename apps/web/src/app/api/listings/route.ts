@@ -6,6 +6,8 @@ import { ValidationError } from '@/lib/error-reporter'
 import { createServiceClient } from '@/lib/supabase/service'
 import { geocodeListingAddress } from '@/lib/geocode'
 import { sanitizeSearchQuery } from '@/lib/search-sanitize'
+import { syncListingIdOwner } from '@/lib/listings/sync-verification'
+import { runSilentChecks } from '@/lib/listings/silent-checks'
 
 // Direct client for public queries (bypasses RLS issues with server client)
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -86,13 +88,18 @@ export const GET = withPublicHandler(
           verification_level
         )
       `)
+      // Rank verified listings higher (enums sort by declaration order:
+      // unverified < verified < trusted, so descending = trusted first), newest
+      // first within a tier. Ordering happens in SQL, before pagination.
+      .order('listing_verification_level', { ascending: false })
       .order('created_at', { ascending: false })
 
-    // If fetching user's own listings, show all (active + inactive)
+    // `userId` is an unauthenticated query param, so it can only ever be a public
+    // filter — never an ownership grant. Always constrain to active listings; RLS
+    // additionally hides auto-flagged rows from non-owners.
+    query = query.eq('is_active', true)
     if (userId) {
       query = query.eq('user_id', userId)
-    } else {
-      query = query.eq('is_active', true)
     }
 
     if (city) {
@@ -151,6 +158,9 @@ export const GET = withPublicHandler(
 
     if (error) throw error
 
+    // Visibility (flagged-row hiding) + ranking are enforced in the DB (RLS +
+    // ORDER BY), and fraud fields no longer live on `listings`, so the rows are
+    // safe to return as-is.
     return apiResponse({ listings: listings || [] }, 200, requestId)
   },
   { rateLimit: 'search' }
@@ -241,7 +251,29 @@ export const POST = withApiHandler(
       )
     }
 
-    return apiResponse({ listing }, 201, requestId)
+    // Listing verification (best-effort; never blocks listing creation).
+    const nowIso = new Date().toISOString()
+    const { data: ownerProfile } = await writeClient
+      .from('profiles')
+      .select('verification_level')
+      .eq('user_id', userId!)
+      .single()
+    await syncListingIdOwner(writeClient, listing.id, ownerProfile?.verification_level ?? null, nowIso)
+    await runSilentChecks(writeClient, {
+      id: listing.id,
+      user_id: userId!,
+      photos: listingData.photos,
+      address: listingData.address ?? null,
+      city: listingData.city,
+      postal_code: listingData.postal_code ?? null,
+    })
+    // Re-read so the response reflects the derived level + flags.
+    const { data: finalListing } = await writeClient
+      .from('listings')
+      .select('*')
+      .eq('id', listing.id)
+      .single()
+    return apiResponse({ listing: finalListing ?? listing }, 201, requestId)
   },
   {
     rateLimit: 'listingCreate',

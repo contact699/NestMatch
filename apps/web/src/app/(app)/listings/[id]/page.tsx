@@ -8,6 +8,7 @@ import { formatPrice, formatDate, AMENITIES, HELP_TASKS } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { VerificationBadge, Badge } from '@/components/ui/badge'
+import { ListingVerificationBadges } from '@/components/listing-verification-badges'
 import { AnimatedPage } from '@/components/ui/animated-page'
 import {
   ArrowLeft,
@@ -143,6 +144,14 @@ export default async function ListingPage({ params }: ListingPageProps) {
     .eq('user_id', listing.user_id)
     .single() as { data: any }
 
+
+  // Fetch this listing's badges from the public-safe view (projects only
+  // badge columns; the underlying listing_verifications table is not publicly
+  // readable because its `result` holds capture evidence).
+  const { data: listingVerifications } = (await supabase
+    .from('listing_badges')
+    .select('type, status')
+    .eq('listing_id', id)) as { data: Array<{ type: string; status: string }> | null }
 
   // Check if this is the owner's listing
   const isOwner = user?.id === listing.user_id
@@ -599,6 +608,20 @@ export default async function ListingPage({ params }: ListingPageProps) {
                     </div>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Listing verification badges */}
+            <Card variant="bordered" data-animate className="delay-250">
+              <CardContent className="py-4">
+                <h3 className="font-display font-semibold text-on-surface mb-3">Listing verification</h3>
+                <ListingVerificationBadges
+                  level={listing.listing_verification_level}
+                  verifications={listingVerifications ?? []}
+                />
+                <p className="mt-3 text-xs text-on-surface-variant">
+                  Verified listings are posted by ID-checked hosts and confirmed with an in-app live photo.
+                </p>
               </CardContent>
             </Card>
 
