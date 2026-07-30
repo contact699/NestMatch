@@ -7,7 +7,7 @@ const WHAT_YOU_GET = [
   {
     icon: ShieldCheck,
     title: 'Optional ID verification',
-    description: 'Trust badge on your profile after a Persona check.',
+    description: 'Trust badge on your profile after a Certn ID check.',
   },
   {
     icon: Home,
@@ -88,7 +88,7 @@ export function CTASection() {
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  href="/search"
+                  href="/c/toronto"
                   className="px-6 py-4 bg-white/10 text-on-primary border border-white/20 font-semibold rounded-xl hover:bg-white/20 transition-colors backdrop-blur text-center"
                 >
                   Browse listings

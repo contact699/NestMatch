@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import {
   ArrowRight,
@@ -11,11 +12,106 @@ import {
   MapPin,
   Check,
 } from 'lucide-react'
+import { FLAGSHIP_CITIES } from '@/lib/cities'
 
-const POPULAR = ['Liberty Village', 'Mile End', 'Kitsilano', 'Plateau']
+// Neighborhood → parent flagship-city slug. The chip row reads from this too,
+// so a manually typed neighborhood routes to the same destination as
+// clicking its chip. Add entries here when expanding the neighborhood list.
+const NEIGHBORHOOD_TO_CITY: Record<string, string> = {
+  // Toronto
+  'liberty village': 'toronto',
+  'leslieville': 'toronto',
+  'the annex': 'toronto',
+  'annex': 'toronto',
+  'kensington market': 'toronto',
+  'kensington': 'toronto',
+  'parkdale': 'toronto',
+  'downtown toronto': 'toronto',
+  // Montreal
+  'mile end': 'montreal',
+  'mile-end': 'montreal',
+  'plateau': 'montreal',
+  'le plateau': 'montreal',
+  'griffintown': 'montreal',
+  'verdun': 'montreal',
+  // Vancouver
+  'kitsilano': 'vancouver',
+  'kits': 'vancouver',
+  'yaletown': 'vancouver',
+  'gastown': 'vancouver',
+  'west end': 'vancouver',
+  'mount pleasant': 'vancouver',
+  // Ottawa
+  'centretown': 'ottawa',
+  'the glebe': 'ottawa',
+  'glebe': 'ottawa',
+  'byward market': 'ottawa',
+  // Calgary
+  'beltline': 'calgary',
+  'bridgeland': 'calgary',
+  'sunnyside': 'calgary',
+  'mission': 'calgary',
+  'inglewood': 'calgary',
+}
+
+const POPULAR: Array<{ label: string; citySlug: string }> = [
+  { label: 'Liberty Village', citySlug: NEIGHBORHOOD_TO_CITY['liberty village'] },
+  { label: 'Mile End', citySlug: NEIGHBORHOOD_TO_CITY['mile end'] },
+  { label: 'Kitsilano', citySlug: NEIGHBORHOOD_TO_CITY['kitsilano'] },
+  { label: 'Plateau', citySlug: NEIGHBORHOOD_TO_CITY['plateau'] },
+]
+
+/**
+ * Map a guest's search query to the best public destination.
+ * Checks (in order): exact flagship city match, neighborhood lookup,
+ * substring match against any city or neighborhood. Falls back to
+ * Toronto so the click never dead-ends in a 404 or login wall.
+ */
+function resolveSearchDestination(query: string): string {
+  const normalized = query.trim().toLowerCase()
+  if (!normalized) return '/c/toronto'
+
+  // 1. Exact flagship city match
+  const cityHit = FLAGSHIP_CITIES.find(
+    (c) =>
+      c.slug === normalized ||
+      c.displayName.toLowerCase() === normalized ||
+      c.dbName.toLowerCase() === normalized,
+  )
+  if (cityHit) return `/c/${cityHit.slug}`
+
+  // 2. Exact neighborhood lookup
+  if (NEIGHBORHOOD_TO_CITY[normalized]) {
+    return `/c/${NEIGHBORHOOD_TO_CITY[normalized]}`
+  }
+
+  // 3. Substring fallback — handles "rooms in toronto", "vancouver area",
+  //    "liberty village ON", etc.
+  for (const c of FLAGSHIP_CITIES) {
+    if (
+      normalized.includes(c.slug) ||
+      normalized.includes(c.dbName.toLowerCase()) ||
+      normalized.includes(c.displayName.toLowerCase())
+    ) {
+      return `/c/${c.slug}`
+    }
+  }
+  for (const [name, slug] of Object.entries(NEIGHBORHOOD_TO_CITY)) {
+    if (normalized.includes(name)) return `/c/${slug}`
+  }
+
+  // 4. Unknown query — Toronto as the safe public default.
+  return '/c/toronto'
+}
 
 export function HeroSection() {
+  const router = useRouter()
   const [query, setQuery] = useState('')
+
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    router.push(resolveSearchDestination(query))
+  }
 
   return (
     <section className="relative pt-4 lg:pt-12 pb-20 lg:pb-28 overflow-hidden">
@@ -83,7 +179,7 @@ export function HeroSection() {
           </p>
 
           <form
-            action="/search"
+            onSubmit={handleSearch}
             className="mt-9 max-w-xl bg-surface-container-lowest rounded-2xl shadow-[0_20px_40px_-12px_rgba(0,32,69,0.18)] p-2 flex items-center gap-2 ring-1 ring-outline-variant/40"
           >
             <label className="flex-1 flex items-center gap-3 px-4 py-2.5 min-w-0">
@@ -100,11 +196,11 @@ export function HeroSection() {
             </label>
             <div className="hidden sm:block w-px h-8 bg-outline-variant/50" />
             <Link
-              href="/search"
+              href="/c/toronto"
               className="hidden md:flex items-center gap-2 px-3 py-2 text-sm font-semibold text-on-surface-variant hover:text-primary"
             >
               <SlidersHorizontal className="w-[18px] h-[18px]" />
-              Filters
+              Browse
             </Link>
             <button
               type="submit"
@@ -119,11 +215,11 @@ export function HeroSection() {
             <span className="text-on-surface-variant">Popular:</span>
             {POPULAR.map((p) => (
               <Link
-                key={p}
-                href={`/search?q=${encodeURIComponent(p)}`}
+                key={p.label}
+                href={`/c/${p.citySlug}`}
                 className="px-3 py-1 rounded-full bg-surface-container-low text-on-surface-variant hover:bg-surface-container transition-colors"
               >
-                {p}
+                {p.label}
               </Link>
             ))}
           </div>
