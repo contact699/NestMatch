@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Bookmark, Check, Loader2, UsersRound } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
@@ -19,6 +20,35 @@ interface GroupRow {
   alreadySaved: boolean
   /** id of the existing group_saved_listings row, when alreadySaved */
   savedRowId: string | null
+}
+
+interface ActiveGroupRpcRow {
+  group_id: string | null
+  group_name: string | null
+}
+
+interface GroupSavedListingRow {
+  id: string
+  group_id: string
+}
+
+interface GroupSavedListingsClient {
+  rpc(fn: 'get_my_active_groups'): Promise<{ data: ActiveGroupRpcRow[] | null }>
+  from(table: 'group_saved_listings'): {
+    select(columns: 'id, group_id'): {
+      eq(column: 'listing_id', value: string): {
+        in(column: 'group_id', values: string[]): Promise<{ data: GroupSavedListingRow[] | null }>
+      }
+    }
+    delete(): {
+      eq(column: 'id', value: string): Promise<unknown>
+    }
+    insert(values: { group_id: string; listing_id: string; saved_by: string }): {
+      select(columns: 'id'): {
+        single(): Promise<{ data: { id: string } | null }>
+      }
+    }
+  }
 }
 
 /**
@@ -101,7 +131,8 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
       // (migration 025). co_renter_members has known RLS recursion issues —
       // querying it directly from the client silently returns zero rows, the
       // same reason /api/groups/* routes hop through a service client.
-      const { data: rpcRows } = await (supabase.rpc as any)('get_my_active_groups')
+      const groupClient = supabase as unknown as GroupSavedListingsClient
+      const { data: rpcRows } = await groupClient.rpc('get_my_active_groups')
       const rows = ((rpcRows as Array<{ group_id: string; group_name: string }> | null) ?? [])
         .map((m) => ({
           group_id: m.group_id,
@@ -119,7 +150,7 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
 
       // Which of those groups already have this listing shortlisted?
       const groupIds = rows.map((r) => r.group_id)
-      const { data: savedRows } = await (supabase as any)
+      const { data: savedRows } = await groupClient
         .from('group_saved_listings')
         .select('id, group_id')
         .eq('listing_id', listingId)
@@ -159,7 +190,8 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
     }
 
     if (group.alreadySaved && group.savedRowId) {
-      await (supabase as any)
+      const groupClient = supabase as unknown as GroupSavedListingsClient
+      await groupClient
         .from('group_saved_listings')
         .delete()
         .eq('id', group.savedRowId)
@@ -171,7 +203,8 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
         )
       )
     } else {
-      const { data: inserted } = await (supabase as any)
+      const groupClient = supabase as unknown as GroupSavedListingsClient
+      const { data: inserted } = await groupClient
         .from('group_saved_listings')
         .insert({
           group_id: group.group_id,
@@ -193,7 +226,21 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
     router.refresh()
   }
 
-  if (!isLoggedIn) return null
+  if (!isLoggedIn) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => router.push(`/login?redirect=/listings/${listingId}`)}
+      >
+        <span className="inline-flex items-center justify-center h-7 w-7 rounded-lg bg-secondary-container text-secondary mr-2.5">
+          <UsersRound className="h-4 w-4" />
+        </span>
+        Save to a group
+      </Button>
+    )
+  }
 
   const menu = open && coords ? (
     <div
@@ -217,12 +264,12 @@ export function SaveToGroupButton({ listingId, isLoggedIn }: SaveToGroupButtonPr
           <p className="text-sm text-on-surface-variant mb-2">
             You&apos;re not in any co-renter groups yet.
           </p>
-          <a
+          <Link
             href="/groups"
             className="text-sm font-semibold text-secondary hover:underline"
           >
             Create or join a group →
-          </a>
+          </Link>
         </div>
       ) : (
         <>

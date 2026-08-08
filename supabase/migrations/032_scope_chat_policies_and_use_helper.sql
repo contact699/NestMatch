@@ -46,6 +46,9 @@
 DROP POLICY IF EXISTS "Users can view own conversations"            ON public.conversations;
 DROP POLICY IF EXISTS "Users can create conversations"              ON public.conversations;
 DROP POLICY IF EXISTS "Participants can update their conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can view own 1:1 conversations"            ON public.conversations;
+DROP POLICY IF EXISTS "Users can create 1:1 conversations"              ON public.conversations;
+DROP POLICY IF EXISTS "Participants can update their 1:1 conversations" ON public.conversations;
 
 CREATE POLICY "Users can view own 1:1 conversations" ON public.conversations
   FOR SELECT
@@ -74,6 +77,8 @@ CREATE POLICY "Participants can update their 1:1 conversations" ON public.conver
 
 DROP POLICY IF EXISTS "Users can view messages in their conversations" ON public.messages;
 DROP POLICY IF EXISTS "Users can send messages to their conversations" ON public.messages;
+DROP POLICY IF EXISTS "Users can view 1:1 messages" ON public.messages;
+DROP POLICY IF EXISTS "Users can send 1:1 messages" ON public.messages;
 
 CREATE POLICY "Users can view 1:1 messages" ON public.messages
   FOR SELECT
