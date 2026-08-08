@@ -77,6 +77,7 @@ export default function ProfileEditPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingPhoto, setIsUploadingPhoto] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -208,6 +209,7 @@ export default function ProfileEditPage() {
   const onSubmit = async (data: ProfileFormData) => {
     setIsSaving(true)
     setError(null)
+    setSuccessMessage(null)
 
     const supabase = createClient()
     const {
@@ -248,7 +250,10 @@ export default function ProfileEditPage() {
     }
 
     toast.success('Profile updated successfully')
-    router.push('/profile')
+    setSuccessMessage('Your profile has been saved.')
+    setIsSaving(false)
+    // Keep the user on the edit page so the confirmation is visible.
+    // Refresh server data without navigating away.
     router.refresh()
   }
 
@@ -278,6 +283,22 @@ export default function ProfileEditPage() {
         {error && (
           <div className="p-4 bg-error-container rounded-xl text-error text-sm">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-4 bg-secondary-container rounded-xl text-secondary text-sm flex items-center justify-between gap-4"
+          >
+            <span>{successMessage}</span>
+            <Link
+              href="/profile"
+              className="font-semibold text-secondary hover:underline whitespace-nowrap"
+            >
+              View profile →
+            </Link>
           </div>
         )}
 
