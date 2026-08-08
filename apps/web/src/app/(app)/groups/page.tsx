@@ -429,6 +429,16 @@ function CreateGroupModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // YYYY-MM-DD in the user's local timezone, used as the min for the
+  // move-in date picker and a client-side guard before submit.
+  const todayISO = (() => {
+    const d = new Date()
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  })()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
@@ -450,6 +460,12 @@ function CreateGroupModal({
     const maxBudget = parseOptionalPositive(budgetMax)
     if (minBudget !== undefined && maxBudget !== undefined && minBudget > maxBudget) {
       setError('Minimum budget cannot exceed maximum budget')
+      return
+    }
+
+    // Client-side move-date validation: must be today or in the future.
+    if (moveDate && moveDate < todayISO) {
+      setError('Move-in date must be today or in the future')
       return
     }
 
@@ -589,6 +605,7 @@ function CreateGroupModal({
             <input
               type="date"
               value={moveDate}
+              min={todayISO}
               onChange={(e) => setMoveDate(e.target.value)}
               className="w-full px-3 py-2 border border-outline-variant/15 rounded-lg focus:ring-2 focus:ring-surface-tint/20 focus:border-primary"
             />

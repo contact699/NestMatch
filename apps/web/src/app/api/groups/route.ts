@@ -22,6 +22,24 @@ const createGroupSchema = z.object({
     return true
   },
   { message: 'Minimum budget must be less than or equal to maximum budget', path: ['combined_budget_max'] }
+).refine(
+  (data) => {
+    if (!data.target_move_date) return true
+    // Floor against the earliest Canadian timezone (America/Vancouver). A
+    // user in Vancouver picking "today" at 9pm local has already rolled
+    // past midnight UTC and past midnight in Toronto, but their date
+    // picker still shows their local today — we must accept that. Using
+    // Pacific time as the server floor means every valid client-local
+    // date in any Canadian timezone passes. en-CA formats as YYYY-MM-DD.
+    const todayInPacific = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Vancouver',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date())
+    return data.target_move_date >= todayInPacific
+  },
+  { message: 'Move-in date must be today or in the future', path: ['target_move_date'] }
 )
 
 // Get user's co-renter groups
@@ -120,8 +138,10 @@ export const POST = withApiHandler(
     let groupData: z.infer<typeof createGroupSchema>
     try {
       groupData = await parseBody(req, createGroupSchema)
-    } catch {
-      throw new ValidationError('Invalid group data')
+    } catch (err) {
+      // Surface the first Zod issue's message so the client can render it inline.
+      const issue = (err as { issues?: Array<{ message?: string }> })?.issues?.[0]
+      throw new ValidationError(issue?.message || 'Invalid group data')
     }
 
     const {
