@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { clientLogger } from '@/lib/client-logger'
+import { downscaleImage } from '@/lib/downscale-image'
 import { Button } from './button'
 import {
   Camera,
@@ -43,9 +44,18 @@ export function ImageUploader({
       throw new Error('Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.')
     }
 
-    // Validate file size (max 10MB)
+    // Hard ceiling on the ORIGINAL so we never try to decode something absurd.
+    if (file.size > 40 * 1024 * 1024) {
+      throw new Error('File too large. Maximum size is 40MB.')
+    }
+
+    // Downscale camera originals to a bounded size before upload — stored
+    // full-resolution photos were the main decode cost on listing pages.
+    const processed = await downscaleImage(file)
+
+    // Validate the size we actually store (post-downscale)
     const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
+    if (processed.size > maxSize) {
       throw new Error('File too large. Maximum size is 10MB.')
     }
 
@@ -60,14 +70,14 @@ export function ImageUploader({
     // Generate unique filename
     const timestamp = Date.now()
     const randomString = Math.random().toString(36).substring(2, 8)
-    const extension = file.name.split('.').pop() || 'jpg'
+    const extension = processed.name.split('.').pop() || 'jpg'
     const filename = `${user.id}/${timestamp}-${randomString}.${extension}`
 
     // Upload directly to Supabase Storage
     const { data, error: uploadError } = await supabase.storage
       .from(bucket)
-      .upload(filename, file, {
-        contentType: file.type,
+      .upload(filename, processed, {
+        contentType: processed.type,
         upsert: false,
       })
 
