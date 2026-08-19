@@ -1,11 +1,14 @@
 'use client'
 
 import Script from 'next/script'
+import { useCookieConsent } from '@/components/cookie-consent'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 
 export function GoogleAnalytics() {
-  if (!GA_MEASUREMENT_ID) return null
+  // Analytics cookies are opt-in: load nothing until the visitor accepts.
+  const consent = useCookieConsent()
+  if (!GA_MEASUREMENT_ID || consent !== 'accepted') return null
 
   return (
     <>

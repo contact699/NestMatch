@@ -12,7 +12,7 @@ export const listingSchema = z.object({
   city: z.string().min(1, 'City is required'),
   province: z.string().min(1, 'Province is required'),
   postal_code: z.string().optional(),
-  photos: z.array(z.string()).min(1, 'Please add at least one photo'),
+  photos: z.array(z.string()).min(1, 'Add at least 1 photo to publish your listing.'),
   amenities: z.array(z.string()),
   bathroom_type: z.enum(['ensuite', 'private', 'shared']),
   bathroom_size: z.enum(['full', 'three_quarter', 'half']).nullable().optional(),
@@ -31,3 +31,18 @@ export const listingSchema = z.object({
 })
 
 export type ListingFormData = z.infer<typeof listingSchema>
+
+/**
+ * Wizard step numbers — the single source of truth shared by page.tsx's
+ * STEPS array and the review screen's Edit links. Insert or reorder steps
+ * here first; both consumers derive from these values.
+ */
+export const WIZARD_STEP = {
+  TYPE: 1,
+  LOCATION: 2,
+  DETAILS: 3,
+  AMENITIES: 4,
+  PHOTOS: 5,
+  PREFERENCES: 6,
+  REVIEW: 7,
+} as const

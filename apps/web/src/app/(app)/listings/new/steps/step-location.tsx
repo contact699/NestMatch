@@ -95,9 +95,9 @@ export function StepLocation({ register, errors, watch }: StepLocationProps) {
           <span className="text-white text-sm font-bold">!</span>
         </div>
         <div>
-          <p className="font-semibold text-on-surface text-sm">Professional Tip</p>
+          <p className="font-semibold text-on-surface text-sm">Tip</p>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Accurate neighborhood tags increase listing visibility by up to 45%. We&apos;ll help you refine this based on the street address in the next step.
+            Accurate neighborhood tags help the right people find your listing. Use the neighbourhood name renters would actually search for.
           </p>
         </div>
       </div>
