@@ -26,19 +26,23 @@ export async function generateMetadata({ params }: CityPageProps): Promise<Metad
     return { title: 'City Not Found', robots: { index: false, follow: false } }
   }
   const canonical = `https://www.nestmatch.app/c/${config.slug}`
-  const title = `Find a Roommate in ${config.displayName} | NestMatch`
+  // The root layout applies the `%s - NestMatch` template to `title`, so the
+  // page title must not repeat the brand. Social cards get no template, so
+  // they use the fully-qualified variant.
+  const title = `Find a Roommate in ${config.displayName}`
+  const socialTitle = `${title} - NestMatch`
   const description = `Browse current rooms for rent in ${config.displayName}, ${config.province}. Lifestyle-based matching, verified hosts, and a free way to find a roommate in ${config.displayName}.`
   return {
     title,
     description,
     alternates: { canonical },
     openGraph: {
-      title,
+      title: socialTitle,
       description,
       url: canonical,
       type: 'website',
     },
-    twitter: { card: 'summary_large_image', title, description },
+    twitter: { card: 'summary_large_image', title: socialTitle, description },
   }
 }
 

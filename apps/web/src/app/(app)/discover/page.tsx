@@ -610,7 +610,7 @@ export default function DiscoverPage() {
                         To get AI-generated group suggestions, complete your{' '}
                         <Link href="/profile/edit" className="text-primary hover:underline">profile</Link>,{' '}
                         <Link href="/quiz" className="text-primary hover:underline">lifestyle quiz</Link>, and{' '}
-                        <Link href="/seeking" className="text-primary hover:underline">seeking preferences</Link>, then click below.
+                        <Link href="/roommates" className="text-primary hover:underline">roommate preferences</Link>, then click below.
                       </>
                     }
                     action={

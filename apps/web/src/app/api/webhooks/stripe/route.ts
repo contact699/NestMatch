@@ -333,6 +333,27 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session, 
     paid_by,
   })
 
+  // Self-only, enforced at consumption time. api/verify/checkout/route.ts now
+  // stamps subject_user_id = paid_by = the authenticated caller, but sessions
+  // minted before that patch could name an arbitrary subject, and a Checkout
+  // Session created then is still completable now — which would attach
+  // background-check records to a stranger's profile. The completion route
+  // (api/verify/checkout/complete) applies the same rule; both consumers of
+  // this metadata must, or closing one just routes the abuse through the other.
+  if (!subject_user_id || subject_user_id !== paid_by) {
+    logger.error(
+      'Rejected verification checkout whose subject is not the payer',
+      new Error('subject_user_id does not match paid_by'),
+      {
+        requestId,
+        resourceId: session.id,
+        subject_user_id,
+        paid_by,
+      }
+    )
+    return
+  }
+
   const parsedChecks = parseChecksNeeded(checks_needed)
   if (!parsedChecks.ok) {
     logger.error('Failed to parse checks_needed metadata', new Error(`Invalid JSON: ${checks_needed}`), {

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { FetchError } from '@/components/ui/fetch-error'
@@ -102,11 +103,11 @@ interface ReviewsData {
 
 interface ProfileData {
   profile: {
+    user_id: string
     name: string | null
     profile_photo: string | null
+    verification_level: 'basic' | 'verified' | 'trusted'
     created_at: string
-    background_checks_count?: number
-    response_rate?: number
   } | null
 }
 
@@ -122,27 +123,77 @@ export default function ReviewsPage() {
     refetch: refetchCohabitations,
   } = useFetch<CohabitationsData>('/api/cohabitations')
 
-  // Fetch reviews
+  // Fetch the signed-in user's own profile summary for the sidebar. This runs
+  // first because it is also where the current user's id comes from, and the
+  // reviews query below is scoped to it.
+  const {
+    data: profileData,
+    isLoading: profileLoading,
+    error: profileError,
+    refetch: refetchProfile,
+  } = useFetch<ProfileData>('/api/profile/status')
+
+  const profile = profileData?.profile ?? null
+  const currentUserId = profile?.user_id ?? null
+
+  // Fetch reviews RECEIVED by the signed-in user.
+  //
+  // GET /api/reviews applies a user predicate only when `user_id` is present
+  // (it filters on `reviewee_id`, or `reviewer_id` with type=given) — calling
+  // it bare returned every visible review on the platform, and left `aggregate`
+  // null because the route only computes it for a target user. Passing the id
+  // explicitly fixes both the leak and the always-empty sidebar rating.
+  const reviewsUrl = currentUserId
+    ? `/api/reviews?user_id=${encodeURIComponent(currentUserId)}`
+    : null
   const {
     data: reviewsData,
     isLoading: reviewsLoading,
     error: reviewsError,
     refetch: refetchReviews,
-  } = useFetch<ReviewsData>('/api/reviews')
-
-  // Fetch profile for sidebar
-  const {
-    data: profileData,
-  } = useFetch<ProfileData>('/api/profile')
+  } = useFetch<ReviewsData>(reviewsUrl, { deps: [currentUserId] })
 
   const cohabitations = cohabitationsData?.cohabitations ?? []
   const reviews = reviewsData?.reviews ?? []
   const aggregate = reviewsData?.aggregate ?? null
-  const profile = profileData?.profile ?? null
-  const isLoading = cohabLoading || reviewsLoading
-  const error = cohabError || reviewsError
+
+  // The reviews request can only start once the profile resolves, so there is a
+  // render between the two where nothing is in flight yet. Count that gap as
+  // loading, otherwise the "No reviews yet" empty state flashes.
+  const reviewsPending = !!currentUserId && !reviewsData && !reviewsError
+  const isLoading = cohabLoading || profileLoading || reviewsLoading || reviewsPending
+  const error = cohabError || reviewsError || profileError
+
+  const retryAll = () => {
+    refetchCohabitations()
+    refetchReviews()
+    refetchProfile()
+  }
 
   const pendingReviews = cohabitations.filter((c) => c.can_review && !c.user_has_reviewed)
+
+  // Tab filtering. A received review's author is the *other* participant in the
+  // cohabitation, so the author's role is the inverse of ours: if we hosted
+  // (is_provider), they stayed with us — a roommate; if we were the seeker, they
+  // were our host. The reviews endpoint doesn't join provider_id/seeker_id onto
+  // the cohabitation, so the role is looked up from /api/cohabitations, which
+  // returns every period the user participates in (no pagination).
+  const currentUserIsProviderByCohabId = useMemo(() => {
+    const map = new Map<string, boolean>()
+    cohabitations.forEach((c) => map.set(c.id, c.is_provider))
+    return map
+  }, [cohabitations])
+
+  const filteredReviews = useMemo(() => {
+    if (tab === 'all') return reviews
+    return reviews.filter((review) => {
+      const cohabId = review.cohabitation?.id
+      if (!cohabId) return false
+      const weHosted = currentUserIsProviderByCohabId.get(cohabId)
+      if (weHosted === undefined) return false
+      return tab === 'roommates' ? weHosted : !weHosted
+    })
+  }, [reviews, tab, currentUserIsProviderByCohabId])
 
   const handleReviewSuccess = () => {
     setReviewingId(null)
@@ -193,6 +244,9 @@ export default function ReviewsPage() {
     ? new Date(profile.created_at).toLocaleDateString('en-CA', { month: 'short', year: 'numeric' })
     : null
 
+  const isVerified =
+    profile?.verification_level === 'verified' || profile?.verification_level === 'trusted'
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -204,7 +258,7 @@ export default function ReviewsPage() {
   if (error) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <FetchError message={error} onRetry={() => { refetchCohabitations(); refetchReviews() }} />
+        <FetchError message={error} onRetry={retryAll} />
       </div>
     )
   }
@@ -272,15 +326,27 @@ export default function ReviewsPage() {
             </CardContent>
           </Card>
 
-          {/* Community Verified */}
+          {/* Verification status — derived from the profile's real level */}
           <div className="bg-secondary-container/20 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="h-5 w-5 text-secondary" />
-              <span className="font-semibold text-secondary text-sm">Community Verified</span>
+              <span className="font-semibold text-secondary text-sm">
+                {isVerified ? 'Verified member' : 'Not verified yet'}
+              </span>
             </div>
             <p className="text-xs text-on-surface-variant">
-              This user has completed {profile?.background_checks_count ?? 0} background check{(profile?.background_checks_count ?? 0) !== 1 ? 's' : ''} and has a {profile?.response_rate ?? 100}% response rate.
+              {isVerified
+                ? 'Your identity checks are complete, so your profile carries a verification badge.'
+                : 'Complete your verification checks to earn a badge on your profile and listings.'}
             </p>
+            {!isVerified && (
+              <Link
+                href="/verify"
+                className="inline-block mt-2 text-xs font-medium text-secondary hover:underline"
+              >
+                Go to Trust Center
+              </Link>
+            )}
           </div>
         </div>
 
@@ -386,21 +452,25 @@ export default function ReviewsPage() {
               </div>
             </div>
 
-            {reviews.length === 0 ? (
+            {filteredReviews.length === 0 ? (
               <Card variant="bordered">
                 <CardContent className="py-12 text-center">
                   <Star className="h-12 w-12 text-on-surface-variant/20 mx-auto mb-4" />
                   <h3 className="text-lg font-display font-semibold text-on-surface mb-2">
-                    No reviews yet
+                    {reviews.length === 0 ? 'No reviews yet' : 'No reviews in this view'}
                   </h3>
                   <p className="text-on-surface-variant">
-                    Reviews from your roommates will appear here.
+                    {reviews.length === 0
+                      ? 'Reviews from your roommates will appear here.'
+                      : tab === 'roommates'
+                        ? 'None of your reviews were written by a roommate who stayed with you.'
+                        : 'None of your reviews were written by a host you stayed with.'}
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-4">
-                {reviews.map((review) => (
+                {filteredReviews.map((review) => (
                   <ReviewCard
                     key={review.id}
                     review={review}

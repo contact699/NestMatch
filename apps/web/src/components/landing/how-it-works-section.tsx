@@ -26,7 +26,10 @@ const STEPS = [
 
 export function HowItWorksSection() {
   return (
-    <section className="py-24 lg:py-32 bg-surface-container-low relative overflow-hidden">
+    <section
+      id="how-it-works"
+      className="py-24 lg:py-32 bg-surface-container-low relative overflow-hidden scroll-mt-20"
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="max-w-3xl" data-animate>
           <span className="text-secondary font-bold tracking-widest uppercase text-xs">

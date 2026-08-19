@@ -2,7 +2,7 @@ import { SignupForm } from '@/components/auth/signup-form'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Sign Up - NestMatch',
+  title: 'Sign Up',
   description: 'Create your NestMatch account and find your perfect roommate',
 }
 

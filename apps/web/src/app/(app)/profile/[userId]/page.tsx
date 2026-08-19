@@ -42,7 +42,7 @@ export async function generateMetadata({ params }: ProfilePageProps) {
   }
 
   return {
-    title: `${profile.name || 'User'} - NestMatch`,
+    title: profile.name || 'User',
     description: profile.city
       ? `${profile.name} from ${profile.city}, ${profile.province}`
       : `View ${profile.name}'s profile on NestMatch`,
@@ -75,10 +75,20 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     )
   }
 
-  // Fetch the profile
+  // Fetch the profile.
+  //
+  // Explicit projection, NOT select('*'): this page renders for logged-out
+  // visitors (the (app) layout swaps in LandingNav rather than redirecting), so
+  // this query runs as `anon`, which has column-level SELECT on profiles only
+  // for public-safe columns (migration 038). A select('*') here would be a hard
+  // 403 from PostgREST, and the notFound() below would turn every public profile
+  // into a 404. Add a column here only if it is also granted to anon in 038.
   const { data: profile, error } = (await supabase
     .from('profiles')
-    .select('*')
+    .select(
+      'user_id, name, bio, occupation, city, province, languages, profile_photo, ' +
+        'verification_level, show_verification_badges, email_verified, phone_verified'
+    )
     .eq('user_id', userId)
     .single()) as { data: any; error: any }
 
@@ -98,12 +108,22 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     isSaved = !!savedRow
   }
 
-  // Fetch lifestyle responses
-  const { data: lifestyleResponses } = (await supabase
-    .from('lifestyle_responses')
-    .select('*')
-    .eq('user_id', userId)
-    .single()) as { data: any }
+  // Fetch lifestyle responses — signed-in visitors only.
+  //
+  // These are raw answers (smoking, cannabis, alcohol, sleep, work, pets), the
+  // same data class as the anonymous-exposure incident. Migration 038 revokes
+  // anon SELECT on the table outright, so this query would fail for logged-out
+  // visitors; hiding the section for them is the intended behaviour, not a
+  // workaround. The render at the bottom of this file is already null-guarded.
+  let lifestyleResponses: any = null
+  if (currentUser) {
+    const { data } = (await supabase
+      .from('lifestyle_responses')
+      .select('*')
+      .eq('user_id', userId)
+      .single()) as { data: any }
+    lifestyleResponses = data
+  }
 
   // Fetch reviews received
   const { data: reviews } = (await supabase
@@ -137,6 +157,25 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
     .eq('status', 'completed') as { data: Array<{ type: string; status: string }> | null }
 
   const firstName = profile.name?.split(' ')[0] || 'User'
+
+  // `show_verification_badges` is the user's opt-out for every PUBLIC
+  // verification indicator on this page — not just the <VerificationBadges>
+  // pill row. The avatar shield overlay and the Verifications card leaked the
+  // same signal regardless of the toggle, so both are gated on it now. Matches
+  // <VerificationBadges>'s own `if (!showPublic) return null`: anything falsy
+  // hides, so a missing value fails closed toward privacy.
+  const showVerificationBadges = !!profile.show_verification_badges
+
+  // Which checks actually completed. `verification_level` is NOT a proxy for
+  // government-ID verification: api/verify/phone/confirm promotes a profile to
+  // 'verified' on email + phone alone, with no ID check anywhere in the flow
+  // (only the Certn webhook, api/webhooks/certn, sets it off real checks).
+  // Claiming "Government ID" off `verification_level !== 'basic'` therefore
+  // asserted an identity check that may never have happened. The `verifications`
+  // table rows (already filtered to status = 'completed' above) are the real
+  // signal, and 'id' is the government-ID check.
+  const completedVerificationTypes = new Set((verifications || []).map((v) => v.type))
+  const hasGovernmentId = completedVerificationTypes.has('id')
 
   // Lifestyle quiz tabs
   const lifestyleTabs = [
@@ -179,7 +218,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                       <User className="h-14 w-14 text-on-surface-variant" />
                     )}
                   </div>
-                  {profile.verification_level !== 'basic' && (
+                  {showVerificationBadges && profile.verification_level !== 'basic' && (
                     <div className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-secondary text-on-secondary flex items-center justify-center">
                       <ShieldCheck className="h-4 w-4" />
                     </div>
@@ -200,7 +239,7 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
                     verifications={verifications || []}
                     verificationLevel={profile.verification_level}
                     variant="full"
-                    showPublic={profile.show_verification_badges}
+                    showPublic={showVerificationBadges}
                   />
                 </div>
 
@@ -261,32 +300,35 @@ export default async function PublicProfilePage({ params }: ProfilePageProps) {
             </CardContent>
           </Card>
 
-          {/* Verifications */}
-          <Card variant="bordered">
-            <CardContent className="py-5">
-              <h3 className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-4">
-                Verifications
-              </h3>
-              <div className="space-y-3">
-                <VerificationRow
-                  icon={<ShieldCheck className="h-4 w-4" />}
-                  label="Government ID"
-                  verified={profile.verification_level !== 'basic'}
-                />
-                <VerificationRow
-                  icon={<Phone className="h-4 w-4" />}
-                  label="Phone Verified"
-                  verified={!!profile.phone_verified}
-                />
-                <VerificationRow
-                  icon={<Mail className="h-4 w-4" />}
-                  label="Work Email"
-                  verified={!!profile.email_verified}
-                  pending={!profile.email_verified}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Verifications — hidden entirely when the user has opted out of
+              public verification badges. */}
+          {showVerificationBadges && (
+            <Card variant="bordered">
+              <CardContent className="py-5">
+                <h3 className="text-xs font-semibold tracking-wider text-on-surface-variant uppercase mb-4">
+                  Verifications
+                </h3>
+                <div className="space-y-3">
+                  <VerificationRow
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    label="Government ID"
+                    verified={hasGovernmentId}
+                  />
+                  <VerificationRow
+                    icon={<Phone className="h-4 w-4" />}
+                    label="Phone Verified"
+                    verified={!!profile.phone_verified}
+                  />
+                  <VerificationRow
+                    icon={<Mail className="h-4 w-4" />}
+                    label="Work Email"
+                    verified={!!profile.email_verified}
+                    pending={!profile.email_verified}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Right Column */}

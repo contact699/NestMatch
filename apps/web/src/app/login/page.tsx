@@ -5,7 +5,7 @@ import { ShieldCheck } from 'lucide-react'
 import { LogoMark } from '@/components/ui/logo-mark'
 
 export const metadata = {
-  title: 'Sign In - NestMatch',
+  title: 'Sign In',
   description: 'Sign in to your NestMatch account',
 }
 

@@ -103,9 +103,11 @@ export async function getClientIdentifier(userId?: string): Promise<string> {
   }
 
   const headersList = await headers()
-  const forwarded = headersList.get('x-forwarded-for')
+  // x-real-ip is set by the platform (Vercel) and can't be influenced by the
+  // client, unlike x-forwarded-for whose first hop is client-controlled.
   const realIp = headersList.get('x-real-ip')
-  const ip = forwarded?.split(',')[0] || realIp || 'unknown'
+  const forwarded = headersList.get('x-forwarded-for')
+  const ip = realIp || forwarded?.split(',')[0]?.trim() || 'unknown'
 
   return `ip:${ip}`
 }

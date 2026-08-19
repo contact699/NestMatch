@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import {
   LayoutDashboard,
@@ -34,9 +34,9 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isLoading, setIsLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [currentPath, setCurrentPath] = useState('')
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -45,7 +45,7 @@ export default function AdminLayout({
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) {
-        router.push('/sign-in')
+        router.push('/login?redirect=/admin')
         return
       }
 
@@ -68,9 +68,8 @@ export default function AdminLayout({
     checkAdmin()
   }, [router])
 
-  useEffect(() => {
-    setCurrentPath(window.location.pathname)
-  }, [])
+  const isNavItemActive = (href: string) =>
+    pathname === href || (href !== '/admin' && pathname.startsWith(href + '/'))
 
   if (isLoading) {
     return (
@@ -102,9 +101,40 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-surface-container-low">
+      {/* Mobile top bar — the sidebar is hidden below lg, so the nav lives here */}
+      <div className="lg:hidden bg-surface-container-lowest ghost-border border-t-0 border-l-0 border-r-0">
+        <div className="px-4 py-3">
+          <h2 className="font-display font-semibold text-on-surface flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-primary" />
+            Admin Panel
+          </h2>
+        </div>
+        <nav className="flex gap-1 overflow-x-auto px-2 pb-2">
+          {navItems.map((item) => {
+            const Icon = item.icon
+            const isActive = isNavItemActive(item.href)
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            )
+          })}
+        </nav>
+      </div>
+
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-surface-container-lowest ghost-border min-h-screen fixed left-0 top-0 pt-16">
+        <aside className="hidden lg:flex flex-col w-64 bg-surface-container-lowest ghost-border min-h-screen fixed left-0 top-0 pt-16">
           <div className="p-4 ghost-border border-t-0 border-l-0 border-r-0">
             <h2 className="font-display font-semibold text-on-surface flex items-center gap-2">
               <ShieldAlert className="h-5 w-5 text-primary" />
@@ -114,14 +144,12 @@ export default function AdminLayout({
           <nav className="p-2">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive = currentPath === item.href ||
-                (item.href !== '/admin' && currentPath.startsWith(item.href))
+              const isActive = isNavItemActive(item.href)
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={() => setCurrentPath(item.href)}
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
                       ? 'bg-primary/10 text-primary'
@@ -146,7 +174,7 @@ export default function AdminLayout({
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 ml-64 p-8">
+        <main className="flex-1 lg:ml-64 p-4 sm:p-8 min-w-0">
           {children}
         </main>
       </div>

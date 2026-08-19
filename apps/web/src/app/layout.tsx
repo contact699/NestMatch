@@ -32,12 +32,17 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
+  // Resolves relative URLs in `alternates`/`openGraph` across every route.
+  // NOTE: `alternates.canonical` deliberately lives on `app/page.tsx` and not
+  // here — Next.js inherits metadata into child segments, so a root canonical
+  // would point every un-overriding page (/search, /login, …) at "/".
+  metadataBase: new URL("https://www.nestmatch.app"),
   title: {
     default: "NestMatch - Find Your Perfect Roommate in Canada",
     template: "%s - NestMatch",
   },
   description:
-    "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
+    "Find your perfect roommate in Canada — lifestyle-based matching, verified profiles, and optional ID verification for added trust.",
   keywords: [
     "roommate",
     "Canada",
@@ -50,28 +55,25 @@ export const metadata: Metadata = {
     "verified roommates",
   ],
   authors: [{ name: "NestMatch" }],
+  // NOTE: no explicit `images` on openGraph/twitter. The share cards come from
+  // the file-based `app/opengraph-image.tsx` and `app/twitter-image.tsx`
+  // routes, which Next.js injects automatically. An `images` array here would
+  // override those — and the URL it used to name (/og-image.png) has never
+  // existed in `public/`, so every share preview resolved to a 404.
   openGraph: {
     title: "NestMatch - Find Your Perfect Roommate in Canada",
     description:
-      "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
+      "Find your perfect roommate in Canada — lifestyle-based matching, verified profiles, and optional ID verification for added trust.",
     url: "https://www.nestmatch.app",
     siteName: "NestMatch",
     locale: "en_CA",
     type: "website",
-    images: [
-      {
-        url: "https://www.nestmatch.app/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: "NestMatch - Find Your Perfect Roommate in Canada",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "NestMatch - Find Your Perfect Roommate in Canada",
     description:
-      "Find your perfect roommate in Canada — lifestyle-based matching, real listings, and optional ID verification for added trust.",
+      "Find your perfect roommate in Canada — lifestyle-based matching, verified profiles, and optional ID verification for added trust.",
   },
   robots: {
     index: true,
@@ -92,7 +94,7 @@ export default function RootLayout({
           <PostHogPageview />
         </Suspense>
         {children}
-        <Toaster position="bottom-right" richColors closeButton />
+        <Toaster position="bottom-right" richColors closeButton duration={5000} />
         <CookieConsent />
         <SpeedInsights />
       </body>

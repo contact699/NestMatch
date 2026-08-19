@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { FetchError } from '@/components/ui/fetch-error'
 import {
   ArrowLeft,
   User,
@@ -41,44 +42,69 @@ export default function SettingsPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showVerificationBadges, setShowVerificationBadges] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    let cancelled = false
+
     async function loadSettings() {
-      const supabase = createClient()
+      setIsLoading(true)
+      setLoadError(null)
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      try {
+        const supabase = createClient()
 
-      if (!user) {
-        router.push('/login?redirect=/settings')
-        return
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+
+        if (!user) {
+          router.push('/login?redirect=/settings')
+          return
+        }
+
+        // Load profile settings
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('show_verification_badges')
+          .eq('user_id', user.id)
+          .single()
+
+        if (profileError) throw new Error(profileError.message)
+
+        if (!cancelled && profile) {
+          setShowVerificationBadges(profile.show_verification_badges ?? true)
+        }
+
+        // Load blocked users
+        const response = await fetch('/api/blocked-users')
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data?.error || 'Failed to load blocked users')
+        }
+
+        if (!cancelled) {
+          setBlockedUsers(data.blocked_users ?? [])
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(err instanceof Error ? err.message : 'Failed to load settings')
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
       }
-
-      // Load profile settings
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('show_verification_badges')
-        .eq('user_id', user.id)
-        .single()
-
-      if (profile) {
-        setShowVerificationBadges(profile.show_verification_badges ?? true)
-      }
-
-      // Load blocked users
-      const response = await fetch('/api/blocked-users')
-      const data = await response.json()
-
-      if (response.ok) {
-        setBlockedUsers(data.blocked_users)
-      }
-
-      setIsLoading(false)
     }
 
     loadSettings()
-  }, [router])
+
+    return () => {
+      cancelled = true
+    }
+  }, [router, reloadKey])
 
   const handleSignOut = async () => {
     const supabase = createClient()
@@ -129,26 +155,48 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true)
 
-    // Note: Account deletion would typically involve:
-    // 1. Soft delete or anonymize user data
-    // 2. Cancel any active listings
-    // 3. Close conversations
-    // 4. Delete auth user
+    try {
+      const response = await fetch('/api/account/delete', { method: 'POST' })
 
-    // For MVP, we'll just show a message
-    // In production, implement proper account deletion
+      let data: { deleted?: boolean; error?: string } | null = null
+      try {
+        data = await response.json()
+      } catch {
+        data = null
+      }
 
-    setTimeout(() => {
-      setIsDeleting(false)
+      if (!response.ok) {
+        toast.error(data?.error || 'Failed to delete account. Please contact support.')
+        return
+      }
+
+      // Auth user is gone server-side; clear the local session before leaving.
+      const supabase = createClient()
+      await supabase.auth.signOut()
+
+      toast.success('Your account has been deleted')
       setShowDeleteConfirm(false)
-      toast.info('Account deletion is not yet implemented. Please contact support.')
-    }, 1000)
+      router.push('/')
+      router.refresh()
+    } catch {
+      toast.error('Failed to delete account. Please contact support.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <FetchError message={loadError} onRetry={() => setReloadKey((k) => k + 1)} />
       </div>
     )
   }

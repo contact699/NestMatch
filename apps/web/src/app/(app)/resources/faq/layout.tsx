@@ -1,7 +1,7 @@
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'FAQ | NestMatch Resources',
+  title: 'Resources FAQ',
   description: 'Find answers to frequently asked questions about renting, roommates, and tenant rights in Canada.',
   openGraph: {
     title: 'Frequently Asked Questions',

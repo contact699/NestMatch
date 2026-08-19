@@ -16,15 +16,56 @@ export const GET = withApiHandler(
     // Retrieve and verify the Stripe session
     const session = await getCheckoutSession(sessionId)
 
+    const metadata = session.metadata || {}
+    const subjectUserId = metadata.subject_user_id
+    const paidBy = metadata.paid_by
+
+    // Ownership check FIRST: a Stripe session id appearing in a redirect URL is
+    // not a secret, and this route provisions verifications off it. Without this
+    // guard anyone holding (or guessing) someone else's session id could drive
+    // that session's checks — and, worse, burn it via the idempotency lookup.
+    // Only the user who paid may complete their own session.
+    if (!paidBy || paidBy !== userId!) {
+      logger.warn('Checkout completion attempted by a user who did not pay', {
+        requestId,
+        sessionId,
+      })
+      return NextResponse.redirect(new URL('/verify?payment=error', req.url))
+    }
+
+    // Self-only, enforced at consumption time. api/verify/checkout/route.ts now
+    // stamps subject_user_id = paid_by = the authenticated caller, but sessions
+    // minted BEFORE that patch could name any `for_user_id` as the subject and
+    // are still redeemable — a Stripe Checkout Session stays completable long
+    // after it is created. Refusing the mismatch here (and in the webhook)
+    // retires those without needing to hunt them down in Stripe.
+    if (subjectUserId && subjectUserId !== paidBy) {
+      logger.error('Rejected checkout session whose subject is not the payer', undefined, {
+        requestId,
+        sessionId,
+      })
+      return NextResponse.redirect(new URL('/verify?payment=error', req.url))
+    }
+
     if (session.payment_status !== 'paid') {
       logger.warn('Checkout session not paid', { requestId, sessionId, status: session.payment_status })
       return NextResponse.redirect(new URL('/verify?payment=error', req.url))
     }
 
-    const metadata = session.metadata || {}
-    const subjectUserId = metadata.subject_user_id
-    const paidBy = metadata.paid_by
-    const checksNeeded: VerificationCheckType[] = JSON.parse(metadata.checks_needed || '[]')
+    // Metadata is attacker-influenced only via Stripe, but a malformed value
+    // here used to throw out of the handler into a bare 500 instead of the
+    // /verify error state the rest of this route redirects to.
+    let checksNeeded: VerificationCheckType[]
+    try {
+      const parsed = JSON.parse(metadata.checks_needed || '[]')
+      checksNeeded = Array.isArray(parsed) ? (parsed as VerificationCheckType[]) : []
+    } catch {
+      logger.error('Unparseable checks_needed in checkout metadata', undefined, {
+        requestId,
+        sessionId,
+      })
+      return NextResponse.redirect(new URL('/verify?payment=error', req.url))
+    }
 
     if (!subjectUserId || checksNeeded.length === 0) {
       logger.error('Invalid checkout session metadata', undefined, { requestId, sessionId, metadata })
@@ -120,5 +161,8 @@ export const GET = withApiHandler(
 
     return NextResponse.redirect(new URL('/verify?payment=success', req.url))
   },
-  { rateLimit: false }
+  // Was `rateLimit: false`. This route hits Stripe and CERTN once per call, so
+  // an unthrottled loop over it is a billable-API amplifier; 'api' (100/min,
+  // fail-open) is generous for a redirect landing users hit once per purchase.
+  { rateLimit: 'api' }
 )

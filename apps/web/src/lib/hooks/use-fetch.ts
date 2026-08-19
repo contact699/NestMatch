@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { clientLogger } from '@/lib/client-logger'
+import { getApiErrorMessage } from '@/lib/api-error'
 
 interface UseFetchOptions<T> {
   /** Initial data value */
@@ -85,7 +86,7 @@ export function useFetch<T>(
       const json = await response.json()
 
       if (!response.ok) {
-        throw new Error(json.error || `Request failed with status ${response.status}`)
+        throw new Error(getApiErrorMessage(json, `Request failed with status ${response.status}`))
       }
 
       const result = transform ? transform(json) : json
@@ -159,7 +160,7 @@ export function useMutation<T>(url: string) {
         const json = await response.json()
 
         if (!response.ok) {
-          throw new Error(json.error || `Request failed with status ${response.status}`)
+          throw new Error(getApiErrorMessage(json, `Request failed with status ${response.status}`))
         }
 
         onSuccess?.(json)
