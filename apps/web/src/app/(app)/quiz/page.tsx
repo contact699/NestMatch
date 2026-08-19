@@ -475,7 +475,16 @@ export default function QuizPage() {
       </div>
 
       {/* Navigation */}
-      <div className="flex items-center justify-between mt-8 pt-6 border-t border-surface-container">
+      {!isLastStep && quizQuestions[currentStep + 1] && (
+        <p className="mt-8 text-sm text-on-surface-variant">
+          Up next:{' '}
+          <span className="text-on-surface font-medium">
+            {quizQuestions[currentStep + 1].question}
+          </span>
+        </p>
+      )}
+
+      <div className="flex items-center justify-between mt-4 pt-6 border-t border-surface-container">
         <Button
           variant="ghost"
           onClick={handleBack}
@@ -510,7 +519,7 @@ export default function QuizPage() {
             disabled={!answers[currentQuestion.id]}
             variant="primary"
           >
-            Next: {quizQuestions[currentStep + 1]?.question.split(' ').slice(0, 3).join(' ')}
+            Next
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         )}

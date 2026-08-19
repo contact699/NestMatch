@@ -8,6 +8,7 @@ import { ErrorState } from '@/components/ui/error-state'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Modal, ModalHeader, ModalTitle, ModalContent, ModalFooter } from '@/components/ui/modal'
 import { useFetch } from '@/lib/hooks/use-fetch'
+import { getApiErrorMessage, readApiErrorMessage } from '@/lib/api-error'
 import { formatPrice, formatDate } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -28,6 +29,7 @@ import {
   Filter,
   Search,
   ArrowRight,
+  Trash2,
 } from 'lucide-react'
 
 interface ExpenseShare {
@@ -82,6 +84,8 @@ export default function ExpensesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [creating, setCreating] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [expenseToDelete, setExpenseToDelete] = useState<{ id: string; title: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   // Form state
   const [title, setTitle] = useState('')
@@ -171,7 +175,9 @@ export default function ExpensesPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        toast.error(data.error || 'Failed to create expense')
+        // `data.error` is a string for flat envelopes but an object for thrown
+        // AppErrors (validation failures land here) — decode both.
+        toast.error(getApiErrorMessage(data, 'Failed to create expense'))
         return
       }
 
@@ -183,6 +189,36 @@ export default function ExpensesPage() {
       toast.error('Failed to create expense')
     } finally {
       setCreating(false)
+    }
+  }
+
+  const handleDeleteExpense = async () => {
+    if (!expenseToDelete) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/expenses/${expenseToDelete.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        // 403/404/409 are thrown AppErrors, so the body is
+        // `{ error: { code, message } }`; the 500/503 paths return a flat
+        // `{ error: "..." }`. `readApiErrorMessage` handles both and falls back
+        // to the default copy for empty/non-JSON bodies, so the server's
+        // wording (e.g. the 409 "recorded payments" conflict) shows verbatim.
+        toast.error(await readApiErrorMessage(response, 'Failed to delete expense'))
+        return
+      }
+
+      toast.success('Expense deleted')
+      setExpenseToDelete(null)
+      if (expandedId === expenseToDelete.id) setExpandedId(null)
+      refetch()
+    } catch {
+      toast.error('Failed to delete expense')
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -385,8 +421,9 @@ export default function ExpensesPage() {
                 const paidCount = expense.shares.filter((s) => s.status === 'paid').length
                 const totalShares = expense.shares.length
                 const splitLabel = expense.split_type === 'equal'
-                  ? `Split equally (${totalShares} people)`
+                  ? `Split equally (${totalShares} ${totalShares === 1 ? 'person' : 'people'})`
                   : `${paidCount}/${totalShares} paid`
+                const canDelete = !!currentUserId && expense.created_by === currentUserId
 
                 return (
                   <Card key={expense.id} variant="bordered">
@@ -415,6 +452,19 @@ export default function ExpensesPage() {
                             </p>
                             {getStatusBadge(expense.status)}
                           </div>
+                          {canDelete && (
+                            <button
+                              type="button"
+                              aria-label={`Delete expense ${expense.title}`}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setExpenseToDelete({ id: expense.id, title: expense.title })
+                              }}
+                              className="p-2 rounded-lg text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
                         </div>
                       </div>
 
@@ -607,6 +657,45 @@ export default function ExpensesPage() {
             disabled={!title.trim() || !totalAmount || creating}
           >
             Create Expense
+          </Button>
+        </ModalFooter>
+      </Modal>
+
+      {/* Delete Expense Confirmation */}
+      <Modal
+        isOpen={!!expenseToDelete}
+        onClose={() => { if (!deleting) setExpenseToDelete(null) }}
+        size="sm"
+        ariaLabel="Delete expense"
+      >
+        <ModalHeader onClose={() => { if (!deleting) setExpenseToDelete(null) }}>
+          <ModalTitle>Delete expense?</ModalTitle>
+        </ModalHeader>
+        <ModalContent>
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-error flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-on-surface-variant">
+              {expenseToDelete
+                ? `"${expenseToDelete.title}" and every share attached to it will be permanently removed. This cannot be undone.`
+                : ''}
+            </p>
+          </div>
+        </ModalContent>
+        <ModalFooter>
+          <Button
+            variant="outline"
+            onClick={() => setExpenseToDelete(null)}
+            disabled={deleting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handleDeleteExpense}
+            isLoading={deleting}
+            disabled={deleting}
+          >
+            Delete Expense
           </Button>
         </ModalFooter>
       </Modal>

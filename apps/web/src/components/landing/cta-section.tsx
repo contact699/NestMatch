@@ -7,12 +7,12 @@ const WHAT_YOU_GET = [
   {
     icon: ShieldCheck,
     title: 'Optional ID verification',
-    description: 'Trust badge on your profile after a Persona check.',
+    description: 'Trust badge on your profile after a Certn ID check.',
   },
   {
     icon: Home,
-    title: 'Ownership-verified listings',
-    description: 'Hosts prove the place is theirs before it goes live.',
+    title: 'Optional listing verification',
+    description: 'Hosts can add identity and photo-based trust signals.',
   },
   {
     icon: MessageCircle,

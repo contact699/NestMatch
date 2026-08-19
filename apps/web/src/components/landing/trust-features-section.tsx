@@ -9,17 +9,17 @@ const FEATURES = [
     iconBg: 'bg-primary',
     title: 'Optional ID verification',
     description:
-      'Government ID check via Persona. Verified members display a trust badge — filter to verified-only in one tap.',
+      'Government ID check via Certn. Verified members display a trust badge — filter to verified-only in one tap.',
     cta: 'How verification works',
     href: '/verify',
   },
   {
     icon: Home,
     iconBg: 'bg-secondary',
-    title: 'Real listings only',
+    title: 'Optional listing verification',
     description:
-      'We verify ownership before a listing goes live. No bait-and-switch, no phantom apartments, no wasted viewings.',
-    cta: 'See verified listings',
+      'Hosts can add identity and photo-based trust signals. Badges show which checks have been completed.',
+    cta: 'Browse listings',
     href: '/search',
   },
   {

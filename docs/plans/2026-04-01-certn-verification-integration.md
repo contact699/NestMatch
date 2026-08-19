@@ -20,7 +20,7 @@
 
 Add after the existing env vars:
 ```
-CERTN_API_KEY=oGhfKqcs.D0D6QKhom5oun2y5u9Mrn4QxixlFirO3
+CERTN_API_KEY=<redacted — a live key was previously committed here; it must be rotated. See vault/env, never this file.>
 ```
 
 **Step 2: Verify .env.local.example already has the placeholder**

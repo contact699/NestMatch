@@ -60,7 +60,7 @@ export default async function Image() {
               ✓ ID Verification
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: 18 }}>
-              ✓ Real Listings
+              ✓ Background Checks
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#22c55e', fontSize: 18 }}>
               ✓ Lifestyle Matching

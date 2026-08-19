@@ -10,6 +10,11 @@ import { FeaturedListingsSection } from '@/components/landing/featured-listings-
 import { LatestMembersSection } from '@/components/landing/latest-members-section'
 import { OrganizationJsonLd } from '@/components/json-ld'
 import { HomeScrollAnimations } from './page-client'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 export default function HomePage() {
   return (

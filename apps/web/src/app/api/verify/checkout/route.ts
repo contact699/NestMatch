@@ -6,12 +6,17 @@ import { getProduct, getCheckTypes, isCheckType, isPackageType, type Verificatio
 
 export const POST = withApiHandler(
   async (req, { userId, supabase, requestId }) => {
-    const body = await req.json()
-    const type = body.type as string
-    const forUserId = body.for_user_id as string | undefined
+    let body: Record<string, unknown>
+    try {
+      body = (await req.json()) as Record<string, unknown>
+    } catch {
+      return apiResponse({ error: 'Invalid JSON body' }, 400, requestId)
+    }
+
+    const type = body?.type
 
     // Validate product type
-    if (!type || (!isCheckType(type) && !isPackageType(type))) {
+    if (typeof type !== 'string' || (!isCheckType(type) && !isPackageType(type))) {
       return apiResponse({ error: 'Invalid verification type' }, 400, requestId)
     }
 
@@ -20,9 +25,13 @@ export const POST = withApiHandler(
       return apiResponse({ error: 'Product not found' }, 400, requestId)
     }
 
-    // Determine who the checks are for (self or another user)
-    const subjectUserId = forUserId || userId!
+    // Verification is always for the authenticated caller. This used to accept a
+    // `for_user_id` from the body and stamp it into the session metadata as
+    // `subject_user_id`, which the Stripe webhook and the completion route both
+    // trust — so any caller could pay $15 to attach background-check records to
+    // a stranger's profile. The subject is the payer, full stop.
     const payingUserId = userId!
+    const subjectUserId = userId!
 
     // Get paying user's profile for Stripe customer
     const { data: payerProfile } = await supabase

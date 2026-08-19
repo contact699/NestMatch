@@ -35,6 +35,9 @@ import {
   MapPin,
 } from 'lucide-react'
 
+/** Fallback capacity for groups created before `group_size_max` was persisted. */
+const DEFAULT_GROUP_CAPACITY = 4
+
 interface GroupMember {
   id: string
   role: string
@@ -71,6 +74,7 @@ interface Group {
   preferred_cities: string[] | null
   status: string
   created_at: string
+  group_size_max: number | null
   members: GroupMember[]
   invitations: Invitation[]
   user_role: string
@@ -427,6 +431,13 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
     )
   }, [group])
 
+  // Capacity comes from the group's configured max size; never from the current
+  // member count (that made every brand-new group render as "1 / 1 Full").
+  const groupCapacity = useMemo(() => {
+    if (!group) return 0
+    return Math.max(group.group_size_max ?? DEFAULT_GROUP_CAPACITY, group.members.length)
+  }, [group])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
@@ -707,7 +718,8 @@ export default function GroupDetailPage({ params }: { params: Promise<{ id: stri
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="font-display text-xl font-bold">Group Members</CardTitle>
             <span className="text-sm text-on-surface-variant">
-              {group.members.length} / {group.members.length} Full
+              {group.members.length} / {groupCapacity}
+              {group.members.length >= groupCapacity ? ' Full' : ''}
             </span>
           </CardHeader>
           <CardContent>

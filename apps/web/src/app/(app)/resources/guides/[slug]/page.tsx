@@ -36,7 +36,7 @@ export async function generateMetadata({
   if (!resource) return { title: 'Resource Not Found' }
 
   return {
-    title: `${resource.title} | NestMatch Resources`,
+    title: resource.title,
     description: resource.excerpt || `Learn about ${resource.title}`,
     keywords: resource.tags?.join(', '),
     alternates: { canonical: `https://www.nestmatch.app/resources/guides/${slug}` },

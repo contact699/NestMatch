@@ -89,7 +89,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/trust"
+                  href="/verify"
                   className="text-xs tracking-wide text-on-surface-variant hover:underline decoration-secondary underline-offset-4 transition-opacity hover:opacity-80"
                 >
                   Trust &amp; Safety

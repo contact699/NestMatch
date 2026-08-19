@@ -95,7 +95,7 @@ export function FeaturedListingsSection() {
               market this week.
             </h2>
             <p className="mt-4 text-lg text-on-surface-variant">
-              Real listings, verified ownership. Sign up to see your compatibility score.
+              Sign up to see your compatibility score for every listing.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">

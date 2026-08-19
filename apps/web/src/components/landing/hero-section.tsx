@@ -77,9 +77,9 @@ export function HeroSection() {
           </h1>
 
           <p className="mt-7 text-lg lg:text-xl text-on-surface-variant max-w-xl leading-relaxed">
-            Canada&rsquo;s trust-first housing platform. Verified profiles, real
-            listings, and lifestyle matching that goes deeper than &ldquo;clean
-            and quiet.&rdquo;
+            Canada&rsquo;s trust-first housing platform. Verified profiles and
+            lifestyle matching that goes deeper than &ldquo;clean and
+            quiet.&rdquo;
           </p>
 
           <form

@@ -1,6 +1,27 @@
 import { z } from 'zod'
 
 /**
+ * Shortest string we will accept as a real secret. Nothing Certn issues is
+ * anywhere near this short; the bar exists to catch placeholder values
+ * (`x`, `todo`, a stray quote) that are truthy but useless.
+ */
+const MIN_SECRET_LENGTH = 10
+
+/**
+ * True when a value is present and looks like an actual secret rather than
+ * whitespace or a placeholder.
+ *
+ * Trimming first is the point: dashboards and `.env` files routinely carry a
+ * trailing newline or a copy-paste space, and `Boolean(' ')` is `true`. A
+ * whitespace-only secret passes a naive truthiness check, boots the app, and
+ * then fails every HMAC comparison at runtime — the exact class of bug that
+ * once masqueraded as a Stripe network outage in this codebase.
+ */
+function isUsableSecret(value: string | undefined): boolean {
+  return (value ?? '').trim().length >= MIN_SECRET_LENGTH
+}
+
+/**
  * Server environment schema. Core infrastructure vars are required — the app
  * cannot function without them, so a missing/malformed one should fail boot with
  * a named error rather than surface as a confusing runtime failure later (see
@@ -34,6 +55,30 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   NEXT_PUBLIC_SENTRY_DSN: z.string().optional(),
 })
+  // Certn drives verification_level, which drives the trust badges shown to
+  // other users. If the integration is configured at all, the webhook signing
+  // secret is not optional — without it the webhook endpoint fails closed (503)
+  // and verification results silently stop arriving. Fail at boot instead, where
+  // it is diagnosable.
+  .superRefine((env, ctx) => {
+    // CERTN_API_KEY is the only Certn credential anything actually reads
+    // (lib/services/certn.ts:11 — CERTN_CLIENT_ID / CERTN_CLIENT_SECRET are
+    // dead config left over from an OAuth design that was never built, and are
+    // commented out in .env.local.example). Keying "is Certn configured?" off
+    // an unread variable would demand a webhook secret for a deployment that
+    // cannot make a single Certn call.
+    if (!isUsableSecret(env.CERTN_API_KEY)) return
+
+    if (!isUsableSecret(env.CERTN_WEBHOOK_SECRET)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['CERTN_WEBHOOK_SECRET'],
+        message:
+          `required whenever CERTN_API_KEY is set (webhooks are rejected without it), ` +
+          `and must be at least ${MIN_SECRET_LENGTH} non-whitespace characters`,
+      })
+    }
+  })
 
 export type Env = z.infer<typeof envSchema>
 

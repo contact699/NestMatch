@@ -50,9 +50,11 @@ export interface WebhookConfig {
   getEventType: (body: any) => string
   /**
    * Header carrying the HMAC signature (e.g. 'x-signature'). When set together
-   * with `secretEnv` AND that env var is present, the raw body is verified and
-   * an invalid/missing signature is rejected with 401. If the secret env var is
-   * absent, verification is skipped (so enabling it is opt-in via config).
+   * with `secretEnv`, verification is REQUIRED: the raw body is verified and an
+   * invalid or missing signature is rejected with 401. If the secret env var is
+   * absent the endpoint fails closed with 503 rather than accepting unsigned
+   * payloads — a webhook that mutates verification state must never trust an
+   * unauthenticated caller because a secret was left unset.
    */
   signatureHeader?: string
   /** Name of the env var holding the signing secret. */
@@ -98,6 +100,26 @@ function errorResponse(
       headers: { 'X-Request-ID': requestId },
     }
   )
+}
+
+/**
+ * Best-effort client IP for a request, used as the rate-limit bucket for
+ * callers with no user id (public + webhook routes).
+ *
+ * `x-real-ip` is checked FIRST. On Vercel (and behind most managed proxies) it
+ * is set by the platform from the actual TCP peer and cannot be influenced by
+ * the client, whereas `x-forwarded-for` is a client-supplied header that the
+ * edge APPENDS to rather than replaces. Taking its first hop therefore reads a
+ * value the caller chose: an attacker rotates `X-Forwarded-For: <random>` per
+ * request and lands in a fresh rate-limit bucket every time, which is no rate
+ * limit at all. x-forwarded-for remains the fallback for self-hosted setups
+ * where a trusted reverse proxy is the only thing populating it.
+ */
+function getClientIp(req: NextRequest): string {
+  const realIp = req.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp
+  const forwarded = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()
+  return forwarded || 'unknown'
 }
 
 /**
@@ -215,8 +237,18 @@ export function withApiHandler(
       }
 
       // 3. Rate limiting
-      if (config.rateLimit !== false && config.rateLimit && userId) {
-        const rateLimitResult = await checkRateLimit(config.rateLimit, userId)
+      //
+      // The `&& userId` guard this condition used to carry meant public and
+      // webhook routes — the ones reachable without credentials — were the only
+      // routes never rate limited. Fall back to the caller's IP so anonymous
+      // traffic is throttled too. Authenticated callers keep the exact bucket
+      // `getClientIdentifier()` derives for them (`user:<id>`), so their limits
+      // are unchanged.
+      if (config.rateLimit) {
+        const rateLimitIdentifier = userId ? `user:${userId}` : `ip:${getClientIp(req)}`
+        const rateLimitResult = await checkRateLimit(config.rateLimit, userId, {
+          identifier: rateLimitIdentifier,
+        })
 
         if (!rateLimitResult.allowed) {
           // Fail-closed: the limiter itself errored on a sensitive endpoint.
@@ -252,24 +284,32 @@ export function withApiHandler(
       if (config.webhook) {
         const bodyText = await req.text()
 
-        // Optional HMAC signature verification (opt-in: only enforced when the
-        // configured secret env var is present, so it never breaks an unconfigured
-        // provider). Computed over the raw body before JSON parsing.
+        // Mandatory HMAC signature verification, computed over the raw body
+        // before JSON parsing. Configuring a signatureHeader + secretEnv pair is
+        // a declaration that this endpoint is authenticated; a missing secret is
+        // a deployment fault, not a licence to accept unsigned payloads.
         const { signatureHeader, secretEnv, provider } = config.webhook
         if (signatureHeader && secretEnv) {
           const secret = process.env[secretEnv]
-          if (secret) {
-            const signature = req.headers.get(signatureHeader) ?? ''
-            const valid =
-              signature.length > 0 &&
-              (await verifyWebhookSignature(provider, bodyText, signature, secret))
-            if (!valid) {
-              logger.warn('Webhook signature verification failed', {
-                requestId,
-                provider,
-              })
-              return errorResponse('Invalid webhook signature', 401, requestId)
-            }
+          if (!secret) {
+            logger.error('Webhook signing secret missing — rejecting request', undefined, {
+              requestId,
+              provider,
+              secretEnv,
+            })
+            return errorResponse('Webhook signature verification unavailable', 503, requestId)
+          }
+
+          const signature = req.headers.get(signatureHeader) ?? ''
+          const valid =
+            signature.length > 0 &&
+            (await verifyWebhookSignature(provider, bodyText, signature, secret))
+          if (!valid) {
+            logger.warn('Webhook signature verification failed', {
+              requestId,
+              provider,
+            })
+            return errorResponse('Invalid webhook signature', 401, requestId)
           }
         }
 
@@ -355,9 +395,22 @@ export function withApiHandler(
         })
       }
 
-      // 8. Mark webhook as complete
-      if (webhookProvider && webhookEventId && response.ok) {
-        await completeWebhookEvent(webhookProvider, webhookEventId)
+      // 8. Close out the webhook event
+      if (webhookProvider && webhookEventId) {
+        if (response.ok) {
+          await completeWebhookEvent(webhookProvider, webhookEventId)
+        } else {
+          // A handler that *returns* a non-2xx (rather than throwing) used to
+          // leave the event stuck in `processing`: registerWebhookEvent then
+          // rejects the provider's retry as "currently being processed" until
+          // the 5-minute stale window elapses, so a transient failure could
+          // silently drop the event. Mark it failed so the retry is accepted.
+          await failWebhookEvent(
+            webhookProvider,
+            webhookEventId,
+            `Handler returned HTTP ${response.status}`
+          )
+        }
       }
 
       // 9. Log response
@@ -401,12 +454,17 @@ export function withApiHandler(
         })
       }
 
-      // Generic error — include message to aid debugging
-      return errorResponse(
-        err.message || 'Internal server error',
-        500,
-        requestId
-      )
+      // Unknown error — the message can carry internals (SQL text, table and
+      // column names, upstream URLs, env-var names), so it stays server-side.
+      // The client gets an opaque 500 plus the request id to quote to support.
+      logger.error('Unhandled API error', err, {
+        requestId,
+        userId,
+        path,
+        method,
+      })
+
+      return errorResponse('Internal server error', 500, requestId)
     }
   }
 }
