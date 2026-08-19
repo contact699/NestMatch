@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { createClient } from '@/lib/supabase/client'
+import { downscaleImage } from '@/lib/downscale-image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -158,9 +159,8 @@ export default function ProfileEditPage() {
       return
     }
 
-    const maxSize = 10 * 1024 * 1024
-    if (file.size > maxSize) {
-      setError('File too large. Maximum size is 10MB.')
+    if (file.size > 40 * 1024 * 1024) {
+      setError('File too large. Maximum size is 40MB.')
       return
     }
 
@@ -168,6 +168,14 @@ export default function ProfileEditPage() {
     setError(null)
 
     try {
+      // Downscale camera originals before upload (bounded storage + decode cost)
+      const processed = await downscaleImage(file)
+
+      const maxSize = 10 * 1024 * 1024
+      if (processed.size > maxSize) {
+        throw new Error('File too large. Maximum size is 10MB.')
+      }
+
       const supabase = createClient()
       const {
         data: { user },
@@ -179,13 +187,13 @@ export default function ProfileEditPage() {
 
       const timestamp = Date.now()
       const randomString = Math.random().toString(36).substring(2, 8)
-      const extension = file.name.split('.').pop() || 'jpg'
+      const extension = processed.name.split('.').pop() || 'jpg'
       const filename = `${user.id}/profile-${timestamp}-${randomString}.${extension}`
 
       const { data, error: uploadError } = await supabase.storage
         .from('profile-photos')
-        .upload(filename, file, {
-          contentType: file.type,
+        .upload(filename, processed, {
+          contentType: processed.type,
           upsert: false,
         })
 
