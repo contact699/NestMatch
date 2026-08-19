@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -12,9 +13,24 @@ import { useQuery } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Search as SearchIcon, Heart } from 'lucide-react-native'
-import { Screen, Input, Avatar, Badge } from '@/components/ui'
+import { Screen, Input, Avatar, Badge, Button } from '@/components/ui'
 import { useMatchScores } from '@/lib/use-match-scores'
 import { colors, radii, shadows, typography } from '@/theme/tokens'
+
+/**
+ * PostgREST's `or()` filter is parsed as a comma-separated list of
+ * `column.operator.value` triples, so a raw query containing `,` `(` `)` or `.`
+ * produces a 400 rather than a search (QA: "Montréal, ON" failed). Keep only
+ * the text before the first separator and strip the remaining metacharacters —
+ * "Montréal, ON" searches for "Montréal", which matches.
+ */
+function sanitizeSearchTerm(raw: string): string {
+  const firstSegment = raw.split(/[,()]/)[0] ?? ''
+  return firstSegment
+    .replace(/[.%\\"']/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 type Listing = {
   id: string
@@ -47,8 +63,10 @@ export default function SearchScreen() {
     if (initialQuery !== undefined) setQuery(initialQuery)
   }, [initialQuery])
 
+  const term = useMemo(() => sanitizeSearchTerm(query), [query])
+
   const listingsQuery = useQuery({
-    queryKey: ['search-listings', query],
+    queryKey: ['search-listings', term],
     queryFn: async () => {
       let q = supabase
         .from('listings')
@@ -56,8 +74,8 @@ export default function SearchScreen() {
         .eq('is_active', true)
         .order('created_at', { ascending: false })
         .limit(50)
-      if (query.trim()) {
-        q = q.or(`title.ilike.%${query}%,city.ilike.%${query}%`)
+      if (term) {
+        q = q.or(`title.ilike.%${term}%,city.ilike.%${term}%`)
       }
       const { data, error } = await q
       if (error) throw error
@@ -67,15 +85,15 @@ export default function SearchScreen() {
   })
 
   const roommatesQuery = useQuery({
-    queryKey: ['search-roommates', query],
+    queryKey: ['search-roommates', term],
     queryFn: async () => {
       let q = supabase
         .from('profiles')
         .select('user_id, name, age, occupation, city, profile_photo')
         .order('created_at', { ascending: false })
         .limit(50)
-      if (query.trim()) {
-        q = q.or(`name.ilike.%${query}%,city.ilike.%${query}%,occupation.ilike.%${query}%`)
+      if (term) {
+        q = q.or(`name.ilike.%${term}%,city.ilike.%${term}%,occupation.ilike.%${term}%`)
       }
       const { data, error } = await q
       if (error) throw error
@@ -127,13 +145,28 @@ export default function SearchScreen() {
         </View>
       ) : active.error ? (
         <View style={styles.center}>
-          <Text style={styles.errorText}>Failed to load. Pull down to retry.</Text>
+          <Text style={styles.errorText}>Failed to load results.</Text>
+          <Button
+            variant="outline"
+            size="sm"
+            onPress={() => active.refetch()}
+            style={{ marginTop: 12 }}
+          >
+            Retry
+          </Button>
         </View>
       ) : segment === 'listings' ? (
         <FlatList
           data={(listingsQuery.data ?? []) as Listing[]}
           keyExtractor={(i) => i.id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={listingsQuery.isRefetching}
+              onRefresh={() => listingsQuery.refetch()}
+              tintColor={colors.primary}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyTitle}>No listings found</Text>
@@ -165,6 +198,13 @@ export default function SearchScreen() {
           data={(roommatesQuery.data ?? []) as RoommateRow[]}
           keyExtractor={(i) => i.user_id}
           contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl
+              refreshing={roommatesQuery.isRefetching}
+              onRefresh={() => roommatesQuery.refetch()}
+              tintColor={colors.primary}
+            />
+          }
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyTitle}>No roommates found</Text>
@@ -174,7 +214,10 @@ export default function SearchScreen() {
             </View>
           }
           renderItem={({ item }) => (
-            <Pressable style={styles.profile}>
+            <Pressable
+              style={styles.profile}
+              onPress={() => router.push(`/user/${item.user_id}`)}
+            >
               <Avatar src={item.profile_photo} name={item.name} size={48} />
               <View style={styles.profileInfo}>
                 <Text style={styles.profileName}>

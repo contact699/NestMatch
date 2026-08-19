@@ -31,9 +31,11 @@ import {
   Globe,
   CreditCard,
   HandHelping,
+  Flag,
 } from 'lucide-react-native'
 import { colors, radii, typography } from '@/theme/tokens'
 import { Badge } from '../../src/components/ui'
+import { promptReport } from '../../src/lib/api'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const PHOTO_HEIGHT = 280
@@ -88,19 +90,27 @@ export default function ListingDetailScreen() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (isSaved) {
-        await supabase
+        const { error } = await supabase
           .from('saved_listings')
           .delete()
           .eq('listing_id', id!)
           .eq('user_id', user!.id)
+        if (error) throw error
       } else {
-        await supabase
+        const { error } = await supabase
           .from('saved_listings')
           .insert({ listing_id: id!, user_id: user!.id })
+        if (error) throw error
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['saved-listing', id, user?.id] })
+    },
+    onError: () => {
+      Alert.alert(
+        isSaved ? 'Could not unsave listing' : 'Could not save listing',
+        'Please try again in a moment.'
+      )
     },
   })
 
@@ -134,11 +144,13 @@ export default function ListingDetailScreen() {
       if (error) throw error
       return newConversation.id
     },
-    onSuccess: () => {
-      // Navigate to messages tab
-      router.push('/(tabs)/messages')
+    onSuccess: (conversationId: string) => {
+      // Open the conversation itself — dropping the user on the messages tab
+      // made it look like nothing happened.
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
+      router.push(`/conversation/${conversationId}`)
     },
-    onError: (err) => {
+    onError: () => {
       Alert.alert('Error', 'Could not start conversation. Please try again.')
     },
   })
@@ -452,6 +464,21 @@ export default function ListingDetailScreen() {
               </View>
             )}
 
+            {/* Report — required for user-generated content in both stores */}
+            {!isOwnListing && (
+              <View style={styles.section}>
+                <TouchableOpacity
+                  style={styles.reportButton}
+                  onPress={() => promptReport({ listingId: id! }, 'this listing')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Report this listing"
+                >
+                  <Flag color={colors.onSurfaceVariant} size={16} />
+                  <Text style={styles.reportButtonText}>Report this listing</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Spacer for bottom buttons */}
             <View style={{ height: 100 }} />
           </View>
@@ -715,6 +742,24 @@ const styles = StyleSheet.create({
   featureText: {
     fontSize: 15,
     color: '#334155',
+  },
+
+  // Report
+  reportButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.outlineVariant,
+    backgroundColor: colors.surfaceContainerLowest,
+  },
+  reportButtonText: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: 14,
+    color: colors.onSurfaceVariant,
   },
 
   // Host Card

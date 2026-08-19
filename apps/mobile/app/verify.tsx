@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native'
 import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -22,16 +23,25 @@ import {
 import { colors, radii, typography } from '@/theme/tokens'
 import { useAuth } from '@/providers/auth-provider'
 import { supabase } from '@/lib/supabase'
+import { computeTrustQuotient } from '@/lib/trust-quotient'
 
 type VerificationStatus = 'verified' | 'pending' | 'unverified'
 
 type VerificationItem = {
   label: string
   key: string
+  description: string
   status: VerificationStatus
   certn: boolean // requires Stripe + Certn flow (opens in-app browser)
   priceCents?: number
 }
+
+/**
+ * Paid verifications are purchased on the web. App Store rules forbid steering
+ * users to an outside purchase from inside the app, so on iOS we describe the
+ * checks but show no price and no tappable buy affordance.
+ */
+const IS_IOS = Platform.OS === 'ios'
 
 const PRICE_BY_KEY: Record<string, number> = {
   id: 1500,
@@ -89,18 +99,21 @@ export default function VerifyScreen() {
         {
           label: 'Email Verified',
           key: 'email',
+          description: 'Confirms you can be reached at the address on your account.',
           status: profile.email_verified ? 'verified' : 'unverified',
           certn: false,
         },
         {
           label: 'Phone Verified',
           key: 'phone',
+          description: 'Confirms a working mobile number belongs to you.',
           status: profile.phone_verified ? 'verified' : 'unverified',
           certn: false,
         },
         {
           label: 'Government ID',
           key: 'id',
+          description: 'Matches your photo ID to your profile through Certn.',
           status: getVerificationStatus('id'),
           certn: true,
           priceCents: PRICE_BY_KEY.id,
@@ -108,6 +121,7 @@ export default function VerifyScreen() {
         {
           label: 'Background Check',
           key: 'criminal',
+          description: 'Canadian criminal record check run by Certn.',
           status: getVerificationStatus('criminal'),
           certn: true,
           priceCents: PRICE_BY_KEY.criminal,
@@ -115,6 +129,7 @@ export default function VerifyScreen() {
         {
           label: 'Credit Check',
           key: 'credit',
+          description: 'Soft credit check that signals you can cover rent.',
           status: getVerificationStatus('credit'),
           certn: true,
           priceCents: PRICE_BY_KEY.credit,
@@ -122,13 +137,13 @@ export default function VerifyScreen() {
       ]
 
       setItems(verificationItems)
-
-      // Calculate trust score as percentage of verified items
-      const verifiedCount = verificationItems.filter((i) => i.status === 'verified').length
-      const pendingCount = verificationItems.filter((i) => i.status === 'pending').length
-      const total = verificationItems.length
-      const score = Math.round(((verifiedCount + pendingCount * 0.5) / total) * 100)
-      setTrustScore(score)
+      setTrustScore(
+        computeTrustQuotient({
+          emailVerified: profile.email_verified,
+          phoneVerified: profile.phone_verified,
+          verifications,
+        }),
+      )
     } catch {
       Alert.alert('Error', 'Failed to load verification status.')
     } finally {
@@ -258,9 +273,12 @@ export default function VerifyScreen() {
                       <Text style={[styles.verificationStatus, { color: statusColors.text }]}>
                         {getStatusLabel(item.status)}
                       </Text>
+                      {item.certn && item.status === 'unverified' ? (
+                        <Text style={styles.verificationDescription}>{item.description}</Text>
+                      ) : null}
                     </View>
                   </View>
-                  {item.certn && item.status === 'unverified' && (
+                  {item.certn && item.status === 'unverified' && !IS_IOS && (
                     <TouchableOpacity
                       style={styles.verifyWebButton}
                       onPress={() => handleStartVerification(item.key)}
@@ -270,6 +288,9 @@ export default function VerifyScreen() {
                       </Text>
                       <ExternalLink color={colors.primary} size={14} />
                     </TouchableOpacity>
+                  )}
+                  {item.certn && item.status === 'unverified' && IS_IOS && (
+                    <Text style={styles.availabilityNote}>Available at nestmatch.app</Text>
                   )}
                   {item.certn && item.status === 'pending' && (
                     <TouchableOpacity
@@ -289,7 +310,9 @@ export default function VerifyScreen() {
         <View style={styles.infoCard}>
           <Text style={styles.infoTitle}>Why verify?</Text>
           <Text style={styles.infoText}>
-            Verified profiles receive 3x more responses from potential roommates. Verifications are powered by Certn and require a web browser to complete.
+            {IS_IOS
+              ? 'Email and phone verification are free and can be completed here. Government ID, background and credit checks are powered by Certn and are managed on nestmatch.app.'
+              : 'Email and phone verification are free. Government ID, background and credit checks are powered by Certn and open in a web browser to complete.'}
           </Text>
         </View>
 
@@ -425,6 +448,19 @@ const styles = StyleSheet.create({
   verificationStatus: {
     fontSize: 13,
     fontWeight: '500',
+  },
+  verificationDescription: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginTop: 3,
+    lineHeight: 16,
+  },
+  availabilityNote: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    marginLeft: 12,
+    maxWidth: 96,
+    textAlign: 'right',
   },
   verifyWebButton: {
     flexDirection: 'row',

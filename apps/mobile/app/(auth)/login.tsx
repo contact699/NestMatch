@@ -8,13 +8,14 @@ import {
   ScrollView,
 } from 'react-native'
 import { Link } from 'expo-router'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { useAuth } from '@/providers/auth-provider'
 import { signInWithGoogle } from '@/lib/google-auth'
 import { Screen, Input, Button } from '@/components/ui'
-import { colors, typography } from '@/theme/tokens'
+import { colors, radii, typography } from '@/theme/tokens'
 
 export default function LoginScreen() {
-  const { signIn } = useAuth()
+  const { signIn, signInWithApple } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -27,6 +28,12 @@ export default function LoginScreen() {
     const { error: googleError } = await signInWithGoogle()
     if (googleError) setError(googleError.message)
     setGoogleLoading(false)
+  }
+
+  const handleAppleSignIn = async () => {
+    setError(null)
+    const { error: appleError } = await signInWithApple()
+    if (appleError) setError(appleError.message)
   }
 
   const handleSignIn = async () => {
@@ -58,6 +65,7 @@ export default function LoginScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Input
+            testID="login-email"
             label="Email"
             value={email}
             onChangeText={setEmail}
@@ -67,6 +75,7 @@ export default function LoginScreen() {
             placeholder="you@example.com"
           />
           <Input
+            testID="login-password"
             label="Password"
             value={password}
             onChangeText={setPassword}
@@ -74,7 +83,13 @@ export default function LoginScreen() {
             placeholder="••••••••"
           />
 
-          <Button variant="primary" size="lg" fullWidth loading={loading} onPress={handleSignIn}>
+          <View style={styles.forgotRow}>
+            <Link href="/(auth)/forgot-password" style={styles.forgotLink}>
+              Forgot password?
+            </Link>
+          </View>
+
+          <Button testID="login-submit" variant="primary" size="lg" fullWidth loading={loading} onPress={handleSignIn}>
             Sign in
           </Button>
 
@@ -87,6 +102,16 @@ export default function LoginScreen() {
           <Button variant="outline" size="lg" fullWidth loading={googleLoading} onPress={handleGoogleSignIn}>
             Continue with Google
           </Button>
+
+          {Platform.OS === 'ios' ? (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={radii.md}
+              style={styles.appleButton}
+              onPress={handleAppleSignIn}
+            />
+          ) : null}
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>Don&apos;t have an account? </Text>
@@ -130,6 +155,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginBottom: 4,
   },
+  forgotRow: { alignItems: 'flex-end', marginTop: -4, marginBottom: 4 },
+  forgotLink: {
+    fontFamily: typography.fontFamily.bodyMedium,
+    fontSize: 13,
+    color: colors.secondary,
+  },
+  appleButton: { width: '100%', height: 50, marginTop: 12 },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
