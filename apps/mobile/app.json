@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "nestmatch",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -18,10 +18,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.nestmatch.app",
       "infoPlist": {
-        "NSCameraUsageDescription": "NestMatch needs camera access to take photos for your profile and listings.",
-        "NSPhotoLibraryUsageDescription": "NestMatch needs photo library access to upload photos for your profile and listings.",
-        "NSLocationWhenInUseUsageDescription": "NestMatch uses your location to find nearby listings and roommates.",
-        "ITSAppUsesNonExemptEncryption": true
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -32,10 +29,11 @@
       "package": "com.nestmatch.app",
       "edgeToEdgeEnabled": false,
       "permissions": [
-        "CAMERA",
-        "READ_MEDIA_IMAGES",
-        "READ_EXTERNAL_STORAGE",
-        "ACCESS_FINE_LOCATION"
+        "CAMERA"
+      ],
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
     "web": {
@@ -52,10 +50,12 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "NestMatch needs access to your photos to add images to your listing."
+          "photosPermission": "NestMatch needs access to your photos so you can add a profile photo and images to your listings.",
+          "cameraPermission": "NestMatch needs camera access to take photos for your profile and listings."
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-apple-authentication"
     ],
     "extra": {
       "router": {},

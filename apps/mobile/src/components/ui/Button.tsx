@@ -24,6 +24,10 @@ type ButtonProps = {
   rightIcon?: ReactNode
   fullWidth?: boolean
   style?: StyleProp<ViewStyle>
+  /** Passed through for E2E (Maestro) selectors. */
+  testID?: string
+  /** Screen-reader label; defaults to the button text when that is a string. */
+  accessibilityLabel?: string
 }
 
 const VARIANT: Record<Variant, { bg: string; fg: string; border?: string }> = {
@@ -51,6 +55,8 @@ export function Button({
   rightIcon,
   fullWidth = false,
   style,
+  testID,
+  accessibilityLabel,
 }: ButtonProps) {
   const v = VARIANT[variant]
   const s = SIZE[size]
@@ -60,6 +66,12 @@ export function Button({
     <Pressable
       onPress={onPress}
       disabled={isDisabled}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={
+        accessibilityLabel ?? (typeof children === 'string' ? children : undefined)
+      }
+      accessibilityState={{ disabled: isDisabled, busy: loading }}
       android_ripple={{ color: 'rgba(0,0,0,0.08)' }}
       style={({ pressed }) => [
         styles.button,

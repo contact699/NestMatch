@@ -8,7 +8,17 @@ import * as SplashScreen from 'expo-splash-screen'
 import { ErrorBoundary } from '../src/components/error-boundary'
 import { useAppFonts } from '../src/theme/fonts'
 
-const queryClient = new QueryClient()
+// Mobile networks drop requests routinely, so a failed query retries twice
+// before surfacing an error state, and fresh data is reused for 30s instead of
+// refetching on every screen focus.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 30_000,
+    },
+  },
+})
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore — splash already hidden in some hot-reload scenarios
@@ -50,6 +60,10 @@ export default function RootLayout() {
               />
               <Stack.Screen
                 name="group/[id]"
+                options={{ animation: 'slide_from_right' }}
+              />
+              <Stack.Screen
+                name="user/[id]"
                 options={{ animation: 'slide_from_right' }}
               />
               <Stack.Screen

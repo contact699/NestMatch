@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react'
 import {
   View,
   Text,
@@ -7,18 +7,20 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
 } from 'react-native'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
 import { useAuth } from '../../src/providers/auth-provider'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../src/lib/supabase'
+import { promptBlock, promptReport } from '../../src/lib/api'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ArrowLeft, Send } from 'lucide-react-native'
+import { ArrowLeft, MoreVertical, Send } from 'lucide-react-native'
 import { Avatar } from '@/components/ui'
 import { colors, radii, typography } from '@/theme/tokens'
-import { useState } from 'react'
 
 type Message = {
   id: string
@@ -43,6 +45,7 @@ export default function ConversationScreen() {
   const queryClient = useQueryClient()
   const flatListRef = useRef<FlatList>(null)
   const [inputText, setInputText] = useState('')
+  const [sendError, setSendError] = useState<string | null>(null)
 
   // Fetch conversation details to get participant IDs and group linkage
   const { data: conversation } = useQuery({
@@ -139,15 +142,28 @@ export default function ConversationScreen() {
     enabled: isGroup && senderIds.length > 0,
   })
 
+  // Identity of the unread set, not of the array: react-query hands back a new
+  // array on every refetch, so depending on `messages` re-ran the update on
+  // every render. This only changes when the ids actually change.
+  const unreadKey = useMemo(
+    () =>
+      (messages ?? [])
+        .filter((m) => m.sender_id !== user?.id && !m.read_at)
+        .map((m) => m.id)
+        .join(','),
+    [messages, user?.id]
+  )
+  const latestMessageId = messages && messages.length > 0 ? messages[messages.length - 1].id : null
+
   // Mark unread messages as read. Group read state is per-member
   // (co_renter_members.last_read_at, from migration 027) — messages.read_at is
   // a single shared column, so writing it in a group chat would mark messages
   // read for every other member too.
   useEffect(() => {
-    if (!messages || !user) return
+    if (!user) return
 
     if (isGroup) {
-      if (!groupId) return
+      if (!groupId || !latestMessageId) return
       supabase
         .from('co_renter_members')
         .update({ last_read_at: new Date().toISOString() })
@@ -159,9 +175,7 @@ export default function ConversationScreen() {
       return
     }
 
-    const unreadIds = messages
-      .filter((m) => m.sender_id !== user.id && !m.read_at)
-      .map((m) => m.id)
+    const unreadIds = unreadKey ? unreadKey.split(',') : []
 
     if (unreadIds.length > 0) {
       supabase
@@ -173,7 +187,7 @@ export default function ConversationScreen() {
           queryClient.invalidateQueries({ queryKey: ['conversations'] })
         })
     }
-  }, [messages, user, queryClient, isGroup, groupId])
+  }, [unreadKey, latestMessageId, user, queryClient, isGroup, groupId])
 
   // Real-time subscription for new messages
   useEffect(() => {
@@ -252,6 +266,7 @@ export default function ConversationScreen() {
       return data
     },
     onSuccess: (newMessage) => {
+      setSendError(null)
       queryClient.setQueryData<Message[]>(['messages', id], (old) => {
         if (!old) return [newMessage as Message]
         if (old.some((m) => m.id === newMessage.id)) return old
@@ -259,23 +274,34 @@ export default function ConversationScreen() {
       })
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },
+    // The send used to fail silently with the message already wiped from the
+    // composer. Put the text back so nothing typed is ever lost.
+    onError: (err: unknown, content: string) => {
+      setInputText((current) => (current.trim() ? current : content))
+      setSendError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Message not sent. Check your connection and try again.'
+      )
+    },
   })
 
   const handleSend = useCallback(() => {
     const trimmed = inputText.trim()
     if (!trimmed || sendMutation.isPending) return
+    setSendError(null)
     setInputText('')
     sendMutation.mutate(trimmed)
   }, [inputText, sendMutation])
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when a new message arrives
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true })
-      }, 100)
-    }
-  }, [messages?.length])
+    if (!latestMessageId) return
+    const timer = setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true })
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [latestMessageId])
 
   const formatTime = (dateStr: string) => {
     if (!dateStr) return ''
@@ -301,6 +327,31 @@ export default function ConversationScreen() {
   // Group messages to show date separators
   const getDateKey = (dateStr: string) => new Date(dateStr).toDateString()
 
+  // Group chats have no single "other user", so the header safety menu below is
+  // hidden for them. Long-pressing another member's message is the per-sender
+  // equivalent — App Store review requires report/block to be reachable from
+  // every surface that shows user-generated content.
+  const openSenderSafetyMenu = useCallback(
+    (senderId: string, senderName: string | null) => {
+      if (!senderId || senderId === user?.id) return
+      const subject = senderName?.trim() || 'this person'
+      Alert.alert(subject, 'What would you like to do?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Report user', onPress: () => promptReport({ userId: senderId }, subject) },
+        {
+          text: 'Block user',
+          style: 'destructive',
+          onPress: () =>
+            promptBlock(senderId, subject, () => {
+              queryClient.invalidateQueries({ queryKey: ['conversations'] })
+              queryClient.invalidateQueries({ queryKey: ['messages', id] })
+            }),
+        },
+      ])
+    },
+    [user?.id, queryClient, id]
+  )
+
   const renderMessage = ({ item, index }: { item: Message; index: number }) => {
     const isCurrentUser = item.sender_id === user?.id
     const showDateSeparator =
@@ -316,24 +367,16 @@ export default function ConversationScreen() {
       !isCurrentUser &&
       (index === 0 || messages![index - 1].sender_id !== item.sender_id)
 
-    return (
-      <View>
-        {showDateSeparator && (
-          <View style={styles.dateSeparator}>
-            <View style={styles.dateLine} />
-            <Text style={styles.dateText}>
-              {formatDateSeparator(item.created_at)}
-            </Text>
-            <View style={styles.dateLine} />
-          </View>
-        )}
-        <View
-          style={[
-            styles.messageRow,
-            isCurrentUser ? styles.messageRowRight : styles.messageRowLeft,
-          ]}
-        >
-          {!isCurrentUser &&
+    // In a group, a long press on someone else's message opens report/block.
+    const canModerateSender = isGroup && !isCurrentUser && !!item.sender_id
+    const rowStyle = [
+      styles.messageRow,
+      isCurrentUser ? styles.messageRowRight : styles.messageRowLeft,
+    ]
+
+    const rowBody = (
+      <>
+        {!isCurrentUser &&
             (senderProfile?.profile_photo ? (
               <Avatar
                 src={senderProfile.profile_photo}
@@ -378,7 +421,34 @@ export default function ConversationScreen() {
               {formatTime(item.created_at)}
             </Text>
           </View>
-        </View>
+      </>
+    )
+
+    return (
+      <View>
+        {showDateSeparator && (
+          <View style={styles.dateSeparator}>
+            <View style={styles.dateLine} />
+            <Text style={styles.dateText}>
+              {formatDateSeparator(item.created_at)}
+            </Text>
+            <View style={styles.dateLine} />
+          </View>
+        )}
+        {canModerateSender ? (
+          <Pressable
+            style={rowStyle}
+            onLongPress={() =>
+              openSenderSafetyMenu(item.sender_id, senderProfile?.name ?? null)
+            }
+            delayLongPress={350}
+            accessibilityHint="Long press to report or block this member"
+          >
+            {rowBody}
+          </Pressable>
+        ) : (
+          <View style={rowStyle}>{rowBody}</View>
+        )}
       </View>
     )
   }
@@ -386,6 +456,26 @@ export default function ConversationScreen() {
   const headerTitle = isGroup
     ? group?.name ?? 'Group chat'
     : otherProfile?.name ?? 'Conversation'
+
+  // Safety menu for 1:1 chats — App Store review requires reporting and
+  // blocking to be reachable from anywhere user-generated content is shown.
+  const openSafetyMenu = useCallback(() => {
+    if (!otherUserId) return
+    const subject = otherProfile?.name ?? 'this person'
+    Alert.alert(subject, 'What would you like to do?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Report', onPress: () => promptReport({ userId: otherUserId }, subject) },
+      {
+        text: 'Block',
+        style: 'destructive',
+        onPress: () =>
+          promptBlock(otherUserId, subject, () => {
+            queryClient.invalidateQueries({ queryKey: ['conversations'] })
+            router.back()
+          }),
+      },
+    ])
+  }, [otherUserId, otherProfile?.name, queryClient, router])
 
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
@@ -401,6 +491,18 @@ export default function ConversationScreen() {
               <ArrowLeft size={24} color="#0f172a" />
             </TouchableOpacity>
           ),
+          headerRight: () =>
+            otherUserId ? (
+              <TouchableOpacity
+                onPress={openSafetyMenu}
+                style={styles.headerMenuButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                accessibilityRole="button"
+                accessibilityLabel="Report or block this person"
+              >
+                <MoreVertical size={22} color={colors.primary} />
+              </TouchableOpacity>
+            ) : null,
           headerStyle: { backgroundColor: colors.surfaceContainerLowest },
           headerTitleStyle: {
             color: colors.primary,
@@ -447,6 +549,12 @@ export default function ConversationScreen() {
           />
         )}
 
+        {sendError ? (
+          <View style={styles.sendErrorBanner}>
+            <Text style={styles.sendErrorText}>{sendError}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
@@ -490,6 +598,10 @@ const styles = StyleSheet.create({
   },
   backButton: {
     marginRight: 8,
+    padding: 4,
+  },
+  headerMenuButton: {
+    marginLeft: 8,
     padding: 4,
   },
   messagesList: {
@@ -578,6 +690,15 @@ const styles = StyleSheet.create({
     color: colors.outline,
     marginHorizontal: 12,
     fontWeight: '500',
+  },
+  sendErrorBanner: {
+    backgroundColor: colors.errorContainer,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  sendErrorText: {
+    fontSize: 13,
+    color: colors.error,
   },
   inputContainer: {
     flexDirection: 'row',

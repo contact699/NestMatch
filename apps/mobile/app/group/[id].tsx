@@ -198,6 +198,24 @@ export default function GroupDetailScreen() {
         .update({ status: 'accepted', reviewed_by: user!.id })
         .eq('id', req.id)
       if (updErr) throw updErr
+
+      // Group chat access now follows group membership via group_id (migration
+      // 032), so this is no longer what grants the new member access. Keep it as
+      // best-effort reconciliation for rows created by older app builds.
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('id, participant_ids')
+        .eq('group_id', id!)
+        .maybeSingle()
+      if (conversation?.id) {
+        const current = (conversation.participant_ids ?? []) as string[]
+        if (!current.includes(req.user_id)) {
+          await supabase
+            .from('conversations')
+            .update({ participant_ids: [...current, req.user_id] })
+            .eq('id', conversation.id)
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['group-pending-requests', id] })
@@ -222,21 +240,65 @@ export default function GroupDetailScreen() {
     onError: () => Alert.alert('Could not decline request', 'Please try again.'),
   })
 
+  /** Every active member of this group, always including the caller. */
+  const fetchActiveMemberIds = async (): Promise<string[]> => {
+    const { data } = await supabase
+      .from('co_renter_members')
+      .select('user_id')
+      .eq('group_id', id!)
+      .eq('status', 'active')
+    const ids = ((data ?? []) as { user_id: string }[]).map((m) => m.user_id)
+    return [...new Set([...ids, user!.id])]
+  }
+
   const openChat = useMutation({
     mutationFn: async () => {
+      // group_id is the primary — and authoritative — link between a group and
+      // its conversation: migration 032 gates group conversations on
+      // `group_id IS NOT NULL AND is_group_member(...)`, and the web route
+      // /api/groups/[id]/chat/init creates them with an empty participant_ids
+      // for exactly that reason. So always look the row up by group_id, and
+      // never let a participant_ids mismatch decide whether the chat exists.
       const { data: existing } = await supabase
         .from('conversations')
-        .select('id')
+        .select('id, participant_ids')
         .eq('group_id', id!)
         .maybeSingle()
-      if (existing?.id) return existing.id as string
 
+      if (existing?.id) {
+        // Secondary reconciliation, kept for conversations created by older app
+        // builds whose rows are still read through the participant_ids policies.
+        // Best-effort: a failure here must not stop the chat from opening.
+        const memberIds = await fetchActiveMemberIds()
+        const current = (existing.participant_ids ?? []) as string[]
+        const missing = memberIds.filter((memberId) => !current.includes(memberId))
+        if (missing.length > 0) {
+          await supabase
+            .from('conversations')
+            .update({ participant_ids: [...current, ...missing] })
+            .eq('id', existing.id)
+        }
+        return existing.id as string
+      }
+
+      const memberIds = await fetchActiveMemberIds()
       const { data: created, error } = await supabase
         .from('conversations')
-        .insert({ group_id: id!, participant_ids: [user!.id] })
+        .insert({ group_id: id!, participant_ids: memberIds })
         .select('id')
         .single()
-      if (error) throw error
+
+      if (error) {
+        // A unique partial index covers conversations(group_id), so a racing
+        // member (or the web app) may have created the row a moment ago.
+        const { data: raced } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('group_id', id!)
+          .maybeSingle()
+        if (raced?.id) return raced.id as string
+        throw error
+      }
       return created.id as string
     },
     onSuccess: (conversationId) => {

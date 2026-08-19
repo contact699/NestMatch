@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,7 +16,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { supabase } from '@/lib/supabase'
 import { Plus, Heart, Bell } from 'lucide-react-native'
-import { Screen, Card, Badge, Avatar, SectionHeader } from '@/components/ui'
+import { Screen, Card, Badge, Avatar, Button, SectionHeader } from '@/components/ui'
 import { colors, radii, shadows, spacing, typography } from '@/theme/tokens'
 import { Hero } from '@/components/home/Hero'
 import { CityChipRow } from '@/components/home/CityChipRow'
@@ -66,7 +67,13 @@ export default function HomeScreen() {
 
   const { content: heroContent } = useHomeSignals(citySlug)
 
-  const { data: roommates, isLoading: roommatesLoading } = useQuery({
+  const {
+    data: roommates,
+    isLoading: roommatesLoading,
+    error: roommatesError,
+    refetch: refetchRoommates,
+    isRefetching: roommatesRefetching,
+  } = useQuery({
     queryKey: ['home-roommates', user?.id, city.slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -82,7 +89,13 @@ export default function HomeScreen() {
     enabled: !!user,
   })
 
-  const { data: listings, isLoading: listingsLoading } = useQuery({
+  const {
+    data: listings,
+    isLoading: listingsLoading,
+    error: listingsError,
+    refetch: refetchListings,
+    isRefetching: listingsRefetching,
+  } = useQuery({
     queryKey: ['home-listings', user?.id, city.slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -113,7 +126,7 @@ export default function HomeScreen() {
     return (
       <Pressable
         style={styles.roommateCard}
-        onPress={() => router.push('/(tabs)/search')}
+        onPress={() => router.push(`/user/${item.user_id}`)}
       >
         <Avatar src={item.profile_photo} name={item.name} size={56} style={styles.roommateAvatar} />
         <Text style={styles.roommateName} numberOfLines={1}>
@@ -138,7 +151,19 @@ export default function HomeScreen() {
 
   return (
     <Screen testID="screen-home" edges={['bottom']}>
-      <ScrollView contentContainerStyle={styles.scroll}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        refreshControl={
+          <RefreshControl
+            refreshing={listingsRefetching || roommatesRefetching}
+            onRefresh={() => {
+              refetchListings()
+              refetchRoommates()
+            }}
+            tintColor={colors.primary}
+          />
+        }
+      >
         <View style={styles.topBar}>
           <Pressable
             style={styles.bellBtn}
@@ -168,6 +193,19 @@ export default function HomeScreen() {
         />
         {listingsLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        ) : listingsError ? (
+          <Card>
+            <Text style={styles.errorTitle}>Could not load listings</Text>
+            <Text style={styles.emptyBody}>Check your connection and try again.</Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => refetchListings()}
+              style={{ marginTop: 10 }}
+            >
+              Retry
+            </Button>
+          </Card>
         ) : (listings?.length ?? 0) === 0 ? (
           <Card>
             <Text style={styles.emptyTitle}>No listings yet</Text>
@@ -206,6 +244,19 @@ export default function HomeScreen() {
         />
         {roommatesLoading ? (
           <ActivityIndicator color={colors.primary} style={{ marginVertical: 24 }} />
+        ) : roommatesError ? (
+          <Card>
+            <Text style={styles.errorTitle}>Could not load roommates</Text>
+            <Text style={styles.emptyBody}>Check your connection and try again.</Text>
+            <Button
+              variant="outline"
+              size="sm"
+              onPress={() => refetchRoommates()}
+              style={{ marginTop: 10 }}
+            >
+              Retry
+            </Button>
+          </Card>
         ) : (
           <FlatList
             horizontal
@@ -350,6 +401,12 @@ const styles = StyleSheet.create({
     fontFamily: typography.fontFamily.bodyBold,
     fontSize: 14,
     color: colors.primary,
+    marginBottom: 4,
+  },
+  errorTitle: {
+    fontFamily: typography.fontFamily.bodyBold,
+    fontSize: 14,
+    color: colors.error,
     marginBottom: 4,
   },
   emptyBody: {

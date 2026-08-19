@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Switch,
   Alert,
   Linking,
   ActivityIndicator,
@@ -17,74 +16,20 @@ import {
   ChevronRight,
   UserPen,
   ShieldCheck,
-  Bell,
-  Eye,
   FileText,
   Lock,
   LogOut,
   Trash2,
 } from 'lucide-react-native'
-import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useAuth } from '@/providers/auth-provider'
-import { supabase } from '@/lib/supabase'
+import { callWebApi } from '@/lib/api'
 import { colors, radii, typography } from '@/theme/tokens'
 
 export default function SettingsScreen() {
   const router = useRouter()
-  const { user, signOut } = useAuth()
+  const { signOut } = useAuth()
 
-  const [pushEnabled, setPushEnabled] = useState(true)
-  const [emailEnabled, setEmailEnabled] = useState(true)
-  const [showBadges, setShowBadges] = useState(true)
-  const [loadingPrivacy, setLoadingPrivacy] = useState(true)
-
-  useEffect(() => {
-    if (!user) return
-    Promise.all([
-      AsyncStorage.getItem(`@settings:show_badges:${user.id}`),
-      AsyncStorage.getItem(`@settings:push_enabled:${user.id}`),
-      AsyncStorage.getItem(`@settings:email_enabled:${user.id}`),
-    ])
-      .then(([badges, push, email]) => {
-        if (badges !== null) setShowBadges(badges === 'true')
-        if (push !== null) setPushEnabled(push === 'true')
-        if (email !== null) setEmailEnabled(email === 'true')
-      })
-      .finally(() => setLoadingPrivacy(false))
-  }, [user])
-
-  const toggleShowBadges = async (value: boolean) => {
-    setShowBadges(value)
-    if (!user) return
-    try {
-      await AsyncStorage.setItem(`@settings:show_badges:${user.id}`, String(value))
-    } catch {
-      setShowBadges(!value)
-      Alert.alert('Error', 'Failed to update privacy setting.')
-    }
-  }
-
-  const togglePushEnabled = async (value: boolean) => {
-    setPushEnabled(value)
-    if (!user) return
-    try {
-      await AsyncStorage.setItem(`@settings:push_enabled:${user.id}`, String(value))
-    } catch {
-      setPushEnabled(!value)
-      Alert.alert('Error', 'Failed to update notification setting.')
-    }
-  }
-
-  const toggleEmailEnabled = async (value: boolean) => {
-    setEmailEnabled(value)
-    if (!user) return
-    try {
-      await AsyncStorage.setItem(`@settings:email_enabled:${user.id}`, String(value))
-    } catch {
-      setEmailEnabled(!value)
-      Alert.alert('Error', 'Failed to update notification setting.')
-    }
-  }
+  const [deleting, setDeleting] = useState(false)
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -116,12 +61,20 @@ export default function SettingsScreen() {
                   text: 'Yes, Delete My Account',
                   style: 'destructive',
                   onPress: async () => {
+                    setDeleting(true)
                     try {
-                      const { error } = await supabase.functions.invoke('delete-account')
-                      if (error) throw error
+                      await callWebApi('/account/delete', { method: 'POST' })
                       await signOut()
-                    } catch {
-                      Alert.alert('Error', 'Failed to delete account. Please try again or contact support.')
+                      router.replace('/(auth)/login')
+                    } catch (error) {
+                      Alert.alert(
+                        'Error',
+                        error instanceof Error
+                          ? error.message
+                          : 'Failed to delete account. Please try again or contact support.',
+                      )
+                    } finally {
+                      setDeleting(false)
                     }
                   },
                 },
@@ -176,65 +129,6 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Notifications Section */}
-        <Text style={styles.sectionLabel}>Notifications</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.warningContainer }]}>
-                <Bell color={colors.onWarningContainer} size={18} />
-              </View>
-              <Text style={styles.rowLabel}>Push Notifications</Text>
-            </View>
-            <Switch
-              value={pushEnabled}
-              onValueChange={togglePushEnabled}
-              trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
-              thumbColor={pushEnabled ? colors.secondary : colors.outline}
-            />
-          </View>
-
-          <View style={styles.separator} />
-
-          <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.warningContainer }]}>
-                <Bell color={colors.onWarningContainer} size={18} />
-              </View>
-              <Text style={styles.rowLabel}>Email Notifications</Text>
-            </View>
-            <Switch
-              value={emailEnabled}
-              onValueChange={toggleEmailEnabled}
-              trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
-              thumbColor={emailEnabled ? colors.secondary : colors.outline}
-            />
-          </View>
-        </View>
-
-        {/* Privacy Section */}
-        <Text style={styles.sectionLabel}>Privacy</Text>
-        <View style={styles.card}>
-          <View style={styles.row}>
-            <View style={styles.rowLeft}>
-              <View style={[styles.iconCircle, { backgroundColor: colors.surfaceContainerLow }]}>
-                <Eye color={colors.primary} size={18} />
-              </View>
-              <Text style={styles.rowLabel}>Show Verification Badges</Text>
-            </View>
-            {loadingPrivacy ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <Switch
-                value={showBadges}
-                onValueChange={toggleShowBadges}
-                trackColor={{ false: colors.outlineVariant, true: colors.secondaryContainer }}
-                thumbColor={showBadges ? colors.secondary : colors.outline}
-              />
-            )}
-          </View>
-        </View>
-
         {/* Legal Section */}
         <Text style={styles.sectionLabel}>Legal</Text>
         <View style={styles.card}>
@@ -281,13 +175,18 @@ export default function SettingsScreen() {
 
           <View style={styles.separator} />
 
-          <TouchableOpacity style={styles.row} onPress={handleDeleteAccount}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={handleDeleteAccount}
+            disabled={deleting}
+          >
             <View style={styles.rowLeft}>
               <View style={[styles.iconCircle, { backgroundColor: colors.errorContainer }]}>
                 <Trash2 color={colors.error} size={18} />
               </View>
               <Text style={[styles.rowLabel, { color: colors.error }]}>Delete Account</Text>
             </View>
+            {deleting ? <ActivityIndicator size="small" color={colors.error} /> : null}
           </TouchableOpacity>
         </View>
 

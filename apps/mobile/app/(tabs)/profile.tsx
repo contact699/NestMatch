@@ -14,6 +14,12 @@ import { useRouter } from 'expo-router'
 import { Settings, ShieldCheck, ChevronRight, Bookmark, Home as HomeIcon, Receipt } from 'lucide-react-native'
 import { ReactNode } from 'react'
 import { Screen, Avatar, Badge, Button, Card } from '@/components/ui'
+import {
+  computeTrustFactors,
+  computeTrustQuotient,
+  TRUST_FACTOR_COUNT,
+  TRUST_FACTOR_KEYS,
+} from '@/lib/trust-quotient'
 import { colors, radii, shadows, typography } from '@/theme/tokens'
 
 type Profile = {
@@ -32,6 +38,8 @@ type Profile = {
 type VerificationRecord = {
   type: 'id' | 'credit' | 'criminal' | 'reference'
   status: 'pending' | 'completed' | 'failed'
+  /** Tie-breaker when several rows share a type — see lib/trust-quotient.ts. */
+  created_at: string | null
 }
 
 export default function ProfileScreen() {
@@ -57,7 +65,7 @@ export default function ProfileScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('verifications')
-        .select('type, status')
+        .select('type, status, created_at')
         .eq('user_id', user!.id)
       if (error) throw error
       return (data ?? []) as VerificationRecord[]
@@ -96,17 +104,18 @@ export default function ProfileScreen() {
       : 'neutral'
   const verifyLabel = level === 'trusted' ? 'Trusted' : level === 'verified' ? 'Verified' : 'Unverified'
 
-  // Trust quotient = % of the 5 verification factors completed.
-  // Matches the calculation in verify.tsx so the two screens never disagree.
-  const factors = [
-    profile?.email_verified === true,
-    profile?.phone_verified === true,
-    verifications?.some((v) => v.type === 'id' && v.status === 'completed'),
-    verifications?.some((v) => v.type === 'criminal' && v.status === 'completed'),
-    verifications?.some((v) => v.type === 'credit' && v.status === 'completed'),
-  ]
-  const completedFactors = factors.filter(Boolean).length
-  const trustPct = Math.round((completedFactors / factors.length) * 100)
+  // Trust quotient — single source of truth shared with verify.tsx, so the two
+  // screens can never disagree (a pending Certn check counts as half a factor).
+  const trustInput = {
+    emailVerified: profile?.email_verified,
+    phoneVerified: profile?.phone_verified,
+    verifications,
+  }
+  const trustPct = computeTrustQuotient(trustInput)
+  const trustFactors = computeTrustFactors(trustInput)
+  const completedFactors = TRUST_FACTOR_KEYS.filter(
+    (key) => trustFactors[key] === 'verified'
+  ).length
 
   return (
     <Screen testID="screen-profile" edges={['bottom']}>
@@ -127,7 +136,7 @@ export default function ProfileScreen() {
           <Text style={styles.trustHint}>
             {trustPct >= 100
               ? 'You are fully verified'
-              : `${completedFactors} of ${factors.length} factors complete · tap Trust Center to finish`}
+              : `${completedFactors} of ${TRUST_FACTOR_COUNT} factors complete · tap Trust Center to finish`}
           </Text>
         </Card>
 

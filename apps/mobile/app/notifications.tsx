@@ -1,5 +1,6 @@
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Pressable,
   StyleSheet,
@@ -98,11 +99,16 @@ export default function NotificationsScreen() {
 
   const handlePress = async (item: Notification) => {
     if (!item.read_at) {
-      await supabase
+      // Only refresh (and so flip the row to "read") once the write succeeded.
+      const { error: updateError } = await supabase
         .from('notifications')
         .update({ read_at: new Date().toISOString() })
         .eq('id', item.id)
-      invalidate()
+      if (updateError) {
+        Alert.alert('Could not mark as read', 'Please try again in a moment.')
+      } else {
+        invalidate()
+      }
     }
     const route = mobileRouteFor(item.link)
     if (route) router.push(route as never)
@@ -110,11 +116,15 @@ export default function NotificationsScreen() {
 
   const markAllRead = async () => {
     if (!user) return
-    await supabase
+    const { error: updateError } = await supabase
       .from('notifications')
       .update({ read_at: new Date().toISOString() })
       .eq('user_id', user.id)
       .is('read_at', null)
+    if (updateError) {
+      Alert.alert('Could not mark all as read', 'Please try again in a moment.')
+      return
+    }
     invalidate()
   }
 

@@ -6,7 +6,7 @@ tags:
 ---
 - launchApp:
     clearState: true
-- assertVisible: "Welcome Back"
+- assertVisible: "Welcome back"
 
 - tapOn:
     id: "login-email"
