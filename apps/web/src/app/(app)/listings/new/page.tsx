@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { clientLogger } from '@/lib/client-logger'
-import { useForm } from 'react-hook-form'
+import { useForm, type FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Button } from '@/components/ui/button'
 // Card components removed - using sidebar layout instead
@@ -24,7 +24,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import Link from 'next/link'
-import { listingSchema, ListingFormData } from './types'
+import { listingSchema, ListingFormData, WIZARD_STEP } from './types'
 import { useFormDraft } from '@/lib/hooks/use-form-draft'
 import {
   StepType,
@@ -37,13 +37,13 @@ import {
 } from './steps'
 
 const STEPS = [
-  { id: 1, title: 'Type', icon: Home },
-  { id: 2, title: 'Location', icon: MapPin },
-  { id: 3, title: 'Details', icon: DollarSign },
-  { id: 4, title: 'Amenities', icon: Calendar },
-  { id: 5, title: 'Photos', icon: Camera },
-  { id: 6, title: 'Preferences', icon: Users },
-  { id: 7, title: 'Review', icon: Check },
+  { id: WIZARD_STEP.TYPE, title: 'Type', icon: Home },
+  { id: WIZARD_STEP.LOCATION, title: 'Location', icon: MapPin },
+  { id: WIZARD_STEP.DETAILS, title: 'Details', icon: DollarSign },
+  { id: WIZARD_STEP.AMENITIES, title: 'Amenities', icon: Calendar },
+  { id: WIZARD_STEP.PHOTOS, title: 'Photos', icon: Camera },
+  { id: WIZARD_STEP.PREFERENCES, title: 'Preferences', icon: Users },
+  { id: WIZARD_STEP.REVIEW, title: 'Review', icon: Check },
 ]
 
 const LISTING_DEFAULTS: Partial<ListingFormData> = {
@@ -100,6 +100,14 @@ export default function NewListingPage() {
     }
   }, [watch, setDraft])
 
+  // Each step is a full screen of its own: land at the top of it, otherwise a step change
+  // from the bottom of a long step (e.g. Preferences -> Review) looks like nothing happened
+  // except the button label changing to "Publish Listing".
+  useEffect(() => {
+    setError(null)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentStep])
+
   const validateStep = async () => {
     let fieldsToValidate: (keyof ListingFormData)[] = []
 
@@ -142,6 +150,9 @@ export default function NewListingPage() {
   }
 
   const onSubmit = async (data: ListingFormData) => {
+    // Belt-and-braces: publishing is only ever allowed from the final Review step.
+    if (currentStep !== STEPS.length) return
+
     clientLogger.info('Form submitted with data')
     setIsSubmitting(true)
     setError(null)
@@ -187,10 +198,13 @@ export default function NewListingPage() {
   }
 
   // Handle validation errors on submit
-  const onError = (validationErrors: any) => {
+  const onError = (validationErrors: FieldErrors<ListingFormData>) => {
     clientLogger.info('Validation errors encountered')
     const errorMessages = Object.entries(validationErrors)
-      .map(([field, error]: [string, any]) => `${field}: ${error.message}`)
+      .map(([field, fieldError]) => {
+        const message = (fieldError as { message?: string } | undefined)?.message
+        return `${field}: ${message ?? 'is invalid'}`
+      })
       .join(', ')
     setError(`Please fix the following: ${errorMessages}`)
   }
@@ -206,20 +220,24 @@ export default function NewListingPage() {
       case 4:
         return <StepAmenities watch={watch} setValue={setValue} />
       case 5:
-        return <StepPhotos watch={watch} setValue={setValue} />
+        return <StepPhotos watch={watch} setValue={setValue} errors={errors} />
       case 6:
         return <StepPreferences register={register} />
       case 7:
-        return <StepReview watch={watch} />
+        return <StepReview watch={watch} onEdit={setCurrentStep} />
       default:
         return null
     }
   }
 
   const progressPercent = Math.round((currentStep / STEPS.length) * 100)
+  const isReviewStep = currentStep === STEPS.length
 
   return (
-    <div className="min-h-screen flex">
+    // The wizard lives inside the app shell (sticky 4rem navbar + padded <main>), so it sizes
+    // itself to the space left over rather than a full 100vh — a full-height box here forces a
+    // scrollbar on every step and pushes the wizard chrome under the translucent navbar.
+    <div className="flex min-h-[calc(100vh-7rem)] lg:min-h-[calc(100vh-8rem)]">
       {/* Left panel - Dark navy sidebar */}
       <div className="hidden lg:flex lg:w-[340px] bg-primary text-white flex-col justify-between p-10 flex-shrink-0">
         <div>
@@ -248,13 +266,8 @@ export default function NewListingPage() {
 
       {/* Right panel - Form content */}
       <div className="flex-1 flex flex-col">
-        {/* Top bar */}
+        {/* Top bar — branding is already provided by the app navbar directly above */}
         <div className="flex items-center justify-between px-6 py-4 lg:px-10">
-          <div className="lg:hidden">
-            <Link href="/dashboard" className="text-on-surface-variant hover:text-on-surface text-sm font-medium transition-colors">
-              NestMatch
-            </Link>
-          </div>
           <div className="flex-1" />
           <Link
             href="/dashboard"
@@ -267,8 +280,9 @@ export default function NewListingPage() {
 
         {/* Form area */}
         <div className="flex-1 px-6 lg:px-10 pb-8 max-w-2xl mx-auto w-full">
-          {/* Step indicator */}
-          <div className="mb-8">
+          {/* Step indicator — docks just below the app navbar (h-16 / z-50) instead of
+              scrolling underneath it */}
+          <div className="sticky top-16 z-30 bg-background -mx-6 px-6 lg:-mx-10 lg:px-10 pt-4 pb-4 mb-4">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-semibold text-secondary uppercase tracking-wider">
                 STEP {currentStep} OF {STEPS.length}
@@ -287,7 +301,17 @@ export default function NewListingPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit, onError)}>
+          <form
+            onSubmit={(event) => {
+              // Only the Review step may publish — this also swallows implicit (Enter key)
+              // submissions from the input fields on the earlier steps.
+              if (!isReviewStep) {
+                event.preventDefault()
+                return
+              }
+              void handleSubmit(onSubmit, onError)(event)
+            }}
+          >
             {error && (
               <div className="mb-6 p-4 bg-error-container rounded-xl flex items-center gap-2 text-error">
                 <AlertCircle className="h-5 w-5 flex-shrink-0" />
@@ -308,7 +332,7 @@ export default function NewListingPage() {
                 {currentStep === 1 ? 'Cancel' : 'Back'}
               </button>
 
-              {currentStep < STEPS.length ? (
+              {!isReviewStep ? (
                 <Button type="button" onClick={nextStep} size="lg">
                   Continue
                   <ArrowRight className="h-4 w-4 ml-2" />

@@ -1,6 +1,6 @@
 'use client'
 
-import { UseFormWatch, UseFormSetValue } from 'react-hook-form'
+import { UseFormWatch, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { ImageUploader } from '@/components/ui/image-uploader'
 import { ListingFormData } from '../types'
 import { Camera } from 'lucide-react'
@@ -8,9 +8,10 @@ import { Camera } from 'lucide-react'
 interface StepPhotosProps {
   watch: UseFormWatch<ListingFormData>
   setValue: UseFormSetValue<ListingFormData>
+  errors: FieldErrors<ListingFormData>
 }
 
-export function StepPhotos({ watch, setValue }: StepPhotosProps) {
+export function StepPhotos({ watch, setValue, errors }: StepPhotosProps) {
   const formData = watch()
 
   return (
@@ -19,15 +20,23 @@ export function StepPhotos({ watch, setValue }: StepPhotosProps) {
         Add photos of the space
       </h3>
       <p className="text-sm text-on-surface-variant">
-        Photos help attract more interest. You can add up to 10 photos.
+        At least one photo is required. You can add up to 10.
       </p>
 
-      <ImageUploader
-        images={formData.photos || []}
-        onChange={(photos) => setValue('photos', photos)}
-        maxImages={10}
-        bucket="listing-photos"
-      />
+      <div>
+        <ImageUploader
+          images={formData.photos || []}
+          // Re-validate on change so the "add a photo" error clears as soon as one is added
+          onChange={(photos) => setValue('photos', photos, { shouldValidate: true })}
+          maxImages={10}
+          bucket="listing-photos"
+        />
+        {errors.photos && (
+          <p className="mt-2 text-sm text-error" role="alert">
+            {errors.photos.message}
+          </p>
+        )}
+      </div>
 
       {/* Professional Tip */}
       <div className="p-4 bg-surface-container-low rounded-2xl flex items-start gap-3">
@@ -37,7 +46,8 @@ export function StepPhotos({ watch, setValue }: StepPhotosProps) {
         <div>
           <p className="font-semibold text-on-surface text-sm">Photo Tips</p>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Include photos of the room, common areas, bathroom, and any outdoor spaces. Listings with 5+ photos get 3x more views.
+            Photos of the room, common areas, bathroom, and any outdoor spaces help your
+            listing stand out. Natural daylight and a tidy space go a long way.
           </p>
         </div>
       </div>
